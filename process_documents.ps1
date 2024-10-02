@@ -24,8 +24,7 @@ $docx = Get-ChildItem -Path $DocxDir -Filter *.docx
 
 $docxPaths = $docx | ForEach-Object { $_.FullName }
 
-Start-Process -NoNewWindow -Wait -FilePath "exiftool" -ArgumentList $($docxPaths -join ' '), "-XMP:ALL", "-XML:ALL", "-j", "-n", "-w", "$MetaDir/%f.json"
- 
+Start-Process -NoNewWindow -FilePath "exiftool" -ArgumentList $($docxPaths -join ' '), "-XMP:ALL", "-XML:ALL", "-j", "-n", "-w", "$MetaDir/%f.json"
 
 foreach ($file in $docx) {
   $document = $file.BaseName  # Get the file name without extension
