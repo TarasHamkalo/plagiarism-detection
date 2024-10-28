@@ -1,0 +1,243 @@
+2. zadanie Operačné Systémy
+
+Martin Eliaš, Bianka Drábová, Samuel Ušala
+
+OS
+
+2023
+
+Obsah
+
+Formulácia úlohy 1
+
+POPIS PROCESOV 1
+
+POPIS KOMUNIKÁCIE 2
+
+1. zadanie.cpp 4
+
+2. proc_p1, proc_p2 5
+
+3. proc_t.cpp 5
+
+4. proc_d.cpp 6
+
+5. proc_serv2.cpp 6
+
+Formulácia úlohy
+
+[Obrázok, na ktorom je text, diagram, písmo, rad Automaticky generovaný
+popis]
+
+Obrázok - schéma zadania
+
+POPIS PROCESOV
+
+PROCES Zadanie (vypracovaný študentom, nie je zakreslený v diagrame)
+
+Spúšťanie
+
+zadanie <číslo portu 1> <číslo portu 2>
+
+Funkcia
+
+Parametre hlavného programu sú čísla portov pre servery Serv1 (TCP)
+a Serv2 (UDP). Tieto čísla je potrebné týmto procesom odovzdať. Program
+Zadanie nech vyhradí všetky zdroje (pre medziprocesovú komunikáciu)
+a nech spustí všetky procesy. Všetky procesy nech sú realizované ako
+samostatné programy.
+
+PROCES Pr
+
+Spúšťanie
+
+proc_pr <pid procesu P1> <pid procesu P2>
+
+<id čítaciaho konca rúry R1> <id zapisovacieho konca rúry R2>
+
+Funkcia
+
+Proces Pr pošle signál SIGUSR1 svojmu hlavnému procesu (Zadanie) na
+signalizáciu, že je pripravený. Proces Pr si údaje bude žiadať:
+
+-   Ak pošle signál (SIGUSR1) procesu P1, nech tento proces (P1) zapíše
+    slovo prečítané zo súboru p1.txt.
+
+-   To isté platí aj pre proces P2 a p2.txt. Teda, ak proces Pr pošle
+    signál (SIGUSR1) procesu P2 nech do rúry R1 zapíše slovo proces P2
+    zo súboru p2.txt.
+
+Proces Pr k slovu prijatému z rúry R1 pridá svoju značku a zapíše nové
+slovo do rúry R2.
+PROCES S
+
+Spúšťanie
+
+proc_s <id zdieľanej pamäte SM1> <id semaforu S1> <id zdieľanej pamäte
+SM2>
+
+<id semaforu S2>
+
+Funkcia
+
+Proces S pošle signál SIGUSR1 svojmu hlavnému procesu (Zadanie) na
+signalizáciu, že je (proces S) pripravený. Proces S príjme slovo zo
+zdieľanej pamäte SM1 so synchronizáciou semaforom S1 (pozri časť
+o semaforoch v časti „Popis komunikácie“), pripíše k nemu svoju značku
+a zapíše ho do zdieľanej pamäte SM2 so synchronizáciou semaforom S2.
+
+PROCES Serv1
+
+Spúšťanie
+
+proc_serv1 <číslo portu 1> <číslo portu 2>
+
+Funkcia
+
+Proces Serv1 vytvorí TCP server (na porte <číslo portu 1>), ktorý bude
+prijímať TCP pakety. Server prijaté slová označí svojou značkou a pošle
+ich ďalej na UDP server (port <číslo portu 2>). Čísla portov 1 a 2 sú
+argumenty hlavného procesu (pozri kapitolu „PROCES Zadanie“). Proces
+Serv1 pošle signál SIGUSR1 svojmu hlavnému procesu (Zadanie) na
+signalizáciu, že je (proces Serv1) pripravený. TCP aj UDP server nech
+vytvorený na lokálnom počítači, teda na počítači „127.0.0.1“ (pozor, nie
+„localhost“!).
+
+POPIS KOMUNIKÁCIE 
+
+Semafor S1
+
+Pre semafor S1 je potrebné vytvoriť dvojicu semaforov. Proces T nech sa
+riadi podľa semaforu S1[0] a proces S sa bude riadiť podľa semaforu
+S1[1], pričom nastavený semafor S1[0] (rozumej nastavený na hodnotu 1)
+nech znamená, že proces T môže zapisovať do zdieľanej pamäte (SM1).
+Nastavený semafor S1[1] nech znamená, že proces S môže zo zdieľanej
+pamäte (SM1) údaje čítať.
+
+Semafor S2
+
+Pre semafor S2 je potrebné vytvoriť dvojicu semaforov. Proces S nech sa
+riadi podľa semaforu S2[0] a proces D sa bude riadiť podľa semaforu
+S2[1]. Pričom nastavený semafor S2[0] (rozumej nastavený na hodnotu 1)
+nech znamená, že proces S môže zapisovať do zdieľanej pamäte (SM2).
+Nastavený semafor S2[1] nech znamená, že proces D môže zo zdieľanej
+pamäte (SM2) údaje čítať.
+
+Príklad komunikácie medzi procesom T a procesom S – semafor S1
+
+Pozn.: Pre semafor S2 je to analogické.
+
+Hodnota semaforu Význam
+
+  0 červená
+
+  1 zelená
+
+Proces T sa riadi semaforom S1[0] a proces S sa riadi semaforom S1[1].
+To znamená, že kým ma proces T na svojom semafore (S1[0]) hodnotu 0
+(t.j. červená) – tak stále čaká. To isté platí pre proces S. To znamená,
+že kým proces S má na svojom semafore (S1[1]) hodnotu 0 (červená) – to
+znamená, že musí čakať.
+
+Semafor treba inicializovať do nasledovného stavu:
+
+S1[0] = 1 (zelená/môžeš) S1[1] = 0 (červená/stoj)
+
+- tento stav znamená, že proces T môže do zdieľanej pamäte zapisovať.
+Proces S čaká, má červenú, nemôže čítať.
+
+Proces T má zelenú (teda môže zapisovať), lebo má svoj semafor (S1[0])
+nastavený na hodnotu 1 (zelená). Teda do zdieľanej pamäte zapíše svoje
+údaje. Teraz je potrebné, aby proces T umožnil procesu S údaje čítať.
+Preto zmení semafory na nasledovný stav:
+
+[Najprv zmení svoj semafor (semafor S1[0]) z hodnoty 1 na hodnotu 0
+(teda zo zelenej na červenú) a semafor procesu S (teda S1[1]) zmení
+z hodnoty 0 na hodnotu 1 (z červenej na zelenú, aby mu naznačil, že
+údaje sú zapísané a môže ich teda čítať.)]
+
+S1[0] = 0 (červená/stoj) S1[1] = 1 (zelená/môžeš)
+
+- tento stav znamená, že proces T nemôže do zdieľanej pamäte zapisovať,
+má čakať. Proces S má zelenú, má v zdieľanej pamäti pripravené údaje
+a môže údaje z pamäte prečítať.
+
+Teraz už môže semafor S zo zdieľanej pamäte údaje prečítať, lebo jeho
+semafor (S1[1]) sa zmenil z hodnoty 0 (červená) na hodnotu 1 (zelená).
+Prečíta teda údaje zo zdieľanej pamäte a vymení farby semaforov (t.j.
+zmení sebe zo zelenej na červenú – z 1 na 0 – a procesu T zmení
+z červenej na zelenú – z 0 na 1 – aby mohol do pamäte zapisovať).
+
+Súbory p1.txt, p2.txt a serv2.txt
+
+Súbory p1.txt a p2.txt budú obsahovať slová (rozumej reťazce znakov
+každé v novom riadku), pričom veľkosť slova počas putovania medzi
+procesmi nepresiahne dĺžku 150 znakov. Súbor serv2.txt nech obsahuje
+výsledné slová zapísané každé v samostatnom riadku.
+
+Riešenie
+
+Charakteristika metód a postupov, ktoré boli použité pri riešení úlohy:
+
+Postupovali sme štruktúrovane, podľa zadania:
+
+zadanie.cpp
+
+Vytvorili sme súbor zadanie.cpp, ktorý má za úlohu sumarizovane spúšťať
+konkrétne procesy.
+
+  []
+
+Obrázok - spúšťanie jednotlivých procesov
+
+  Na spustenie ôsmich procesov používame switch, ktorý ich bude vyberať
+  podľa poradia pidu procesu ktorý práve beží(pid_run). Vo funkcii main
+  sme si nainicializovali premenné pid_run a pid_count(0,8). Na začiatku
+  hlavnej funkcie main príjmame signál pomocou funkcie sig_usr1. Vždy po
+  prijatí nového/ďalšieho signálu sa inkrementuje hodnota premennej
+  pid_run a to umožní vykonať ďalší proces aj paralelne.
+
+proc_p1, proc_p2
+
+V proc_p1.cpp a proc_p2.cpp sme naprogramovali zápis dát do rúr. Obe
+procesy čakajú na signál SIGUSR1, ktorý vysiela rodičovský proces
+proc_pr. Akonáhle ho obdržia načítajú už z ich perspektívneho súboru
+(p1.txt , p2.txt) slovo a zapíšu ho rúry, ktorú dostanú v argumentoch
+(p1 do pipe1 a p2 do pipe2). Obe procesy reagujú na rovnaký signál.
+
+[]
+
+Obrázok - funkcia sig:usr1 v proc_p1.cpp
+
+proc_t.cpp
+
+V ďalšom súbore – proc_t.cpp sme pripojili zdieľanú pamäť. Ak sa podarí
+zdieľanú pamäť pripojiť, pošle signál procesu S že sa môže začať
+vykonávať(proces_t).
+
+[]
+
+Obrázok - pripojenie zdieľanej pamäte
+
+  pripojenie zdieľanej pamäte + odoslanie procesu rodičovi(procesu S) .
+  Vypísanie správy, že proces je pripravený.
+
+proc_d.cpp
+
+Využitie semaforov, čítanie zo zdieľanej pamäte a posielanie správ na
+sockety, čo vytvorili procesy serv1 a serv2, sme vytvorili v proc_d.cpp.
+
+  Využíva semafory a ich stav na to, aby vedel, že sa všetky ostatné
+  procesy už vykonali. Ak sa tak stalo a má povolené(semafor je zelený),
+  tak prečíta zo zdieľanej pamäte(kde sú zapísané dáta z rúr pipe1
+  a pipe2) dát. Potom pošle dáta na servery. Servery sú na socketoch
+  a tie na portoch, ktoré nastavíme do argumentov pri spúšťaní zadania.
+  (Pomocou protokolu TCP) Synchronizácia je zabezpečená vďaka semaforom.
+
+proc_serv2.cpp
+
+Na koniec sme vytvorili proc_serv2.cpp, ktorý slúži na vytvorenie
+socketov a posielanie signálov rodičovi.
+
+Ďalej otvorí výstupný súbor serv2.txt, do ktorého zapíše dáta zo
+serveru.

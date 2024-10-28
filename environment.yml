@@ -1,0 +1,7 @@
+name: plagiarism-detection 
+channels:
+  - defaults
+  - conda-forge
+  - anaconda
+dependencies:
+  - python=3.12
