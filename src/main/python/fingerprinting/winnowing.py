@@ -5,6 +5,7 @@ import operator
 
 from comparison.submission import Submission
 from fingerprinting.fingerprint_index import FingerprintIndex
+from hashing.hasher import Hasher
 from preprocessing.text_token import TextToken
 
 log = logging.getLogger(__name__)
@@ -16,6 +17,8 @@ class Winnowing:
     self.window_size = window_size
 
   def winnowing_fingerprint(self, submission : Submission) -> None:
+    hasher = Hasher(self.window_size)
+
     submission_id = submission.id
     tokens = submission.tokens
 
@@ -33,7 +36,7 @@ class Winnowing:
       token_pos = token_pos[1:]
 
       # TODO: use rolling hash, to enforce same order for matching
-      window.append(self.hash(token.content))
+      window.append(hasher.rolling_hash(token.content))
       token_pos.append(i)
       log.debug(window)
       if i < self.window_size - 1:
@@ -58,18 +61,6 @@ class Winnowing:
             tokens[token_pos[0]].start,
             tokens[token_pos[-1]].end
           )
-
-  @staticmethod
-  def hash(s : str) -> int:
-    mod = 33554393
-    base = 747287
-
-    hash_value = 0
-    for char in s:
-      hash_value = ((hash_value + ord(char)) * base) % mod
-
-    return hash_value
-
 
 if __name__ == '__main__':
   print(Winnowing.hash('abc'))
