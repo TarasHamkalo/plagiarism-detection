@@ -1,0 +1,862 @@
+﻿
+TECHNICKÁ UNIVERZITA V KOŠICIACH
+FAKULTA ELEKTROTECHNIKY A INFORMATIKY
+ZADANIE UNIX1
+Dokumentácia
+
+
+
+
+
+
+
+
+OPERAČNÉ SYSTÉMY
+2023 Košice 
+
+
+
+
+
+
+
+
+
+                                                                           Vladyslav Boiko
+                                                                             Roman Yehorov
+                                                                            Artem Prokopchuk
+
+
+Obsah
+Úvod 												   3
+Text zadania  									             4
+Dodefinovanie zadania									   7
+Popis relevantných štruktúr, algoritmov, dátových typov, konštánt                   8
+Záver a zhodnotenie 									 10
+Použitá literatúra a informačné zdroje 						 11
+Prilohy	                                                   					 12
+Zdrojový kod programu			     					      13-25
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                               Úvod
+Tento dokument popisuje úlohu Inter-Process Communication (IPC) a odporúčaný kód na vyriešenie tohto problému. Dokument obsahuje definíciu úlohy, popis štruktúry, algoritmus, dátové typy, analýzu problému, navrhované riešenie, popis, záver a vyhodnotenie, ako aj prílohu obsahujúcu príručku programátora, používateľskú príručku a zdrojový kód. Program v jazyku C\C++.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                 Text zadania
+ 
+Schéma
+
+— procesy vyznačené zvýrazneným okrajom sú programy, ktoré budú pri kontrole zadania dodané. Teda treba vypracovať iba programy P1, P2, T, D a Serv2.
+
+
+PROCES Zadanie (vypracovaný študentom, nie je zakreslený v diagrame)
+Spúšťanie
+zadanie 
+Funkcia
+Parametre hlavného programu sú čísla portov pre servery Serv1 (TCP) a Serv2 (UDP). Tieto čísla je potrebné týmto procesom odovzdať. Program Zadanie nech vyhradí všetky zdroje (pre medziprocesovú komunikáciu) a nech spustí všetky procesy. Všetky procesy nech sú realizované ako samostatné programy.
+
+PROCES Pr
+Spúšťanie
+proc_pr 
+Funkcia
+Proces Pr pošle signál SIGUSR1 svojmu hlavnému procesu (Zadanie) na signalizáciu, že je pripravený. Proces Pr si údaje bude žiadať:
+    • Ak pošle signál (SIGUSR1) procesu P1, nech tento proces (P1) zapíše slovo prečítané zo súboru p1.txt.
+    • To isté platí aj pre proces P2 a p2.txt. Teda, ak proces Pr pošle signál (SIGUSR1) procesu P2 nech do rúry R1 zapíše slovo proces P2 zo súboru p2.txt.
+Proces Pr k slovu prijatému z rúry R1 pridá svoju značku a zapíše nové slovo do rúry R2.
+PROCES S 
+Spúšťanie
+proc_s 
+Funkcia
+Proces S pošle signál SIGUSR1 svojmu hlavnému procesu (Zadanie) na signalizáciu, že je (proces S) pripravený. Proces S príjme slovo zo zdieľanej pamäte SM1 so synchronizáciou semaforom S1 (pozri časť o semaforoch v časti „Popis komunikácie“), pripíše k nemu svoju značku a zapíše ho do zdieľanej pamäte SM2 so synchronizáciou semaforom S2.
+PROCES Serv1
+Spúšťanie
+proc_serv1 <číslo portu 1> <číslo portu 2>
+Funkcia
+Proces Serv1 vytvorí TCP server (na porte <číslo portu 1>), ktorý bude prijímať TCP pakety. Server prijaté slová označí svojou značkou a pošle ich ďalej na UDP server (port <číslo portu 2>). Čísla portov 1 a 2 sú argumenty hlavného procesu (pozri kapitolu „PROCES Zadanie“). Proces Serv1 pošle signál SIGUSR1 svojmu hlavnému procesu (Zadanie) na signalizáciu, že je (proces Serv1) pripravený. TCP aj UDP server nech vytvorený na lokálnom počítači, teda na počítači „127.0.0.1“ (pozor, nie „localhost“!).
+
+PROCES D
+proc_d 
+Funkcia
+Proces D prijíma slová cez zdieľanú pamäť SM2 a semafor sem2 a posiela ich do procesu Serv1 cez TCP server. Proces odošle signál SIGUSR1 svojmu rodičovskému procesu (Enter), aby naznačil, že proces je pripravený. TCP server je vytvorený lokálne, t.j. na počítači "127.0.0.1".
+
+PROCES P1, P2
+proc_p1 <id rury 1 na zapis>
+proc_p2 <id rury 1 na zapis>
+Funkcia
+Procesy P1 a P2 čakajú na signál SIGUSR1 z procesu Pr a ktorýkoľvek proces prijme signál, pošle slovo do pipeline_1.
+
+PROCES T
+proc_t 
+Funkcia
+Proces T používa semafor, aby zabránil procesu S čítať dáta zo zdieľanej pamäte 1, kým sa slovo v potrubí 2 neprečíta a nezapíše do zdieľanej pamäte 1. 
+
+
+             Dodefinovanie zadania
+ 
+ 	K zadaniu sú dodané procesy proc_pr, proc_s, proc_serv1, textové súbory p1.txt a p2.txt. Tieto súbory obsahujú reťazce znakov(slova oddelené znakom "nového riadku"). V zadaní treba napisať procesy P1,P2,T,D,Serv2, spojiť ich spolu z Pr, S, Serv1 v hlavnem subore zadanie.cpp.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Popis relevantných štruktúr, algoritmov, dátových typov, konštánt 
+Dátové štruktúry
+
+Rúry
+      Rúry sú jednosmernou komunikačnou metódou. Dáta zapísané na jednom konci potrubia sa čítajú na druhom konci potrubia (jednosmerný tok údajov). Potrubia sa vytvárajú volaním jadra pipeline(). Keď je vytvorený kanál, systém zaberá 2 miesta v otvorenej tabuľke súborov procesu. Každý potomok zdedí takto vytvorenú fajku.
+
+Semafory
+     Semafor je pasívny synchronizačný nástroj. Vo svojej najjednoduchšej forme je semafor pamäťové miesto, ku ktorému môže pristupovať viacero procesov. Semafor je celočíselná systémová "premenná" s povolenými hodnotami <0,max (celé číslo)>, ktorá obmedzuje prístup k zdieľaným zdrojom operačného systému Unix. Je to počítadlo, ktoré sa zvyšuje alebo znižuje prevádzkou na ňom. Nikdy to však neklesne pod nulu. Synchronizácia je zabezpečená dvomi neprerušiteľnými operáciami P a V (buď vykonaná raz alebo vôbec).
+Zdieľaná pamäť
+ 	Zdieľaná pamäť je segment pamäte (špeciálna sada rámcov vo FAP alebo vymenených na disku). Segment je mapovaný do adresných priestorov dvoch alebo viacerých procesov. Proces mapovania pamäťového segmentu do priestoru adries procesu je nasledujúci. Proces vytvorí segment zdieľanej pamäte v FAP a objaví sa v LAP procesu. Iné procesy potom môžu „pripojiť“ túto časť zdieľanej pamäte v FAP k svojim vlastným LAP. To znamená, že rovnaký segment operačnej pamäte počítača sa objaví v LAP viacerých procesov.
+Synchronizácie
+Semafor S1
+ 	Vytvorte dvojicu semaforov pre semafor S1. Proces T je riadený semaforom S1[0] a proces S je riadený semaforom S1[1], kde nastavenie semaforu S1[0] (to znamená, že je nastavený na 1) znamená, že proces T môže zapisovať do zdieľanej pamäte (SM1 ). Nastavenie semaforu S1[1] znamená, že proces S môže čítať dáta zo zdieľanej pamäte (SM1).
+ 
+Semafor S2
+	Pre semafor S2 sa vytvorí dvojica semaforov. Proces S sa riadi podľa semaforu S2[0] a proces D sa riadi podľa semaforu S2[1]. Pričom nastavený semafor S2[0] (rozumie sa nastavený na hodnotu 1) znamená, že proces S môže zapisovať do zdieľanej pamäte (SM2). Nastavený semafor S2[1] znamená, že proces D môže zo zdieľanej pamäte (SM2) údaje čítať.
+ 
+ 
+
+
+
+
+
+
+
+
+
+              
+
+Záver a zhodnotenie
+Úloha bola náročná vzhľadom na časovú náročnosť. Niektoré z našich vedomostí musíme doplniť samostatnými štúdiami.  Obmedzením implementácie je najmä to, že jednotlivé procesy musia byť spúšťané v určenom poradí, inak program nebude správne fungovať.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      Použitá literatúra a informačné zdroje
+
+
+
+    •  Sofia - Súbory I - opis (neautorizovaný materiál)  
+
+    •  Sofia - Adresáre (neautorizovaný materiál)  
+
+    •  Sofia - Prístupové práva (neautorizovaný materiál) 
+
+    •  Sofia - Ovládanie zariadení (neautorizovaný materiál) 
+
+    •  Sofia - Procesy (neautorizovaný materiál)  
+
+    •  Sofia - Pipes - nepomenované, pomenované (neautorizovaný materiál)
+
+    •  Sofia - Signály (neautorizovaný materiál)  
+
+    •  Sofia - Zdieľaná pamäť (neautorizovaný materiál)(budúci týždeň) 
+ 
+    •  Sofia - Semafory (neautorizovaný materiál) - budúci týždeň  
+
+    •  Sofia - Networking (neautorizovaný materiál) - budúci týždeň
+
+    • 
+
+
+
+
+
+
+
+
+
+
+
+ 
+                    PRÍLOHY
+
+Zdrojový kod programu
+Proces P1
+static int fd, dest;
+
+void read_n_write(int signum);
+void insertAt(char* input_str, char s, int index);
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        perror("Zle argumenty");
+        exit(EXIT_FAILURE);
+    }
+
+    dest = atoi(argv[1]);
+
+    fd = open("p1.txt", O_RDONLY);
+    if (fd == -1) {
+        perror("p1.txt");
+        exit(EXIT_FAILURE);
+    }
+
+    signal(SIGUSR1, read_n_write);
+    while(1){
+		pause();
+	}
+
+    return 0;
+}
+
+void read_n_write(int signum) {
+    int n = 0;
+    char buf, input_str[BUF_SIZE];
+    bool isEndOfLine = false;
+
+    while (!isEndOfLine) {
+        if (read(fd, &buf, 1) == -1) {
+            perror("read p1.txt");
+            exit(EXIT_FAILURE);
+        }
+
+        insertAt(input_str, buf, n);
+        if (buf != '\n')
+            n++;
+        else
+            isEndOfLine = true;
+    }
+
+    if (write(dest, input_str, strlen(input_str)) == -1) {
+        perror("write to r1");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void insertAt(char* input_str, char s, int index) {
+    input_str[index] = s;
+    input_str[index + 1] = '\0';
+}
+
+Proces P2
+static int fd, dest;
+
+void read_n_write(int signum);
+void insertAt(char* input_str, char s, int index);
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        perror("Zle argumenty");
+        exit(EXIT_FAILURE);
+    }
+
+    dest = atoi(argv[1]);
+
+    fd = open("p2.txt", O_RDONLY);
+    if (fd == -1) {
+        perror("p2.txt");
+        exit(EXIT_FAILURE);
+    }
+
+    signal(SIGUSR1, read_n_write);
+    while(1){
+        pause();
+    }
+
+    return 0;
+}
+
+void read_n_write(int signum) {
+    int n = 0;
+    char buf, input_str[BUF_SIZE];
+    bool isEndOfLine = false;
+
+    while (!isEndOfLine) {
+        if (read(fd, &buf, 1) == -1) {
+            perror("read p2.txt");
+            exit(EXIT_FAILURE);
+        }
+
+        insertAt(input_str, buf, n);
+        if (buf != '\n')
+            n++;
+        else
+            isEndOfLine = true;
+    }
+
+    if (write(dest, input_str, strlen(input_str)) == -1) {
+        perror("write to r1");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void insertAt(char* input_str, char s, int index) {
+    input_str[index] = s;
+    input_str[index + 1] = '\0';
+}
+
+
+Proces T
+static int sem;
+
+void read_line(int pipe, char* dest);
+void insertAt(char* line, char s, int index);
+bool sem_operation(int op, int num);
+
+int main(int argc, char const *argv[]){
+    if (argc != 4) {
+        perror("Zle argumenty");
+        exit(EXIT_FAILURE);
+    }
+
+    int pipe_r2_read = atoi(argv[1]);
+    char *shrmem = shmat(atoi(argv[2]), NULL, 0);
+    sem = atoi(argv[3]);
+
+    kill(getppid(), SIGUSR1);
+
+    while (true) {
+        char line[256];
+        read_line(pipe_r2_read, line);
+
+        if (!sem_operation(1, 1)){
+            perror("Chyba pustanie semaforu!");
+            exit(EXIT_FAILURE);
+        }
+        strcpy(shrmem, line);
+        if (!sem_operation(-1, 0)){
+            perror("Chyba blokovanie semaforu!");
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    return 0;
+}
+
+void read_line(int pipe, char* dest) {
+    int n = 0;
+    char buffer;
+    bool isEndOfLine = false;
+
+    while (!isEndOfLine) {
+        if (read(pipe, &buffer, 1) == -1) {
+            perror("read pipe r2");
+            exit(EXIT_FAILURE);
+        }
+
+        insertAt(dest, buffer, n);
+        if (buffer != '\n')
+            n++;
+        else
+            isEndOfLine = true;
+    }
+}
+
+void insertAt(char* line, char s, int index) {
+    if (s != '\n'){
+        line[index] = s;
+        line[index + 1] = '\0';
+    }
+}
+
+bool sem_operation(int op, int num){
+    struct sembuf semaphore;
+    semaphore.sem_op = op;
+    semaphore.sem_num = num;
+    semaphore.sem_flg = SEM_UNDO;
+
+    if (semop(sem, &semaphore, 1) == -1) {
+        return false;
+    }
+    return true;
+}
+
+
+
+
+Proces D
+static int semafor;
+bool sem_operation(int op, int num);
+
+int main(int argc,char *argv[]){
+    if (argc != 4) {
+        perror("Zle argumenty");
+        exit(EXIT_FAILURE);
+    }
+
+	semafor=atoi(argv[2]);
+
+	kill(getppid(),SIGUSR1);
+	struct sockaddr_in servAddr;
+	struct hostent*serv;
+
+	printf("proc_d: vytvara socket\n");
+	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        perror("proc_d: socket chyba!");
+        exit(EXIT_FAILURE);
+    }
+
+	serv = gethostbyname("127.0.0.1");
+	if (serv == NULL) {
+        perror("Host nenajdeny");
+        exit(EXIT_FAILURE);
+    }
+
+	bzero((char*)&servAddr,sizeof(servAddr));
+	servAddr.sin_family = AF_INET;
+	inet_pton(AF_INET, "127.0.0.1", &servAddr.sin_addr.s_addr);
+	servAddr.sin_port = htons(atoi(argv[3]));
+
+	printf("proc_d: vytvara spojenie\n");
+	if (connect(sockfd, (struct sockaddr*)&servAddr, sizeof(servAddr)) < 0) {
+        perror("proc_d: nepripojeny na server!");
+        exit(EXIT_FAILURE);
+    }
+
+	printf("proc_d: posiela\n");
+
+    char buffer[256];
+    memset(&buffer, '\0', strlen(buffer));
+
+	// INICIALIZOVANIE shMem
+	char* sharedMem = (char *) shmat(atoi(argv[1]), NULL, 0);
+
+    while (true) {
+		if (!sem_operation(1, 0)) {
+            perror("Chyba pustanie semaforu!");
+			exit(EXIT_FAILURE);
+		}
+
+		strcpy(buffer, sharedMem);
+		write(sockfd, buffer, (int)strlen(buffer) + 1);
+		memset(buffer, '\0', sizeof(buffer));
+
+		if (!sem_operation(-1, 1)) {
+            perror("Chyba blokovanie semaforu!");
+			exit(EXIT_FAILURE);
+		}
+	}
+    return 0;
+}
+
+bool sem_operation(int op, int num){
+    struct sembuf semaphore;
+    semaphore.sem_op = op;
+    semaphore.sem_num = num;
+    semaphore.sem_flg = SEM_UNDO;
+
+    if (semop(semafor, &semaphore, 1) == -1) {
+        return false;
+    }
+    return true;
+}
+
+
+
+
+Proces Serv2
+int main(int argc, char* argv[]){
+
+    // printf("%d\n", htons(atoi(argv[1])));
+    int sockfd, filefd, itter_file = 10;
+    socklen_t size_cl_addr;
+    struct sockaddr_in server_addr, client_addr;
+
+    char buffer[256];
+
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0); // vytvorenie socketu
+    if (sockfd == -1){
+        perror("serv2: socket chyba! ");
+        exit(EXIT_FAILURE);
+    }
+    bzero(&server_addr, 8);
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons((unsigned short)atoi(argv[1]));
+    inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr.s_addr);
+    
+    // perror("serv2\n");
+    printf("serv2: pridavam soketu IP adresu a port\n");
+    if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1){
+        perror("serv2: bind chyba! ");
+        exit(EXIT_FAILURE);
+    }
+
+    kill(getppid(), SIGUSR1);
+
+    filefd = open("serv2.txt", O_CREAT | O_WRONLY | O_TRUNC, 0777);
+    if (filefd == -1){
+        perror("serv2: file open chyba! ");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("serv2: primam data\n");
+    // bzero(&buffer, 256);
+    size_cl_addr = sizeof(client_addr);
+    while (itter_file > 0){
+        if (recvfrom(sockfd, buffer, 256, 0, (struct sockaddr *)&client_addr, &size_cl_addr) < 0){
+            // printf("serv2: recvfrom chyba! ");
+        }
+        write(filefd, &buffer, strlen(buffer));
+        write(filefd, "\n", 1);
+
+        printf("serv2 buffer: %s\n", buffer);
+        itter_file--;
+    }
+    close(filefd);
+    close(sockfd);
+    kill(getppid(), SIGUSR2);
+
+    return 0;
+}
+
+
+Proces Zadanie
+char num_of_words_str[20];
+int num_of_words = 0;
+
+pid_t proc_p1, proc_p2, proc_pr, proc_t, proc_s, proc_d, proc_serv1, proc_serv2;
+
+void sigusr1(int sign){
+    printf("Oderzal som SIGUSR1\n");
+}
+
+void sigusr2(int sign){
+    kill(proc_p1, SIGKILL);
+    kill(proc_p2, SIGKILL);
+    kill(proc_pr, SIGKILL);
+
+    kill(proc_t, SIGKILL);
+    kill(proc_s, SIGKILL);
+    kill(proc_d, SIGKILL);
+
+    kill(proc_serv1, SIGKILL);
+    kill(proc_serv2, SIGKILL);
+    printf("!KONEC!\n");
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 3){
+        fprintf(stderr, "Neplatnu argumentaciu");
+        exit(EXIT_FAILURE);
+    }
+    signal(SIGUSR1, sigusr1);
+    signal(SIGUSR2, sigusr2);
+
+    
+    int pipe_r1[2], pipe_r2[2];
+
+    char pipe_r1_read_str[20];
+    char pipe_r1_write_str[20];
+    char pipe_r2_read_str[20];
+    char pipe_r2_write_str[20];
+
+    char proc_p1_str[20];
+    char proc_p2_str[20];
+
+    char str_sem1[10];
+    char str_sem2[10];
+
+    char str_shrmem1[10];
+    char str_shrmem2[10];
+
+
+    printf("vytvaranie semaforov");
+    int sem1 = semget(IPC_PRIVATE, 2, 0666 | IPC_CREAT);
+    if (sem1 < 0){
+        perror("semget_1");
+        exit(EXIT_FAILURE);
+    }
+    semctl(sem1, 0, SETVAL, 0);
+    semctl(sem1, 1, SETVAL, 0);
+
+    memset(str_sem1, '\0', sizeof(str_sem1));
+    sprintf(str_sem1, "%d", sem1);
+
+    int sem2 = semget(IPC_PRIVATE, 2, 0666 | IPC_CREAT);
+    if (sem2 < 0){
+        perror("semget2");
+        exit(EXIT_FAILURE);
+    }
+
+    memset(str_sem2, '\0', sizeof(str_sem2));
+    sprintf(str_sem2, "%d", sem2);
+
+    printf(" - OK\n");
+
+    semctl(sem2, 0, SETVAL, 0);
+    semctl(sem2, 1, SETVAL, 0);
+
+
+    printf("vytvaranie vzdial. pamate");
+    int shrmem1 = shmget(IPC_PRIVATE, 256, 0666 | IPC_CREAT);
+    if (shrmem1 < 0){
+        perror("shmget_1");
+        exit(EXIT_FAILURE);
+    }
+    memset(str_shrmem1, '\0', sizeof(str_shrmem1));
+    sprintf(str_shrmem1, "%d", shrmem1);
+
+
+    int shrmem2 = shmget(IPC_PRIVATE, 256, 0666 | IPC_CREAT);
+    if (shrmem2 < 0){
+        perror("shmget_2");
+        exit(EXIT_FAILURE);
+    }
+    memset(str_shrmem2, '\0', sizeof(str_shrmem2));
+    sprintf(str_shrmem2, "%d", shrmem2);
+    printf(" - OK\n");
+
+
+    printf("vytvaranie rur");
+    if (pipe(pipe_r1) != 0) {
+        perror("Rura R1");
+        exit(EXIT_FAILURE);
+    }
+    if (pipe(pipe_r2) != 0) {
+        perror("Rura R2");
+        exit(EXIT_FAILURE);
+    }
+    printf(" - OK\n");
+
+    memset(pipe_r1_read_str, '\0', sizeof(pipe_r1[0]));
+    memset(pipe_r1_write_str, '\0', sizeof(pipe_r1[1]));
+    memset(pipe_r2_read_str, '\0', sizeof(pipe_r2[0]));
+    memset(pipe_r2_write_str, '\0', sizeof(pipe_r2[1]));
+
+    memset(proc_p1_str, '\0', 20);
+    memset(proc_p2_str, '\0', 20);
+
+    sprintf(pipe_r1_read_str, "%d", pipe_r1[0]);
+    sprintf(pipe_r1_write_str, "%d", pipe_r1[1]);
+    sprintf(pipe_r2_read_str, "%d", pipe_r2[0]);
+    sprintf(pipe_r2_write_str, "%d", pipe_r2[1]);
+
+
+    printf("vytvorenie procesu p1");
+    proc_p1 = fork();
+    if (proc_p1 < 0) {
+        perror(" - NOT OK:");
+        exit(EXIT_FAILURE);
+    }
+    else if (proc_p1 == 0) {
+        if (execl("proc_p1", "proc_p1", pipe_r1_write_str, (char*) NULL) < 0) {
+            perror("Proces p1");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    }
+    printf(" - OK\n");
+
+
+    printf("vytvorenie procesu p2");
+    proc_p2 = fork();
+    if (proc_p2 < 0) {
+        perror(" - NOT OK:");
+        exit(EXIT_FAILURE);
+    }
+    else if (proc_p2 == 0) {
+        if (execl("proc_p2", "proc_p2", pipe_r1_write_str, (char*) NULL) < 0) {
+            perror("Proces p2");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    }
+    printf(" - OK\n");
+
+    snprintf(proc_p1_str, 20, "%d", proc_p1);
+    snprintf(proc_p2_str, 20, "%d", proc_p2);
+
+    printf("vytvorenie procesu pr");
+    proc_pr = fork();
+    if (proc_pr < 0) {
+        perror(" - NOT OK:");
+        exit(EXIT_FAILURE);
+    }
+    else if (proc_pr == 0) {
+        if (execl("proc_pr", "proc_pr", proc_p1_str, proc_p2_str, pipe_r1_read_str, pipe_r2_write_str, (char*) NULL) < 0) {
+            perror("Proces pr");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    }
+    printf(" - OK\n");
+    pause();
+
+
+    printf("vytvorenie procesu proc_t");
+    proc_t = fork();
+    if (proc_t < 0) {
+        perror(" - NOT OK:");
+        exit(EXIT_FAILURE);
+    }
+    else if (proc_t == 0) {
+        if (execl("proc_t", "proc_t", pipe_r2_read_str, str_shrmem1, str_sem1, (char*) NULL) < 0) {
+            perror("Proces t");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    }
+    printf(" - OK\n");
+    
+    pause();
+
+
+    printf("vytvorenie procesu serv1");
+    proc_serv1 = fork();
+    if (proc_serv1 < 0){
+        perror(" - NOT OK:");
+        exit(EXIT_FAILURE);
+    }
+    else if (proc_serv1 == 0){
+        if (execl("proc_serv1", "proc_serv1", argv[1], argv[2], (char *)NULL) == -1){
+            perror("Proces serv1");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    }
+    printf(" - OK\n");
+    pause();
+
+
+    printf("vytvorenie procesu serv2");
+    proc_serv2 = fork();
+    if (proc_serv2 < 0){
+        perror(" - NOT OK:");
+        exit(EXIT_FAILURE);
+    }
+    else if (proc_serv2 == 0){
+        if (execl("proc_serv2", "proc_serv2", argv[2], (char *)NULL) == -1){
+            perror("Proces serv2");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    }
+    printf(" - OK\n");
+
+    pause();
+
+
+    printf("vytvorenie procesu proc_d");
+    proc_d = fork();
+    if (proc_d < 0)
+    {
+        perror(" - NOT OK:");
+        exit(EXIT_FAILURE);
+    }
+    else if (proc_d == 0){
+        if (execl("proc_d", "proc_d", str_shrmem2, str_sem2, argv[1], (char *)NULL) < 0){
+            perror("Proces d");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    }
+    else{
+        printf(" - OK\n");
+    }
+    pause();
+
+    printf("vytvorenie procesu proc_s");
+    proc_s = fork();
+    if (proc_s < 0) {
+        perror(" - NOT OK:");
+        exit(EXIT_FAILURE);
+    }
+    else if (proc_s == 0) {
+        if (execl("proc_s", "proc_s", str_shrmem1, str_sem1, str_shrmem2, str_sem2, (char*) NULL) < 0) {
+            perror("Proces s");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    }
+    printf(" - OK\n");
+
+    pause();
+    pause();
+    return 0;
+}
+

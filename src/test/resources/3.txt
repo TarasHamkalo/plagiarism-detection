@@ -1,0 +1,1120 @@
+﻿
+TECHNICKÁ UNIVERZITA V KOŠICIACH
+FAKULTA ELEKTROTECHNIKY A INFORMATIKY
+Zadanie IPC
+(Operačné systémy)
+
+2023
+Branislav Blicha
+Tobiáš Sentál
+Benjamín Blaha
+Obsah
+1.1	Schéma:	4
+1.2	POPIS PROCESOV	4
+1.3	POPIS KOMUNIKÁCIE	5
+2	Dodefinovanie zadania	7
+3	Popis relevantných štruktúr, algoritmov, dátových typov konštánt apod. súvisiacich s riešenou témou	7
+3.1	Relevantné štruktúry	7
+3.2	Algoritmy	7
+3.2.1	Algoritmus procesu P1	7
+3.2.2	Algoritmus procesu P2	8
+3.2.3	Algoritmus procesu D	8
+3.2.4	Algoritmus procesu T	8
+3.2.5	Algoritmus procesu Serv2	8
+3.2.6	Algoritmus procesu Zadanie	8
+3.3	Dátové typy	9
+3.3.1	Dátové typy v proc_p1.cpp	9
+3.3.2	Dátové typy v proc_p2.cpp	9
+3.3.3	Dátové typy v proc_d.cpp	9
+3.3.4	Dátové typy v proc_t.cpp	9
+3.3.5	Dátové typy v proc_serv2.cpp	9
+3.3.6	Dátové typy v zadanie.cpp	10
+3.4	Konštanty (v zadanie.cpp)	10
+4	Analýza problematiky	10
+4.1	Vyhradenie zdrojov:	10
+4.2	Spustenie procesov:	11
+4.3	Medziprocesová komunikácia:	11
+4.4	Práca s sieťou:	11
+4.5	Spolupráca procesov:	11
+4.6	Klady a zápory	11
+5	Popis navrhovaného riešenia:	12
+5.1	Návrh riešenia	12
+5.2	Dátové štruktúry	12
+5.3	Spôsob synchronizácie	13
+5.4	Algoritmy	13
+5.4.1	Algoritmus procesu P1	13
+5.4.2	Algoritmus procesu P2	14
+5.4.3	Algoritmus procesu D	14
+5.4.4	Algoritmus procesu T	14
+5.4.5	Algoritmus procesu Serv2	15
+5.4.6	Algoritmus procesu Zadanie	15
+6	Záver a zhodnotenie	16
+7	Použitá literatúra a informačné zdroje	16
+8	Systémová príručka	17
+8.1	Využité hlavičkové súbory	17
+8.2	Využité funkcie v jednotlivých procesoch	18
+8.3	Dátové štruktúry	21
+9	Príručka používateľa  detailný sprievodca programom	22
+10	Zdrojový text	22
+10.1	proc_p1.cpp	22
+10.2	proc_p2.cpp	23
+10.3	proc_d.cpp	24
+10.4	proc_t.cpp	26
+10.5	proc_serv2.cpp	27
+10.6	zadanie.cpp	28
+
+1.1 Schéma:
+
+    • procesy vyznačené zvýrazneným okrajom sú programy, ktoré budú pri kontrole zadania dodané. Teda treba vypracovať iba programy P1, P2, T, D a Serv2.
+
+1.2 POPIS PROCESOV
+PROCES Zadanie (vypracovaný študentom, nie je zakreslený v diagrame)
+Spúšťanie
+zadanie <číslo portu 1> <číslo portu 2>
+Funkcia
+Parametre hlavného programu sú čísla portov pre servery Serv1 (TCP) a Serv2 (UDP). Tieto čísla je potrebné týmto procesom odovzdať. Program Zadanie nech vyhradí všetky zdroje (pre medziprocesovú komunikáciu) a nech spustí všetky procesy. Všetky procesy nech sú realizované ako samostatné programy.
+
+PROCES Pr
+Spúšťanie
+proc_pr <pid procesu P1> <pid procesu P2>
+<id čítaciaho konca rúry R1> <id zapisovacieho konca rúry R2>
+Funkcia
+Proces Pr pošle signál SIGUSR1 svojmu hlavnému procesu (Zadanie) na signalizáciu, že je pripravený. Proces Pr si údaje bude žiadať: 
+    • Ak pošle signál (SIGUSR1) procesu P1, nech tento proces (P1) zapíše slovo prečítané zo súboru p1.txt.
+    • To isté platí aj pre proces P2 a p2.txt. Teda, ak proces Pr pošle signál (SIGUSR1) procesu P2 nech do rúry R1 zapíše slovo proces P2 zo súboru p2.txt.
+Proces Pr k slovu prijatému z rúry R1 pridá svoju značku a zapíše nové slovo do rúry R2. 
+
+PROCES S
+Spúšťanie
+proc_s <id zdieľanej pamäte SM1> <id semaforu S1> <id zdieľanej pamäte SM2> <id semaforu S2>
+Funkcia
+Proces S pošle signál SIGUSR1 svojmu hlavnému procesu (Zadanie) na signalizáciu, že je (proces S) pripravený. Proces S príjme slovo zo zdieľanej pamäte SM1 so synchronizáciou semaforom S1 (pozri časť o semaforoch v časti „Popis komunikácie“), pripíše k nemu svoju značku a zapíše ho do zdieľanej pamäte SM2 so synchronizáciou semaforom S2. 
+
+PROCES Serv1
+Spúšťanie
+proc_serv1 <číslo portu 1> <číslo portu 2>
+Funkcia
+Proces Serv1 vytvorí TCP server (na porte <číslo portu 1>), ktorý bude prijímať TCP pakety. Server prijaté slová označí svojou značkou a pošle ich ďalej na UDP server (port <číslo portu 2>). Čísla portov 1 a 2 sú argumenty hlavného procesu (pozri kapitolu „PROCES Zadanie“). Proces Serv1 pošle signál SIGUSR1 svojmu hlavnému procesu (Zadanie) na signalizáciu, že je (proces Serv1) pripravený. TCP aj UDP server nech vytvorený na lokálnom počítači, teda na počítači „127.0.0.1“ (pozor, nie „localhost“!).
+
+1.3 POPIS KOMUNIKÁCIE 
+Semafor S1
+Pre semafor S1 je potrebné vytvoriť dvojicu semaforov. Proces T nech sa riadi podľa semaforu S1[0] a proces S sa bude riadiť podľa semaforu S1[1], pričom nastavený semafor S1[0] (rozumej nastavený na hodnotu 1) nech znamená, že proces T môže zapisovať do zdieľanej pamäte (SM1). Nastavený semafor S1[1] nech znamená, že proces S môže zo zdieľanej pamäte (SM1) údaje čítať.
+
+Semafor S2
+Pre semafor S2 je potrebné vytvoriť dvojicu semaforov. Proces S nech sa riadi podľa semaforu S2[0] a proces D sa bude riadiť podľa semaforu S2[1]. Pričom nastavený semafor S2[0] (rozumej nastavený na hodnotu 1) nech znamená, že proces S môže zapisovať do zdieľanej pamäte (SM2). Nastavený semafor S2[1] nech znamená, že proces D môže zo zdieľanej pamäte (SM2) údaje čítať.
+Príklad komunikácie medzi procesom T a procesom S – semafor S1
+Pozn.: Pre semafor S2 je to analogické.
+Hodnota semaforu	Význam
+0	červená
+1	zelená
+Proces T sa riadi semaforom S1[0] a proces S sa riadi semaforom S1[1]. To znamená, že kým ma proces T na svojom semafore (S1[0]) hodnotu 0 (t.j. červená) – tak stále čaká. To isté platí pre proces S. To znamená, že kým proces S má na svojom semafore (S1[1]) hodnotu 0 (červená) – to znamená, že musí čakať.
+Semafor treba inicializovať do nasledovného stavu:
+S1[0] = 1 (zelená/môžeš)	S1[1] = 0 (červená/stoj)
+- tento stav znamená, že proces T môže do zdieľanej pamäte zapisovať. Proces S čaká, má červenú, nemôže čítať.
+Proces T má zelenú (teda môže zapisovať), lebo má svoj semafor (S1[0]) nastavený na hodnotu 1 (zelená). Teda do zdieľanej pamäte zapíše svoje údaje. Teraz je potrebné, aby proces T umožnil procesu S údaje čítať. Preto zmení semafory na nasledovný stav:
+[Najprv zmení svoj semafor (semafor S1[0]) z hodnoty 1 na hodnotu 0 (teda zo zelenej na červenú) a semafor procesu S (teda S1[1]) zmení z hodnoty 0 na hodnotu 1 (z červenej na zelenú, aby mu naznačil, že údaje sú zapísané a môže ich teda čítať.)]
+S1[0] = 0 (červená/stoj)	S1[1] = 1 (zelená/môžeš)
+- tento stav znamená, že proces T nemôže do zdieľanej pamäte zapisovať, má čakať. Proces S má zelenú, má v zdieľanej pamäti pripravené údaje a môže údaje z pamäte prečítať.
+Teraz už môže semafor S zo zdieľanej pamäte údaje prečítať, lebo jeho semafor (S1[1]) sa zmenil z hodnoty 0 (červená) na hodnotu 1 (zelená). Prečíta teda údaje zo zdieľanej pamäte a vymení farby semaforov (t.j. zmení sebe zo zelenej na červenú – z 1 na 0 – a procesu T zmení z červenej na zelenú – z 0 na 1 – aby mohol do pamäte zapisovať).
+
+Súbory p1.txt, p2.txt a serv2.txt
+Súbory p1.txt a p2.txt budú obsahovať slová (rozumej reťazce znakov každé v novom riadku), pričom veľkosť slova počas putovania medzi procesmi nepresiahne dĺžku 150 znakov. Súbor serv2.txt nech obsahuje výsledné slová zapísané každé v samostatnom riadku.
+Poznámka: Pre účely vývoja programov a testovania je možné programy Pr, S a Serv1 stiahnuť zo stránok systému na odovzdávanie zadaní.
+Upozornenie:
+Pozor, nachádzate sa v paralelnom prostredí! To znamená, že poradie vykonávania procesov nemusí byť rovnaké na rôznych systémoch. Preto dbajte na synchronizáciu a vyhnete sa problémom „predbiehania“ procesov!
+2 Dodefinovanie zadania
+Naša implementácia, hoci funkčná, vykazuje obmedzenia, najmä pokiaľ ide o správne poradie spúšťania jednotlivých procesov. Ak sa nezachová stanovené poradie, program neskončí správne a niektoré procesy zostanú visieť. Toto obmedzenie vyžaduje dodatočné opatrenia pri správe a ladení v rámci programu.
+3 Popis relevantných štruktúr, algoritmov, dátových typov konštánt apod. súvisiacich s riešenou témou
+3.1 Relevantné štruktúry
+    • struct sockaddr_in server_addr, client_addr – funkcionalita daných štruktúr spočíva v práci so serverom (v proc_d.cpp, proc_serv2.cpp)
+    • struct sembuf sem_b[1] – funkcionalita daných štruktúr je využívaná na prácu so semaforom (v proc_d.cpp, proc_t.cpp)
+3.2  Algoritmy
+3.2.1 Algoritmus procesu P1
+    • Spúšťanie
+proc_p1 <id pipe1 (write)>
+    • Funkcia
+        ◦ V prípade, že proces P1 zaregistruje signál z procesu PR, tak proces P1 otvorí súbor p1.txt a načíta z neho slovo do rúry P1. 
+3.2.2 Algoritmus procesu P2
+    • Spúšťanie
+proc_p2 <id pipe1 (write)>
+    • Funkcia
+        ◦ V prípade, že proces P2 zaregistruje signál z procesu PR, tak proces P2 otvorí súbor p2.txt a načíta z neho slovo do rúry P1. 
+3.2.3 Algoritmus procesu D
+    • Spúšťanie
+proc_d <id shm2> <id S2> <port tcp>
+    • Funkcia
+        ◦ Proces D odosiela signál hlavnému procesu pomocou služby kill, ktorý informuje hlavný proces o spustení podprocesu D. Následne, proces D pomocou semafora S2, ktorého identifikačné číslo sme získali zo vstupu, zablokuje zapisovanie do zdieľanej pamäte shm2, načíta zo spomenutej zdieľanej pamäte jedno slovo a skrz tcp port budú následné dáta poslané na server.
+3.2.4 Algoritmus procesu T
+    • Spúšťanie
+proc_t <id shm1> <id S1> <id P2 (read)>
+    • Funkcia
+        ◦ Proces T odosiela signál hlavnému procesu pomocou služby kill, ktorý informuje hlavný proces o spustení podprocesu T. Následne, proces T načíta slovo z rúry P2 a potom pomocou semafora S1, ktorého identifikačné číslo sme získali zo vstupu, povolí zapisovanie do zdieľanej pamäte shm1, načíta z rúry P2 jedno slovo a zapíše ho do zdieľanej pamäte shm1, po zapísaní sa zápis zablokuje prostredníctvom spomenutého semaforu S1.
+3.2.5 Algoritmus procesu Serv2
+    • Spúšťanie
+proc_serv2 <port udp>
+    • Funkcia
+        ◦ Úlohou procesu Serv2 je vytvorenie UDP servera, následné prijatie dát o slove z TCP servera a zapísanie daného slova do súboru serv2.txt
+3.2.6 Algoritmus procesu Zadanie
+    • Spúšťanie
+zadanie <port tcp> <port udp>
+    • Funkcia
+        ◦ Skrz daný proces sú spustené všetky ostatné procesy a podprocesy
+3.3 Dátové typy
+    • Dátové typy využité v jednotlivých procesov sú:
+3.3.1 Dátové typy v proc_p1.cpp
+int P1;  // Identifikátor rúry (pipe) na zápis
+int file;  // Deskriptor súboru pre čítanie
+int i;  // Index pre iteráciu v cykle pri čítaní zo súboru
+char line[151];  // Pole na uchovávanie prečítaného riadku zo súboru
+char buff;  // Premenná pre čítanie jednotlivých znakov zo súboru
+
+3.3.2 Dátové typy v proc_p2.cpp
+int P1;  // Identifikátor rúry (pipe) na zápis
+int file;  // Deskriptor súboru pre čítanie
+int i;  // Index pre iteráciu v cykle pri čítaní zo súboru
+char line[151];  // Pole na uchovávanie prečítaného riadku zo súboru
+char buff;  // Premenná pre čítanie jednotlivých znakov zo súboru
+
+3.3.3 Dátové typy v proc_d.cpp
+int shm2;  // Identifikátor zdieľanej pamäte pre komunikáciu s procesom S
+int S2;  // Identifikátor semaforu pre synchronizáciu s procesom S
+int port;  // Port pre pripojenie k serveru
+int socket_id;   // Identifikátor socketu pre komunikáciu so serverom
+char buff[150];  // Buffer pre prenos dát
+char *shmaddr;  // Adresa zdieľanej pamäte
+3.3.4 Dátové typy v proc_t.cpp
+char buf;  // Premenná pre čítanie jednotlivých znakov zo súboru char shmnaddr;  // Adresa zdieľanej pamäte pre komunikáciu s procesom D char line[250];  // Pole na uchovávanie prečítaného riadku zo súboru int shm1, S1, P2, i;  s// Identifikátory zdieľanej pamäte, semaforu a rúry (cislo 2)
+3.3.5 Dátové typy v proc_serv2.cpp
+int port;  // Port pre pripojenie k serveru
+int socket_id;  // Identifikátor socketu pre komunikáciu s klientom
+int serv2_fd;  // Deskriptor súboru "serv2.txt" pre zápis
+int i;  // Index pre iteráciu v cykle
+char buf[250];  // Buffer pre prenos dát
+socklen_t client_size;  // Veľkosť štruktúry pre informácie o klientovi
+3.3.6 Dátové typy v zadanie.cpp
+int Serv1, Serv2, D, P1, P2, Pr, T, S;  // Deskriptory pre identifikáciu rôznych procesov
+
+int num_of_child_procs = 0;  // Počet vytvorených potomkovských procesov
+
+void kill_all(int signum);  // Funkcia na ukončenie všetkých potomkov po signále
+
+void accepted_ready_signal(int signum);  // Funkcia na spracovanie signálu o prijatí ready signálu od potomka
+
+int port1, port2;  // Porty pre komunikáciu medzi procesmi
+
+int pipe1[2], pipe2[2];  // Deskriptory pre rúry (pipes)
+
+int sem_id1, sem_id2, shm_id1, shm_id2;  // Identifikátory pre semafory a zdieľanú pamäť
+
+size_t shm_size = 256;  // Veľkosť zdieľanej pamäte
+
+char pipe1_str_W[20], pipe2_str_W[20], pipe1_str_R[20], pipe2_str_R[20], sem1_str[20], sem2_str[20], char shm1_str[20], shm2_str[20], char port1_str[20], port2_str[20];  // Reťazcové premenné pre konverziu čísel na reťazce
+
+char string_P1[20], string_P2[20];  // Reťazcové premenné pre identifikáciu potomkov v rodičovskom procese
+
+3.4 Konštanty (v zadanie.cpp)
+    • #define SEM_KEY1 1000  // key pre semaforovú sadu 1
+    • #define SEM_KEY2 2000  // key pre semaforovú sadu 2
+    • #define SHM_KEY1 3000  // key pre zdieľanú pamäť 1
+    • #define SHM_KEY2 4000  // key pre zdieľanú pamäť 2
+4 Analýza problematiky
+4.1 Vyhradenie zdrojov:
+    • Problematika tohto zadania spočíva v zabezpečení prenosu informácií medzi jednotlivými procesmi. Tento prenos informácií praktizujeme pomocou rúr, semaforov a zdieľanej pamäte.
+    • Proces Zadanie vyhradí rúry, semafory a zdieľanú pamäť pre medziprocesovú komunikáciu. Týmto zabezpečí synchronizáciu a komunikáciu medzi jednotlivými procesmi.
+
+
+4.2 Spustenie procesov:
+    • Proces Zadanie spustí nasledujúce procesy v tomto poradí (na poradí záleží):
+        1. Serv1 (TCP server)
+        2. Serv2 (UDP server)
+        3. D (proces D)
+        4. P1 (proces P1)
+        5. P2 (proces P2)
+        6. Pr (proces Pr)
+        7. T (proces T)
+        8. S (proces S)
+4.3 Medziprocesová komunikácia:
+    • Rúry, semafory a zdieľaná pamäť slúžia na komunikáciu medzi procesmi a zabezpečujú synchronizáciu ich činnosti.
+    • Signály (SIGUSR1, SIGUSR2) sa používajú na signalizáciu medzi hlavným procesom (Zadanie) a potomkami.
+4.4 Práca s sieťou:
+    • Proces Serv1 vytvára TCP server na danom porte a prijíma TCP pakety.
+    • Proces Serv2 vytvára UDP server na danom porte a prijíma UDP pakety.
+4.5 Spolupráca procesov:
+    • Procesy P1 a P2 spolupracujú s procesom Pr na prenose slov cez rúry R1 a R2.
+    • Procesy T a S spolupracujú na zdieľanej pamäti shm1 a semaforoch S1.
+    • Procesy S a D spolupracujú na zdieľanej pamäti shm2 a semaforoch S2.
+4.6 Klady a zápory
+    • Medzi klady patrí ľahká spustiteľnosť prostredníctvom procesu Zadanie, ktoré koordinuje chod všetkých procesov a ich potomkov. Zároveň problematiku komunikácie medzi hlavným procesom a jeho potomkami uľahčuje využívanie signálov (SIGUSR1, SIGUSR2).
+    • Ohľadom záporov, nevýhodou centralizácie riadenia všetkých procesov iba skrz proces zadanie je situácia predstavujúca zlyhanie hlavného procesu, ktorej by predchádzalo zrútenie celého systému. Ďalšou nevýhodou je nedostatočná flexibilita systému, keďže hlavný proces môže byť náchylný na rôzne problémy (preplnenie rúr, vyčerpanie zdrojov). A keďže je dôležité, aby jednotlivé procesy boli oddelené časovými intervalmi, v prípade nedodržania týchto časových výluk by mohlo dôjsť k nesprávnej komunikácii medzi procesmi.
+5 Popis navrhovaného riešenia:
+5.1 Návrh riešenia
+Vzhľadom na to, že sme neuviedli viac variant možných riešení daného problému, zameriame sa práve na riešenie so zameraním na využitie rúr na medziprocesovú komunikáciu, a potom procesy, semafory a zdieľanú pamäť na koordináciu a synchronizáciu. Riešenie taktiež využíva signály na signalizáciu medzi procesmi, pričom použitie rúr pre komunikáciu medzi P1, P2 a Pr umožňuje prenášanie informácií medzi procesmi. Je nutné podotknúť, že pre správne vykonanie jednotlivých procesov a postprocesov je nutné dodržať presné spúšťanie jednotlivých procesov, ktoré zahŕňa aj prvotné inicializovanie serverov serv1 a serv2.
+5.2 Dátové štruktúry
+    1. Rúry (P1 a P2):
+    • Použité na komunikáciu medzi procesmi P1, P2 a Pr.
+        ◦ P1(pipe): Rúra medzi P1 a Pr.
+        ◦ P2(pipe): Rúra medzi P2 a Pr.
+    2. Semaforové Sady (S1 a S2):
+    • Dve semaforové sady pre synchronizáciu medzi procesmi T a S a procesmi D a S.
+        ◦ S1: Sada semaforov pre T a S.
+        ◦ S2: Sada semaforov pre D a S.
+    3. Zdieľaná Pamäť (shm1 a shm2):
+    • Dve oblasti zdieľanej pamäte pre komunikáciu medzi procesmi T a S a procesmi D a S.
+        ◦  shm1: Zdieľaná pamäť pre T a S.
+        ◦  shm2: Zdieľaná pamäť pre D a S.
+    4. Serverová komunikácia (Serv1 a Serv2):
+    • Procesy Serv1 a Serv2 využívajú komunikačné servery pre prijímanie a odosielanie dát.
+    • Serverová komunikácia zabezpečuje koordinovaný prenos informácií medzi procesmi.
+        ◦ Serv1:
+            ▪ TCP server na porte zadanom v argumentoch, slúžiaci na prijímanie TCP paketov.
+        ◦ Serv2:
+            ▪ UDP server na porte zadanom v argumentoch, slúžiaci na prijímanie UDP paketov.
+5.3 Spôsob synchronizácie
+    • Semafor S1:
+        ◦ Semaforová sada S1 zahrňuje dva semafory.
+            ▪ S1[0] - používa sa pre synchronizáciu medzi procesmi T a S. Nastavený na hodnotu 1 umožňuje procesu T zapisovať do zdieľanej pamäte (shm1).
+            ▪ S1[1] - používa sa pre synchronizáciu medzi procesmi S a T. Nastavený na hodnotu 1 umožňuje procesu S čítať údaje zo zdieľanej pamäte (shm1).
+    • Semafor S2:
+        ◦ Semaforová sada S2 zahrňuje dva semafory.
+            ▪ S2[0] - používa sa pre synchronizáciu medzi procesmi S a D. Nastavený na hodnotu 1 umožňuje procesu S zapisovať do zdieľanej pamäte (shm2).
+            ▪ S2[1] - Používa sa pre synchronizáciu medzi procesmi D a S. Nastavený na hodnotu 1 umožňuje procesu D čítať údaje zo zdieľanej pamäte (shm2).
+5.4 Algoritmy
+5.4.1 Algoritmus procesu P1
+Algoritmus procesu P1 inicializujeme nastavením signal handlera (handler) pre spracovanie signálu SIGUSR1. Následne overíme, či proces P1 dostal správny počet argumentov (je iba jeden - identifikátor pipe). Pokračujeme otvorením súboru "p1.txt" na čítanie (O_RDONLY). Proces P1 po otvorení súboru pošle signál SIGUSR1 hlavnému procesu (Zadanie), aby signalizoval, že je pripravený na prácu.
+Čítanie a odosielanie riadkov:
+    • V nekonečnom cykle prebieha načítavanie jedného znaku zo súboru "p1.txt" do buffera.
+    • Ak je znak koniec riadku ('\n'), zároveň je načítaný do buffera, a celý riadok sa pošle cez pipe procesu Pr.
+    • Proces čaká na ďalší signál SIGUSR1, aby pokračoval v načítavaní a odosielaní ďalších riadkov.
+Handler (funkcia):
+    • Spracováva príjem signálu SIGUSR1.
+    • Postupne načíta znaky zo súboru "p1.txt" do buffera, a keď nájde koniec riadku, pošle tento riadok cez pipe procesu Pr.
+5.4.2 Algoritmus procesu P2
+Algoritmus procesu P2 inicializujeme nastavením signal handlera (handler) pre spracovanie signálu SIGUSR1. Následne overíme, či proces P2 dostal správny počet argumentov (iba jeden - identifikátor pipe). Pokračujeme otvorením súboru "p2.txt" na čítanie (O_RDONLY). Proces P2 po otvorení súboru pošle signál SIGUSR1 hlavnému procesu (Zadanie), aby signalizoval, že je pripravený na prácu.
+Čítanie a odosielanie riadkov:
+    • V nekonečnom cykle prebieha načítavanie jedného znaku zo súboru "p2.txt" do buffera.
+    • Ak je znak koniec riadku ('\n'), zároveň je načítaný do buffera, a celý riadok sa pošle cez pipe procesu Pr.
+    • Proces čaká na ďalší signál SIGUSR1, aby pokračoval v načítavaní a odosielaní ďalších riadkov.
+Handler (funkcia):
+    • Spracováva príjem signálu SIGUSR1.
+    • Postupne načíta znaky zo súboru "p2.txt" do buffera, a keď nájde koniec riadku, pošle tento riadok cez pipe procesu Pr.
+5.4.3 Algoritmus procesu D
+Algoritmus procesu D inicializujeme odoslaním signálu SIGUSR1 hlavnému procesu (Zadanie) na signalizáciu, že je pripravený na prácu. Následne prebieha inicializácia socketu pre komunikáciu s serverom, vytvorenie štruktúry pre serverovú adresu, a pripojenie sa na zdieľanú pamäť. Proces D vytvára socket a konfiguruje serverovú adresu s lokálnou adresou "127.0.0.1" a zadaným portom. Potom sa pripája na server.
+V nekonečnom cykle prebieha odosielanie dát na server. Prvým krokom je zvýšenie hodnoty semafora, aby proces S nemohol zapisovať do zdieľanej pamäte. Následne sa dáta zo zdieľanej pamäte kopírujú do buffera a odosielajú na server. Po odoslaní sa buffer vyčistí a hodnota semafora sa zníži, aby proces S mohol pokračovať v zapisovaní do zdieľanej pamäte. Pauza na 1 sekundu zabezpečuje cyklický charakter odosielania dát.
+5.4.4 Algoritmus procesu T
+Algoritmus procesu T inicializuje niektoré premenné, vrátane buffera (line), následne kontroluje počet argumentov. Ak je počet argumentov nedostatočný, vypíše chybové hlásenie a skončí s chybou. Ďalej konvertuje identifikačné čísla semaforu (S1), zdieľanej pamäte (shm1) a rúry (P2) z argumentov.
+Následne sa pripojí na zdieľanú pamäť pomocou shmat a odosiela signál SIGUSR1 hlavnému procesu (Zadanie) signalizujúc, že je pripravený na prácu.
+V nekonečnom cykle sa čaká na príchod dát z rúry (P2). Pri každom príchode znaku sa postupne ukladá do buffera (line), až kým nenájde koniec riadku '\n'. Po načítaní riadku sa povoli zapis semaforom (S1), zapisuje sa do zdieľanej pamäte shmnaddr a po zápise sa zablokuje ďalši zapis semaforom (S1).
+5.4.5 Algoritmus procesu Serv2
+Algoritmus procesu serv2 inicializuje niektoré premenné, vrátane bufferu (buf) a kontroluje počet argumentov. Ak je počet argumentov neplatný, program skončí s chybou. Následne konvertuje identifikačné číslo portu zo vstupných argumentov.
+Vytvára socket na komunikáciu prostredníctvom UDP. Nastavuje serverovú adresu a skúša pripojiť sa k nej. Ak nastane chyba, vypíše chybové hlásenie.
+Otvára súbor "serv2.txt" na zápis (alebo vytvára, ak neexistuje) a inicializuje premennú i na nulu. Odosielajú sa signály SIGUSR1 hlavnému procesu (Zadanie) na signalizáciu pripravenosti na prácu.
+V nekonečnom cykle (alebo do odoslania 10 správ) čaká na príchod dát zo servera. Pri každom príchode dát sa tieto dáta zapisujú do súboru "serv2.txt". Po zapisovaní dát sa hodnota i zvýši o 1 (inkrementácia). Ak je i väčšie alebo rovné 10, cyklus sa ukončí.
+Po ukončení cyklu sa odosiela signál SIGUSR2 hlavnému procesu na signalizáciu dokončenia práce.
+5.4.6 Algoritmus procesu Zadanie
+Hlavný proces – proces Zadanie inicializuje všetky potrebné premenné, rúry, semafory a zdieľanú pamäť. Vytvára potomkov podľa počtu jednotlivých procesov a spúšťa ich. Počas spúšťania potomkov čaká na prijatie signálu SIGUSR1 od každého z potomkov, čím sa signalizuje, že sú pripravení na prácu. Po úspešnom spustení všetkých potomkov čaká na prijatie signálu SIGUSR2, ktorým sa signalizuje ukončenie všetkých procesov.
+Zároveň vytvára rúry, semafory a zdieľanú pamäť, inicializuje ich a vytvára potomkov. Každý potomok má priradenú svoju úlohu, ktorú vykonáva podľa zadania.
+V prípade chyby pri vytváraní rúr, semaforov alebo zdieľanej pamäte vypíše chybové hlásenie a ukončí program. Po spustení každého potomka čaká na príjem signálu SIGUSR1, ktorým každý potomok signalizuje, že je pripravený na prácu.
+Po úspešnom spustení všetkých potomkov čaká na príjem signálu SIGUSR2, ktorým hlavný proces signalizuje ukončenie všetkých potomkov.
+Po ukončení všetkých potomkov sa hlavný proces stará o správne uzavretie a odstránenie rúr, semaforov a zdieľanej pamäte.
+5.4.6.1 Výpis obrazovky terminálu po spustení algoritmu procesu
+┌──(bem㉿bem)-[~/os2023-sv0910-sn-ipc-7825]
+└─$ ./zadanie 894350 8938
+Rúry, semafory a zdieľaná pamäť boli úspešne vytvorené.
+//--------------------//
+//--------------------//
+//--------------------//
+Proces D vytvara socket.
+//--------------------//
+//--------------------//
+//--------------------//
+//--------------------//
+//--------------------//
+
+┌──(bem㉿bem)-[~/os2023-sv0910-sn-ipc-7825]
+└─$
+6 Záver a zhodnotenie
+Zadanie bolo časovo náročné a komplikované, čiastočne v dôsledku nedostatočnej formulácie úlohy. Počas cvičení sme pokryli iba malý zlomok toho, čo bolo skutočne potrebné pre naprogramovanie celej úlohy. Samostatné štúdium bolo nevyhnutné na získanie dostatočných vedomostí a dohľadu nad celým procesom.
+Celkový dojem by sa dal zhodnotiť tak, že úloha vyžadovala viac pozornosti a detailného prieskumu, než sme predpokladali na základe nášho pôvodného vzdelania a cvičení. V budúcnosti by sme radi zdokonalili naše schopnosti a prístup k riešeniu podobných komplexných problémov.
+7 Použitá literatúra a informačné zdroje
+    • Inter Process Communication
+    • Fork
+    • Sofie:
+        ◦ Sofia v. 2016 - Informačné zdroje - opis (neautorizovaný materiál)
+        ◦ Sofia v. 2016 - Subory I - obyčajné súbory (neautorizovaný materiál)
+        ◦ Sofia v. 2016 - prístupové práva (neautorizovaný materiál)
+        ◦ Sofia v. 2016 - adresáre (neautorizovaný materiál)
+        ◦ Sofia v. 2016 - ovládanie zariadení (neautorizovaný materiál)
+        ◦ Sofia v. 2016 - procesy (neautorizovaný materiál)
+        ◦ 2016 - Sofia - Pipes - nepomenované, pomenované (neautorizovaný materiál)
+        ◦ 2016 - Sofia - Signaly (neautorizovaný materiál)
+        ◦ 2016 - Sofia - Zdieľaná pamäť (neautorizovaný materiál)
+        ◦ 2016 - Sofia - Semafory (neautorizovany material)
+        ◦ 2016 - Sofia - Sockety (Networking) (neautorizovany material)
+    • Man pages	
+8 Systémová príručka
+8.1 Využité hlavičkové súbory
+    • stdio.h: Poskytuje základné vstupno-výstupné operácie, ako je čítanie a zápis na štandardný vstup a výstup.
+    • stdlib.h: Obsahuje deklarácie funkcií pre správu pamäti a iné utility, napríklad funkcie pre konverziu reťazcov na čísla.
+    • string.h: Poskytuje funkcie pre manipuláciu s reťazcami, vrátane kopírovania, porovnávania a vyhľadávania reťazcov.
+    • netinet/in.h: Obsahuje definície štruktúr pre sieťovú komunikáciu, napríklad pre adresu IPv4.
+    • sys/socket.h: Poskytuje funkcie a štruktúry potrebné pre prácu so socketmi, umožňuje sieťovú komunikáciu.
+    • sys/ipc.h: Obsahuje deklarácie pre interprocesovú komunikáciu, konkrétne pre key-based IPC (System V IPC).
+    • fcntl.h: Poskytuje definície pre ovládanie vlastností otvorených súborov, napríklad pre nastavenie neblokujúceho módu.
+    • unistd.h: Obsahuje deklarácie štandardných systémových volaní, ako je fork, exec a al. Slúži pre všeobecnú prácu so systémom.
+    • netdb.h: Poskytuje funkcie pre prevod medzi doménovými menami a sieťovými adresami.
+    • arpa/inet.h: Obsahuje funkcie pre prevod medzi sieťovými a ľudskými formátmi adries.
+    • sys/shm.h: Poskytuje funkcie pre prácu so zdieľanou pamäťou.
+    • sys/sem.h: Obsahuje deklarácie funkcií a štruktúr pre prácu so semaformi (System V semaphores).
+    • signal.h: Poskytuje deklarácie funkcií pre správu signálov, ktoré môže program prijímať.
+    • sys/types.h: Obsahuje rôzne definície typov a štruktúr používaných v systémových volaniach.
+    • errno.h: Poskytuje deklarácie pre premennú errno, ktorá obsahuje chybové kódy.
+8.2 Využité funkcie v jednotlivých procesoch
+    1. Funkcie v procese P1 (proc_p1.cpp):
+        ◦ pipe(fd): Vytvára nepomenovanú rúru a nastavuje koncovky do poľa fd.
+        ◦ signal(signum, handler): Nastavuje handler (funkciu, ktorá sa volá pri príchode signálu) pre daný signál.
+        ◦ atoi(str): Konvertuje reťazec na celé číslo.
+        ◦ kill(pid, sig): Posiela signál sig procesu s identifikátorom pid.
+        ◦ perror(s): Vypisuje chybovú správu do štandardného výstupu na základe aktuálnej hodnoty errno.
+        ◦ exit(status): Ukončuje program s daným návratovým kódom.
+        ◦ read(fd, buf, count): Číta dáta zo súborového deskriptora.Začiatok formulára
+        ◦ open(path, flags): Otvára súbor pre čítanie alebo zapisovanie.
+        ◦ write(fd, buf, count): Zapíše do súborového deskriptora.
+    2. Funkcie v procese P2 (proc_p2.cpp):
+        ◦ pipe(fd): Vytvára nepomenovanú rúru a nastavuje koncovky do poľa fd.
+        ◦ signal(signum, handler): Nastavuje handler (funkciu, ktorá sa volá pri príchode signálu) pre daný signál.
+        ◦ atoi(str): Konvertuje reťazec na celé číslo.
+        ◦ kill(pid, sig): Posiela signál sig procesu s identifikátorom pid.
+        ◦ perror(s): Vypisuje chybovú správu do štandardného výstupu na základe aktuálnej hodnoty errno.
+        ◦ exit(status): Ukončuje program s daným návratovým kódom.
+        ◦ read(fd, buf, count): Číta dáta zo súborového deskriptora.Začiatok formulára
+        ◦ open(path, flags): Otvára súbor pre čítanie alebo zapisovanie.
+        ◦ write(fd, buf, count): Zapíše do súborového deskriptora.
+    3. Funkcie v procese D (proc_d.cpp):
+        ◦ kill(pid, sig): Posiela signál sig procesu s identifikátorom pid.
+        ◦ atoi(str): Konvertuje reťazec na celé číslo.
+        ◦ shmat(shmid, shmaddr, shmflg): Pripája segment zdieľanej pamäte do priestoru procesu.
+        ◦ printf(format, ...): Vypisuje formátovaný text na štandardný výstup.
+        ◦ socket(domain, type, protocol): Vytvára koncový bod komunikácie (socket).
+        ◦ connect(sockfd, serv_addr, addrlen): Pripája sa na server.
+        ◦ htons(uint16_t hostshort): Prevádza 16-bitové hodnoty z hostiteľskej na sieťovú poradie.
+        ◦ semop(semid, sops, nsops): Vykonáva operácie na semaforoch v množine.
+        ◦ strcpy(destination, source): Kopíruje obsah reťazca source do reťazca destination.
+        ◦ perror(s): Vypisuje chybovú správu do štandardného výstupu na základe aktuálnej hodnoty errno.
+        ◦ write(fd, buf, count): Zapíše do súborového deskriptora.
+        ◦ memset(s, c, n): Nastavuje prvé n bytov oblasti pamäte, začínajúcej na adrese s, na hodnotu c.
+        ◦ exit(status): Ukončuje program s daným návratovým kódom.
+        ◦ sleep(seconds): Spí na zadaný počet sekúnd.
+        ◦ sizeof(type): Vráti veľkosť daného dátového typu v bajtoch.
+        ◦ getppid(): Vráti PID (Process ID) rodičovského procesu.
+        ◦ shmat(shmid, shmaddr, shmflg): Pripája segment zdieľanej pamäte do priestoru procesu.
+    4. Funkcie v procese T (proc_t.cpp):
+        ◦ atoi(str): Konvertuje reťazec na celé číslo.
+        ◦ memset(s, c, n): Nastavuje prvé n bytov oblasti pamäte, začínajúcej na adrese s, na hodnotu c.
+        ◦ perror(s): Vypisuje chybovú správu do štandardného výstupu na základe aktuálnej hodnoty errno.
+        ◦ sizeof(type): Vráti veľkosť daného dátového typu v bajtoch.
+        ◦ getppid(): Vráti PID (Process ID) rodičovského procesu.
+        ◦ kill(pid, sig): Posiela signál sig procesu s identifikátorom pid.
+        ◦ semop(semid, sops, nsops): Vykonáva operácie na semaforoch v množine.
+        ◦ shmat(shmid, shmaddr, shmflg): Pripája segment zdieľanej pamäte do priestoru procesu.
+        ◦ exit(status): Ukončuje program s daným návratovým kódom.
+        ◦ strcpy(destination, source): Kopíruje obsah reťazca source do reťazca destination.
+        ◦ read(fd, buf, count): Číta dáta zo súborového deskriptora.Začiatok formulára
+    5. Funkcie v procese Serv2 (proc_serv2.cpp):
+        ◦ atoi(str): Konvertuje reťazec na celé číslo.
+        ◦ memset(s, c, n): Nastavuje prvé n bytov oblasti pamäte, začínajúcej na adrese s, na hodnotu c.
+        ◦ socket(domain, type, protocol): Vytvára koncový bod komunikácie (socket).
+        ◦ bind(sockfd, addr, addrlen): Priradí adresu socketu.
+        ◦ bzero(s, n): Nastavuje prvé n bytov oblasti pamäte, začínajúcej na adrese s, na hodnotu 0.
+        ◦ perror(s): Vypisuje chybovú správu do štandardného výstupu na základe aktuálnej hodnoty errno.
+        ◦ open(path, flags): Otvára súbor pre čítanie alebo zapisovanie.
+        ◦ recvfrom(int sockfd, void *buf, size_t len, int flags, struct sockaddr *src_addr, socklen_t *addrlen): Prijíma správu z datagramového socketu.
+        ◦ write(fd, buf, count): Zapíše do súborového deskriptora.
+        ◦ sizeof(type): Vráti veľkosť daného dátového typu v bajtoch.
+        ◦ getppid(): Vráti PID (Process ID) rodičovského procesu.
+        ◦ kill(pid, sig): Posiela signál sig procesu s identifikátorom pid.
+        ◦ htons(uint16_t hostshort): Prevádza 16-bitové hodnoty z hostiteľskej na sieťovú poradie.
+        ◦ exit(status): Ukončuje program s daným návratovým kódom.
+    6. Funkcie v procese Zadanie (zadanie.cpp):
+        ◦ kill(pid, sig): Posiela signál sig procesu s identifikátorom pid.
+        ◦ signal(sig, handler): Nastavuje handler na spracovanie signálu sig.
+        ◦ pipe(fd): Vytvára nepomenovanú rúru a nastavuje koncovky do poľa fd.
+        ◦ semget(key, num, flags): Získava identifikátor alebo vytvára množinu semaforov.
+        ◦ semctl(semid, semnum, cmd, arg): Kontroluje alebo modifikuje atribúty semaforu.
+        ◦ printf(format, ...): Vypisuje formátovaný text na štandardný výstup.
+        ◦ perror(s): Vypisuje chybovú správu do štandardného výstupu na základe aktuálnej hodnoty errno.
+        ◦ exit(status): Ukončuje program s daným návratovým kódom.
+        ◦ sprintf(str, format, ...): Zapíše formátovaný text do reťazca.
+        ◦ shmget(key, size, shmflg): Vytvára alebo získava identifikátor zdieľanej pamäte.
+        ◦ fork(): Vytvára nový proces kopírovaním aktuálneho.
+        ◦ close(fd): Slúži na zatvorenie súborových deskriptorov spojených s rúrami.
+        ◦ execlp(path, arg0, arg1, ..., argn, (char *)NULL): Nahrazuje aktuálny proces novým procesom definovaným spustiteľným súborom.
+        ◦ pause(): Očakáva príchod signálu.
+8.3 Dátové štruktúry
+    1. struct sockaddr_in server_addr, client_addr:
+Štruktúra sockaddr_in je využívaná v procesoch pracujúcich so sieťovým socketom. Obsahuje informácie o serverovej a klientovej adrese.
+struct sockaddr_in {
+    short            sin_family;   // typ adresy (napr. AF_INET)
+    unsigned short   sin_port;     // číslo portu
+    struct in_addr   sin_addr;     // IP adresa
+    char             sin_zero[8];  // nulovacie pole
+};
+    • sin_family: Typ adresy, napr. AF_INET pre IPv4.
+    • sin_port: Číslo portu, kde server čaká na pripojenie.
+    • sin_addr: Štruktúra obsahujúca IP adresu servera/klienta.
+    • sin_zero: Nulovacie pole, aby sa dosiahla správna veľkosť štruktúry.
+
+    2. struct sembuf sem_b[1]:
+Štruktúra sembuf sa používa na definovanie operácií nad semaforom v rámci volania semop().
+struct sembuf {
+    short sem_num;  // index semafora v sade
+    short sem_op;   // hodnota, ktorá sa má pridať/odobrať
+    short sem_flg;  // príznaky operácie
+};
+    • sem_num: Index semafora v sade.
+    • sem_op: Hodnota, ktorá sa má pridať (ak kladná) alebo odobrať (ak záporná) k hodnote semafora.
+    • sem_flg: Príznaky operácie, napr. 0 pre blokovanie, IPC_NOWAIT pre neblokujúce volanie.
+9 Príručka používateľa  detailný sprievodca programom
+Hlavným zámerom tohto programu je poskytnúť prax a pohľad do oblasti komunikácie a synchronizácie medzi procesmi. Tento projekt zahŕňa viacero procesov, ktoré spolupracujú na vytvorení komplexnej siete, využívajúc rôzne mechanizmy medziprocesovej komunikácie a synchronizácie.
+
+Program sa spúšťa z príkazového riadku pomocou príkazu:
+./zadanie <číslo_tcp_portu> <číslo_udp_portu> 
+Je dôležité spomenúť, že pre správne fungovanie programu je nevyhnutná predchádzajúca kompilácia pomocou príkazu:
+make all
+ktorý zabezpečuje kompiláciu všetkých procesov vrátane hlavného programu.
+Pred spustením programu je potrebné mať k dispozícii vstupné súbory p1.txt a p2.txt. Obsah týchto súborov sa postupne prenáša medzi jednotlivými procesmi, pričom každý proces pridáva vlastnú značku k prenášaným údajom. Nakoniec sú tieto údaje zapísané do súboru serv2.txt. Týmto spôsobom program demonštruje vzájomnú komunikáciu a koordináciu procesov v rámci komplexného systému.
+10 Zdrojový text
+10.1 proc_p1.cpp
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <string.h>
+
+void handler(int signum);
+
+int P1;
+int file;
+char line[151], buff;
+
+int main(int argc, char *argv[]) {
+
+    // HANDLER SIGNALU
+    (void) signal(SIGUSR1, handler);
+
+    // POCET ARGUMENTOV
+    if (argc != 2) {  // Opravený podmienkový výraz pre počet argumentov
+        perror("Zlý počet argumentov");
+        exit(EXIT_FAILURE);
+    }
+
+    // ZISKANIE IDENTIFIKACNEHO CISLA PIPE Z STDIN
+    P1 = atoi(argv[1]);
+
+    // OTVORENIE SUBORU NA CITANIE
+    if ((file = open("p1.txt", O_RDONLY)) == -1) {
+        perror("Chyba pri otvorení súboru");
+        exit(EXIT_FAILURE);
+    }
+
+    // ODOSLANIE SIGNALU HLAVNEMU PROCESU
+    kill(getppid(), SIGUSR1);
+
+    while (1)
+        ;  // Nekonečná slučka - je potrebné zabezpečiť ukončenie programu
+
+    return 0;
+}
+
+// HANDLER NACITA JEDEN RIADOK ZO SUBORU p1.txt A ZAPISE HO DO PIPE
+void handler(int signum) {
+    int i = 0;
+    while (1) {
+        ssize_t bytesRead = read(file, &buff, 1);
+        if (bytesRead == -1) {
+            perror("Chyba pri čítaní zo súboru");
+            exit(EXIT_FAILURE);
+        }
+        if (buff != '\n') {
+            line[i] = buff;
+        } else {
+            line[i] = buff;
+            line[i + 1] = '\0';
+            i++;
+            break;
+        }
+        i++;
+    }
+    write(P1, line, strlen(line));
+}
+10.2 proc_p2.cpp
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <string.h>
+
+void handler(int signum);
+
+int P1;
+int file;
+char line[151], buff;
+
+int main(int argc, char *argv[]) {
+
+    // HANDLER SIGNALU
+    (void) signal(SIGUSR1, handler);
+
+    // POCET ARGUMENTOV
+    if (argc != 2) {  
+        perror("Zlý počet argumentov");
+        exit(EXIT_FAILURE);
+    }
+
+    // ZISKANIE IDENTIFIKACNEHO CISLA PIPE Z STDIN
+    P1 = atoi(argv[1]);
+
+    // OTVORENIE SUBORU NA CITANIE
+    if ((file = open("p2.txt", O_RDONLY)) == -1) {
+        perror("Chyba pri otvorení súboru");
+        exit(EXIT_FAILURE);
+    }
+
+    // ODOSLANIE SIGNALU HLAVNEMU PROCESU
+    kill(getppid(), SIGUSR1);
+
+    while (1);  
+
+    return 0;
+}
+
+// HANDLER NACITA JEDEN RIADOK ZO SUBORU p2.txt A ZAPISE HO DO PIPE
+void handler(int signum) {
+    int i = 0;
+    while (1) {
+        ssize_t bytesRead = read(file, &buff, 1);
+        if (bytesRead == -1) {
+            perror("Chyba pri čítaní zo súboru");
+            exit(EXIT_FAILURE);
+        }
+        if (buff != '\n') {
+            line[i] = buff;
+        } else {
+            line[i] = buff;
+            line[i + 1] = '\0';
+            i++;
+            break;
+        }
+        i++;
+    }
+    write(P1, line, strlen(line));
+}
+
+10.3 proc_d.cpp
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/ipc.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <errno.h>
+
+int main(int argc, char *argv[]) {
+    // odoslanie signalu hlavnemu procesu
+    kill(getppid(), SIGUSR1);
+
+    // Inicializácia štruktúry pre serverovú adresu
+    struct sockaddr_in server_addr;
+
+    // Overenie, či sú zadané správne parametre
+    if (argc < 3) {
+        exit(-1);
+    }
+
+    // Konverzia argumentov na čísla
+    int shm2 = atoi(argv[1]);
+    int S2 = atoi(argv[2]);
+    int port = atoi(argv[3]);
+
+    // Buffer pre prenos dát
+    char buff[150];
+
+    // Pripojenie sa na zdieľanú pamäť
+    char *shmaddr = (char *)shmat(shm2, NULL, 0);
+
+    // Vytvorenie socketu pre komunikáciu s serverom
+    printf("Proces D vytvara socket.\n");
+    int socket_id = socket(AF_INET, SOCK_STREAM, 0);
+
+    // Nulovanie štruktúry pre serverovú adresu
+    bzero((char *)&server_addr, sizeof(server_addr));
+
+    // Nastavenie parametrov serverovej adresy
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server_addr.sin_port = htons(port);
+
+    // Pripojenie sa na server
+    if (connect(socket_id, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Proces D nepripojeny na server!");
+    }
+
+    // Inicializácia štruktúry pre semafory
+    struct sembuf sem_b[1];
+
+    // Nekonečný cyklus pre odosielanie dát
+    while (1) {
+        // Zvýšenie hodnoty semafora 
+        sem_b[0].sem_op = 1;
+        sem_b[0].sem_num = 0;
+        sem_b[0].sem_flg = 0;
+
+        // Operácia nad semaforom
+        if (semop(S2, sem_b, 1) == -1) {
+            exit(EXIT_FAILURE);
+        }
+
+        // Kopírovanie dát zo zdieľanej pamäte do buffra
+        strcpy(buff, shmaddr);
+
+        // Odoslanie dát na server
+        write(socket_id, buff, (int)strlen(buff) + 1);
+
+        // Vyčistenie buffra
+        memset(buff, '\0', sizeof(buff));
+
+        // Zníženie hodnoty semafora 
+        sem_b[0].sem_op = -1;
+        sem_b[0].sem_num = 1;
+        sem_b[0].sem_flg = 0;
+
+        // Operácia nad semaforom
+        if (semop(S2, sem_b, 1) == -1) {
+            exit(EXIT_FAILURE);
+        }
+
+        // Pauza na 1 sekundu
+        sleep(1);
+    }
+
+    return 0;
+}
+
+10.4 proc_t.cpp
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <signal.h>
+#include <errno.h>
+
+int main(int argc, char *argv[]) {
+    char buf;
+    char line[250];
+    memset(line, '\0', sizeof(line));
+
+    // POCET ARGUMENTOV Z STDIN
+    if (argc < 4) {  
+        perror("Zlý počet argumentov");
+        exit(EXIT_FAILURE);
+    }
+
+    // IDENTIFIKACNE CISLA SEMAFORU, ZDIELANEJ PAMATE A RURY (CISLO 2)
+    int shm1 = atoi(argv[2]);
+    int S1 = atoi(argv[3]);
+    int P2 = atoi(argv[1]);
+
+    // PRIPOJENIE NA ZDIEĽANÚ PAMÄŤ
+    char *shmnaddr = (char *)shmat(shm1, NULL, 0);
+
+    // ZASLANIE SIGNALU HLAVNÉMU SEMAFORU
+    kill(getppid(), SIGUSR1);
+
+    // ŠTRUKTÚRA PRE SEMAFOR
+    struct sembuf sem_b[1];
+
+    while (1) {
+        // NACITANIE JEDNEHO RIADKU Z RURY (CISLO 2)
+        int i = 0;
+        while (read(P2, &buf, 1) > 0) {
+            if (buf == '\n') {
+                break;
+            } else {
+                line[i] = buf;
+                line[i + 1] = '\0';
+                i++;
+            }
+        }
+
+        // ZABLOKOVANIE ČÍTANIA
+        sem_b[0].sem_op = 1;
+        sem_b[0].sem_num = 1;
+        sem_b[0].sem_flg = 0;
+
+        if (semop(S1, sem_b, 1) == -1) {  
+            exit(EXIT_FAILURE);
+        }
+
+        // ZAPISANIE DO ZDIEĽANEJ PAMÄTE
+        strcpy(shmnaddr, line);
+
+        // POVOLENIE ČÍTANIA
+        sem_b[0].sem_op = -1;
+        sem_b[0].sem_num = 0;
+        sem_b[0].sem_flg = 0;
+
+        if (semop(S1, sem_b, 1) == -1) {  
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    return 0;
+}
+
+10.5 proc_serv2.cpp
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/ipc.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <errno.h>
+
+int main(int argc, char *argv[]){
+    if(argc < 1){
+    	exit(-1);
+    }
+    int port = atoi(argv[1]);
+    int socket_id = socket(AF_INET, SOCK_DGRAM, 0);
+    char buf[250];
+    memset(buf, '\0', sizeof(buf));
+    struct sockaddr_in server_addr, client_addr;
+    bzero((char*)&server_addr,sizeof(server_addr));  
+    // Nastavenie adresy servera
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server_addr.sin_port = htons(port);
+    
+    if(bind(socket_id,(struct sockaddr*)&server_addr,sizeof(server_addr))<0){
+    	perror("Proces D nepripojeny na server!");
+    }
+    int serv2_fd = open("serv2.txt", O_CREAT | O_WRONLY, 0666);
+    if(serv2_fd < 0){
+    	exit(-1);
+    }
+    
+    int i = 0;
+    socklen_t client_size = sizeof(sockaddr_in);
+    kill(getppid(), SIGUSR1);
+    while(1){
+	if(i >= 10){
+		break;
+	}
+    	recvfrom(socket_id, buf, 256, 0, (struct sockaddr*)&client_addr, &client_size);
+    	if(write(serv2_fd, &buf, strlen(buf)) < 0){
+    		perror("x");
+    	}
+    	if(write(serv2_fd, "\n", 1) < 1){
+    		perror("x");
+    	}
+        //printf("Server 2 zapisane:%s.\n",buf);
+    	i++;
+    }
+    kill(getppid(), SIGUSR2);
+    return 0;
+}
+
+10.6 zadanie.cpp
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <signal.h>
+#include <errno.h>
+#include <sys/wait.h>
+
+// Kľúče pre semafory a zdieľanú pamäť
+#define SEM_KEY1 1000
+#define SEM_KEY2 2000
+#define SHM_KEY1 3000
+#define SHM_KEY2 4000
+
+// Deskriptory
+int Serv1, Serv2, D, P1, P2, Pr, T, S;
+int num_of_child_procs = 0;
+
+// Funkcia na ukončenie všetkých potomkov po signále
+void kill_all(int signum) {
+    sleep(5);
+
+    kill(P1, SIGKILL);
+    kill(P2, SIGKILL);
+    kill(Pr, SIGKILL);
+
+    kill(T, SIGKILL);
+    kill(S, SIGKILL);
+    kill(D, SIGKILL);
+
+    kill(Serv1, SIGKILL);
+    kill(Serv2, SIGKILL);
+}
+
+// Funkcia na spracovanie signálu o prijatí ready signálu od potomka
+void accepted_ready_signal(int signum) {
+    printf("//--------------------//\n");
+    num_of_child_procs++;
+}
+
+int main(int argc, char *argv[]) {
+    // Kontrola počtu argumentov
+    if (argc != 3) {
+        perror("Zle spustene!");
+    }
+
+    // Handler pre signály
+    (void)signal(SIGUSR2, kill_all);
+    (void)signal(SIGUSR1, accepted_ready_signal);
+
+    int port1 = atoi(argv[1]);
+    int port2 = atoi(argv[2]);
+
+    // Vytvorenie dvoch rúr (pipes)
+    int pipe1[2], pipe2[2];
+    if (pipe(pipe1) == -1 || pipe(pipe2) == -1) {
+        perror("Vytvorenie rúr zlyhalo");
+        exit(EXIT_FAILURE);
+    }
+
+    // Vytvorenie dvoch semaforov
+    int sem_id1, sem_id2;
+    sem_id1 = semget(SEM_KEY1, 2, IPC_CREAT | 0666);
+    sem_id2 = semget(SEM_KEY2, 2, IPC_CREAT | 0666);
+
+    if (sem_id1 == -1 || sem_id2 == -1) {
+        perror("Vytvorenie semaforov zlyhalo");
+        exit(EXIT_FAILURE);
+    }
+
+    // Inicializácia semaforov
+    semctl(sem_id1, 0, SETVAL, 0);
+    semctl(sem_id2, 0, SETVAL, 0);
+    semctl(sem_id1, 1, SETVAL, 0);
+    semctl(sem_id2, 1, SETVAL, 0);
+
+    // Vytvorenie dvoch zdieľaných pamätí
+    int shm_id1, shm_id2;
+    size_t shm_size = 256;
+
+    shm_id1 = shmget(SHM_KEY1, shm_size, IPC_CREAT | 0666);
+    shm_id2 = shmget(SHM_KEY2, shm_size, IPC_CREAT | 0666);
+
+    if (shm_id1 == -1 || shm_id2 == -1) {
+        perror("Vytvorenie zdieľanej pamäti zlyhalo");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Rúry, semafory a zdieľaná pamäť boli úspešne vytvorené.\n");
+
+    // Konverzia čísel na reťazce
+    char pipe1_str_W[20], pipe2_str_W[20], pipe1_str_R[20], pipe2_str_R[20];
+    char sem1_str[20], sem2_str[20];
+    char shm1_str[20], shm2_str[20];
+    char port1_str[20], port2_str[20];
+
+    sprintf(pipe1_str_W, "%d", pipe1[1]);
+    sprintf(pipe2_str_W, "%d", pipe2[1]);
+    sprintf(pipe1_str_R, "%d", pipe1[0]);
+    sprintf(pipe2_str_R, "%d", pipe2[0]);
+
+    sprintf(sem1_str, "%d", sem_id1);
+    sprintf(sem2_str, "%d", sem_id2);
+
+    sprintf(shm1_str, "%d", shm_id1);
+    sprintf(shm2_str, "%d", shm_id2);
+
+    sprintf(port1_str, "%d", port1);
+    sprintf(port2_str, "%d", port2);
+
+    // Spustenie potomkov a kontrola úspechu
+    Serv1 = fork();
+    if (Serv1 == 0) {
+        if ((execlp("./proc_serv1", "proc_serv1", port1_str, port2_str, NULL)) < 0) {
+            printf("chyba");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    } else if (Serv1 < 0) {
+        printf("chyba\n");
+        exit(EXIT_FAILURE);
+    }
+
+    while (num_of_child_procs < 1) {
+        pause();
+    }
+
+    Serv2 = fork();
+    if (Serv2 == 0) {
+        if ((execlp("./proc_serv2", "proc_serv2", port2_str, NULL)) < 0) {
+            printf("chyba");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    } else if (Serv2 < 0) {
+        printf("chyba\n");
+        exit(EXIT_FAILURE);
+    }
+
+    while (num_of_child_procs < 2) {
+        pause();
+    }
+
+    D = fork();
+    if (D == 0) {
+        if ((execlp("./proc_d", "proc_d", shm2_str, sem2_str, port1_str, NULL)) < 0) {
+            printf("chyba");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    } else if (D < 0) {
+        printf("chyba\n");
+        exit(EXIT_FAILURE);
+    }
+
+    while (num_of_child_procs < 3) {
+        pause();
+    }
+
+    P1 = fork();
+    if (P1 == 0) {
+        if ((execlp("./proc_p1", "proc_p1", pipe1_str_W, NULL)) < 0) {
+            printf("chyba");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    } else if (P1 < 0) {
+        printf("chyba");
+        exit(EXIT_FAILURE);
+    }
+
+    while (num_of_child_procs < 4) {
+        pause();
+    }
+
+    P2 = fork();
+    if (P2 == 0) {
+        if ((execlp("./proc_p2", "proc_p2", pipe1_str_W, NULL)) < 0) {
+            printf("chyba\n");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    } else if (P2 < 0) {
+        printf("chyba");
+        exit(EXIT_FAILURE);
+    }
+
+    while (num_of_child_procs < 5) {
+        pause();
+    }
+
+    char string_P1[20], string_P2[20];
+    sprintf(string_P1, "%d", P1);
+    sprintf(string_P2, "%d", P2);
+
+    Pr = fork();
+    if (Pr == 0) {
+        if ((execlp("./proc_pr", "proc_pr", string_P1, string_P2, pipe1_str_R, pipe2_str_W, NULL)) < 0) {
+            printf("chyba");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    } else if (Pr < 0) {
+        printf("chyba\n");
+        exit(EXIT_FAILURE);
+    }
+
+    while (num_of_child_procs < 6) {
+        pause();
+    }
+
+    T = fork();
+    if (T == 0) {
+        if ((execlp("./proc_t", "proc_t", pipe2_str_R, shm1_str, sem1_str, NULL)) < 0) {
+            printf("chyba");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    } else if (T < 0) {
+        printf("chyba\n");
+        exit(EXIT_FAILURE);
+    }
+
+    while (num_of_child_procs < 7) {
+        pause();
+    }
+
+    S = fork();
+    if (S == 0) {
+        if ((execlp("./proc_s", "proc_s", shm1_str, sem1_str, shm2_str, sem2_str, NULL)) < 0) {
+            printf("chyba");
+            exit(EXIT_FAILURE);
+        }
+        exit(EXIT_SUCCESS);
+    } else if (S < 0) {
+        printf("chyba\n");
+        exit(EXIT_FAILURE);
+    }
+
+    while (num_of_child_procs < 8) {
+        pause();
+        pause();
+    }
+
+    // Úprava: Zatvorenie rúr, odstránenie semaforov, odpojenie a odstránenie zdieľanej pamäti
+    close(pipe1[0]);
+    close(pipe1[1]);
+    close(pipe2[0]);
+    close(pipe2[1]);
+
+    semctl(sem_id1, 0, IPC_RMID, 0);
+    semctl(sem_id2, 0, IPC_RMID, 0);
+
+    shmctl(shm_id1, IPC_RMID, 0);
+    shmctl(shm_id2, IPC_RMID, 0);
+
+    return 0;
+}
+
+
