@@ -1,5 +1,10 @@
 from collections import defaultdict
+from typing import TypedDict
 
+class Span(TypedDict):
+  start: int
+  end: int
+  length: int
 
 class Fingerprint:
 
@@ -7,6 +12,5 @@ class Fingerprint:
     self.hash = hash
     self.occurrences = defaultdict(list)
 
-
-  def add_occurrence(self, file_path, start, end):
-    self.occurrences[file_path].append({'start': start, 'end': end})
+  def add_occurrence(self, submission_id, start, end):
+    self.occurrences[submission_id].append({'start': start, 'end': end, 'length': end - start})
