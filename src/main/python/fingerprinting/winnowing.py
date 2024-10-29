@@ -3,6 +3,7 @@ from typing import List
 
 import operator
 
+from comparison.submission import Submission
 from fingerprinting.fingerprint_index import FingerprintIndex
 from preprocessing.text_token import TextToken
 
@@ -14,7 +15,10 @@ class Winnowing:
     self.index = index
     self.window_size = window_size
 
-  def winnowing_fingerprint(self, file_path : str, tokens : List[TextToken]) -> None:
+  def winnowing_fingerprint(self, submission : Submission) -> None:
+    submission_id = submission.id
+    tokens = submission.tokens
+
     if len(tokens) < self.window_size:
       raise Exception("File is too small for give window size")
 
@@ -40,7 +44,7 @@ class Winnowing:
       if min_pos < 0:
         min_pos, min_value = min(enumerate(window), key=operator.itemgetter(1))
         self.index.record(
-          file_path,
+          submission_id,
           window[min_pos],
           tokens[token_pos[0]].start,
           tokens[token_pos[-1]].end
@@ -49,14 +53,14 @@ class Winnowing:
         if window[min_pos] > window[-1]:
           min_pos = len(window) - 1
           self.index.record(
-            file_path,
+            submission_id,
             window[min_pos],
             tokens[token_pos[0]].start,
             tokens[token_pos[-1]].end
           )
 
   @staticmethod
-  def hash(s : str):
+  def hash(s : str) -> int:
     mod = 33554393
     base = 747287
 
