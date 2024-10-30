@@ -21,26 +21,25 @@ class SubmissionPair:
     self.submission_b_coverage: int = 0
     self.total_overlap: int = 0
 
-    self.common_fragments: List[CommonFragment] = self.build_fragments()
+    # self.common_fragments: List[CommonFragment] =
+    self.build_fragments()
 
-  def build_fragments(self) -> List[CommonFragment]:
-    # go through common fingerprints, and pair each occurrence from submission a to b
-    self.common_fragments: List[CommonFragment] = []
+  def build_fragments(self):
+    # self.common_fragments: List[CommonFragment] = []
     for fingerprint in self.common: # type: Fingerprint
       for occurrence_a in fingerprint.occurrences[self.submission_a.id]:
         self.submission_a_coverage += occurrence_a['length']
+      for occurrence_b in fingerprint.occurrences[self.submission_b.id]:
+        self.submission_b_coverage += occurrence_b['length']
 
-        for occurrence_b in fingerprint.occurrences[self.submission_b.id]:
-          self.common_fragments.append({
-            'span_a': occurrence_a,
-            'span_b': occurrence_b,
-          })
-
-          self.submission_b_coverage += occurrence_b['length']
+    # go through common fingerprints, and pair each occurrence from submission a to b
+      # self.common_fragments.append({
+      #   'span_a': occurrence_a,
+      #   'span_b': occurrence_b,
+      # })
 
     self.total_overlap = self.submission_a_coverage + self.submission_b_coverage
-
-    return self.common_fragments
+    # <0, 1>: <1, 1>, <1, 2>
 
   def avg_similarity(self) -> float:
     return self.total_overlap / (self.submission_a.length + self.submission_b.length)
