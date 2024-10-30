@@ -36,21 +36,27 @@ class Winnowing:
       token_pos = token_pos[1:]
 
       # TODO: use rolling hash, to enforce same order for matching
-      window.append(hasher.rolling_hash(token.content))
+      # window.append(hasher.rolling_hash(token.content))
+      window.append(hasher.hash(token.content))
+
       token_pos.append(i)
-      log.debug(window)
-      if i < self.window_size - 1:
-        continue
+      # if i < self.window_size - 1:
+      #   continue
 
       min_pos = min_pos - 1
 
       if min_pos < 0:
+        # TODO: should be rightmost
         min_pos, min_value = min(enumerate(window), key=operator.itemgetter(1))
+
+        # TODO: recording whole window as a match gives too may false positives, use min token instead, and try kgrams...
         self.index.record(
           submission_id,
           window[min_pos],
-          tokens[token_pos[0]].start,
-          tokens[token_pos[-1]].end
+          tokens[token_pos[min_pos]].start,
+          tokens[token_pos[min_pos]].end,
+          # tokens[token_pos[0]].start,
+          # tokens[token_pos[-1]].end
         )
       else:
         if window[min_pos] > window[-1]:
@@ -58,16 +64,13 @@ class Winnowing:
           self.index.record(
             submission_id,
             window[min_pos],
-            tokens[token_pos[0]].start,
-            tokens[token_pos[-1]].end
+            tokens[token_pos[min_pos]].start,
+            tokens[token_pos[min_pos]].end,
+            # tokens[token_pos[0]].start,
+            # tokens[token_pos[-1]].end
           )
 
 if __name__ == '__main__':
-  print(Winnowing.hash('abc'))
-  print(Winnowing.hash('a'))
-
-  print([Winnowing.hash(s) for s in ['a', 'b', 'c']])
-  print([Winnowing.hash(s) for s in ['c', 'b', 'a']])
   index = FingerprintIndex()
   text1 = "proces pr pošle signál sigusr1 svojmu hlavnému procesu"
   text1 = "proces pr by mal poslat signal, ktory prijme dalsi proces"

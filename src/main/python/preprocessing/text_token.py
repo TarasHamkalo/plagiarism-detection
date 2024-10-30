@@ -16,6 +16,8 @@ class TextToken:
       return None
 
     content = stanza_word.lemma
+    if content is None:
+      content = stanza_word.text
 
     if stanza_word.upos == 'PUNCT' or stanza_word.upos == 'NUM':
       type = stanza_word.upos

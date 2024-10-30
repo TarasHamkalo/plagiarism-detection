@@ -29,3 +29,12 @@ class Hasher:
 
     return hash_value
 
+
+if __name__ == '__main__':
+  hasher = Hasher(3)
+  h1 = [hasher.rolling_hash('abc'), hasher.rolling_hash('bca'), hasher.rolling_hash('cab')]
+  hasher = Hasher(3)
+  h2 = [hasher.rolling_hash('bca'), hasher.rolling_hash('abc'), hasher.rolling_hash('cab')]
+
+  print(h1)
+  print(h2)
