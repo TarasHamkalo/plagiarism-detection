@@ -1,0 +1,842 @@
+﻿
+
+
+
+
+
+
+
+
+
+
+
+
+Vypracovanie zadania
+OS-IPC
+
+
+
+
+
+
+
+
+
+2.2.2
+
+2.2.2. Text
+3. Text
+
+Pavol Almáši, Hung Do Quoc, Matej Čorba
+Operačné systémy
+2023
+    1. Text zadania.
+
+Vypracovať podľa schémy (obr. č. 1) programy P1, P2, T, D a Serv2. Navyše vypracovať program Zadanie ktorý vyhradí všetky zdroje pre medziprocesorovú komunikáciu a spustí všetky procesy.
+
+    • 
+    • Obr. č. 1 schéma
+
+
+    2. Dodefinovanie zadania
+
+Synchronizácia
+Úloha požaduje aby bolo zachované poradie vykonávania procesov. Teda aby bolo poradie vykonávania procesov rovnaké na všetkých systémoch. Problém predbiehania procesov bude nutné riešiť pomocou niektorých z prostriedkov medzi-procesorovej komunikácie.
+
+Makefile
+Tiež je potrebné vytvoriť súbor Makefile. Je nutné dodržať názvy zdrojových textov a vytvorených spustiteľných programov. Zdrojové texty a Makefile je potrebné odovzdať na príslušný server.
+
+Testovanie
+Testovanie je realizované na serveri. Testuje sa úspešnosť vytvorenia programov a následne po spustení programov je vyhodnotený výsledok v súbore serv2.txt.
+    3. Popis relevantných štruktúr, algoritmov, dátových typov a konštánt
+
+Nepomenovane rúry, pomenovane rúry.
+Prostriedok pre komunikáciu medzi procesmi. Ide o sériovú komunikáciu.
+
+Rúra je uložená ako pole 2 deskriptorov (int file_des[2]). Zvyčajne v file_des[0] sa nachádza deskriptor pre čítanie a v file_des[1] sa nachádza deskriptor pre zápis.
+
+Signály
+Prostriedok slúžiaci na informovanie procesu o výskyte asynchrónnej udalosti. Tento signál môže byť odoslaný buď procesom alebo operačným jadrom.
+
+Signál je v podobe celočíselnej konštanty (viď tab. č. 1).
+
+Meno konštanty
+Hodnota
+Popis
+SIGKILL
+9
+Ukončenie procesu
+SIGUSR1
+30
+Signál definovaný užívateľom
+SIGINT
+2
+Prerušenie klávesnicou (Ctrl + C)
+Tab. č. 1 vybrané hodnoty signálov
+
+Zdieľaná pamäť
+Prostriedok pre komunikáciu medzi procesmi. Je to segment zdieľanej pamäte vo FAP. Jednotlivé procesy si môžu svoje LAP k tejto pamäti pripájať alebo odpájať.
+
+V programe sa vieme ku tejto pamäti dostať pomocou celočíselnej hodnoty – identifikátoru.
+struct shmid_ds {
+struct ipc_perm shm_perm;    /* Ownership and permissions */
+size_t          shm_segsz;   /* Size of segment (bytes) */
+time_t          shm_atime;   /* Last attach time */
+time_t          shm_dtime;   /* Last detach time */
+time_t          shm_ctime;   /* Last change time */
+pid_t           shm_cpid;    /* PID of creator */
+pid_t           shm_lpid;    /* PID of last shmat(2)/shmdt(2) */
+shmatt_t        shm_nattch;  /* No. of current attaches */
+};
+
+Štruktúra shmid_ds poskytuje možnosť zaobchádzať zo zdieľanou pamäťou (vid tab. č. 2).
+
+Meno konštanty
+Popis
+IPC_STAT
+Načíta údaje o zdieľanej pamäti do štruktúry shmid_ds
+IPC_SET
+Nastaví zdieľanú pamäť podľa štruktúry shmid_ds
+IPC_RMID
+Zmaže zdieľanú pamäť
+Tab. č. 2  zaobchádzanie zo zdieľanou pamäťou pomocou shmctl
+
+Semafor
+Nástroj pre pasívnu synchronizáciu procesov. 
+
+V programe sa používa sada semaforov, ta ma svoj identifikátor v podobe celého čísla.
+
+union semun {
+int val;    		   	/* Value for SETVAL */
+struct semid_ds *buf;		/* Buffer for IPC_STAT, IPC_SET */
+unsigned short  *array;	/* Array for GETALL, SETALL */
+struct seminfo	  *__buf;	/* Buffer for IPC_INFO (Linux-specific) */
+};
+
+Štruktúra semun poskytuje možnosť zaobchádzať so semaforom (vid tab. č. 3).
+
+Meno konštanty
+Popis
+SETVAL
+Inicializuje semafor pomocou štruktúry semun
+GETVAL
+Zisti hodnotu semaforu 
+IPC_RMID
+Zmaže zdieľanú sadu semaforov
+Tab. č. 3 -  zaobchádzanie zo sadou semaforov pomocou shmctl
+
+Sockety
+Nástroj pre komunikáciu procesov prostredníctvom počítačovej sieti. 
+
+Každý socket má svoj identifikátor v podobe celého čísla.
+
+Cieľová adresa je uložená v štruktúre sockaddr_in
+
+struct sockaddr_in {         
+short int	 sin_family;	   //typ komunikačného socketu AF nie PF 
+unsigned short	 int sin_port;   // 2 byty cislo portu         
+struct in_addr	 sin_addr;       // 4 byty actual IP address        
+unsigned char	 sin_zero[8];    // zvysnych 8 bytov nulujeme     
+};
+    4. Analýza problematiky
+
+Práca so súbormi
+Budeme potrebovať zapisovať a čítať zo vstupných súborov p1.txt a p2.txt do výstupného súboru serv2.txt ako aj do nepomenovaných rúr SM1, SM2.
+Potrebujeme dostať identifikátor na súbory pomocou služby jadra open, pre rúry to bude služba jadra pipe. Pre zápis je dostupná služba jadra write, pre čítanie službu jadra read. Pre ukončenie s prácou so súbormi slúži služba jadra close.
+Signály
+Proces proc_pr pošle signál procesu proc_p1 alebo procesu proc_2. Na tieto signály potrebujeme patrične reagovať. Bude sa nám hodiť aj posielanie signálu, napríklad pri ukončení všetkých nami vytvorených procesov.
+Na nastavenie ako ma reagovať proces na signál slúži služba jadra signal. Pomocou nej môžeme nastaviť ktorý podprogram sa ma vykonať podľa konkrétneho signálu. Pre zasielanie signálov slúži služba kill.
+Rúry
+Pre komunikáciu medzi procesmi proc_p1,proc_p2 – proc_pr a medzi procesmi proc_pr – proc_t potrebujeme vytvoriť prostriedok na medzi-procesorovú komunikáciu – rúry.
+Služba jadra pipe nám vyplní pole deskriptorov. S rúrou vieme pracovať ako so súbormi, teda môžeme volať služby jadra ako write alebo read.
+Zdieľaná pamäť
+Budeme potrebovať vytvoriť zdieľane pamäte medzi procesmi. Ku prvej zdieľanej pamäti pripojíme procesy proc_t a proc_s, ku druhej zdieľanej pamäti pripojíme procesy proc_s a proc_d.
+Pre vytvorenie zdieľanej pamäte nám poslúži služba jadra shmget. Na pripojenie ku zdieľanej pamäti slúži služba jadra shmat, na odpojenie zas služba shmdt.
+Semafor
+Budeme potrebovať synchronizáciu medzi procesmi. Zdieľaná pamäť nemá sama o sebe synchronizačne prostriedky. Vytvoríme preto sady semaforov, S1 pre synchronizáciu procesov proc_t a proc_s, sadu semaforov S2 pre synchronizáciu procesov proc_s a proc_d.
+Pre vytvorenie sady semaforov slúži služba jadra semget. Pre narábanie, najme zvyšovanie a znižovanie hodnôt o 1, slúži služba semop. Služba semctl slúži na počiatočne nastavenie, alebo zistenie hodnoty semaforu ale aj na zmazanie tejto sady semaforov.
+Sieťová komunikácia
+V rámci za budeme potrebovať vyriešiť medzi-sieťovú komunikáciu procesov proc_d, proc_serv1 a proc_serv2.
+Pre vytvorenie socketu použijeme službu jadra socket, službou bind priradíme socket IP adresu a port. Pomocou služby listen na strane servera vytvoríme pamäť pre uchovavnie požiadaviek na pripojenie.
+Volanie procesov
+Proces zadanie bude musieť okrem vyhradenia pamäte zavolať aj ďalšie procesy. 
+Pre vytváranie procesov nám poslúžia služby jadra fork a execve.
+
+    5. Popis navrhovaného riešenia
+
+Vyhradenie IPC prostriedkov
+Pomocou služby jadra shmget, sme vyhradili zdieľanú pamäť (SM1, SM2) a získali k identifikátory. Pre vytvorenie jedinečného kľúča na odovzdanie ako argumenta pre službu shmget sme použili službu ftok. Pri každom generovaní nového kľúča sme odovzdali službe ftok iný parameter proj_id, parameter cesty sme nastavili na adresár v ktorom sa nachádza program. Pomocou vhodnej kombinácie parametru shmflg sme zavolali službu so zámerom vytvoriť zdieľanú pamäť ak ešte neexistovala. Pomocou služby jadra sme vytvorili nepomenovane rúry (R1, R2). Podobne sme postupovali pri vyhradení pamäte dvojice semaforov. Na to sme použili službu semget. 
+Inicializácia IPC prostriedkov
+Pomocou služby jadra semctl sme nastavili hodnoty semaforov na požadované hodnoty. 
+Príprava argumentov pre dcérske procesy
+Pomocou funkcii strcpy a sprintf sme si uložili požadované argumenty identifikátory (port1, port2, rúry...) v podobe reťazcov. 
+Volanie dcérskych procesov
+Pre zavolanie dcérskych procesov sme použili službu jadra fork a execve. Pri volaní execve sme poskytli  procesom aj potrebne pole argumentov.
+Signály
+V programe zadanie sme si vytvorili handler – funkciu ktorá zastaví všetky vytvorené procesy. Tato funkcia je zaregistrovaná pomocou služby signal, a tato funkcia vola službu kill na všetky procesy vytvorené hlavným procesom.
+Synchronizácia
+Tá bola realizovaná pomocou semaforových sád. V podprocesoch na svoje vzájomne synchronizovanie sme vytvorili pomocne funkcie semaphore_v, semaphore_p. Ak jeden podproces dokončil svoju prácu, zápis, čítanie alebo odoslanie zmenil hodnotu semaforu a signalizoval druhému procesu že môže vykonať svoju činnosť.
+Networking
+Proces_d získa adresu serveru pomocou gethostbyname a pošle žiadosť o pripojenie pomocou connect. Následne proces vstúpi do nekonečného cyklu a pomocou komunikácie s procesom proc_s cez rúru získa dáta. Tieto dáta následne odošle pomocou služby send. Tento proces sa sprava ako client.
+Proces proc_serv2 naopak funguje ako server, pomocou recvfrom a write zapíše do koncového súboru serv2.txt nadobudnuté dáta.
+
+
+    6. Záver a zhodnotenie
+
+Riešenie je správne, požadovaný výsledok bol naplnený. Správnosť nášho riešenia kontrolovali aj automatické testy na vzdialenom serveri .
+Rozdelenie úlohy na menšie časti, ktoré je možne riešiť súbežne je spravidla dobrý spôsob ako urýchliť spracovanie úlohy. Keďže úloha nebola komplexná čo do časovej náročnosti, časová závislosti finálneho riešenia je lineárna, závisí od dĺžky jednotlivých správ na prečítanie a od ich počtu vzhľadom na daný okamih.
+Čo sa týka pamäte, použili sme duplikovanie 2 deskriptorov. Jedná sa mierne navýšenie pamäťovej ceny. Nejde o nič zasadne, ale je možne že, existuje spôsob pre mierne efektívnejšie riešenie.
+Problém sa vyskytol aj pri vytváraní sad semaforov, identifikátor by mal začínaj najmenej od 2, no na niektorých systémoch sa vyskytla pre semaforovú sadu aj hodnota identifikátora 0 alebo 1.
+
+7.	Použitá literatúra a informačné zdroje
+
+Linux man pages - https://linux.die.net/man/
+Sofia v. 2013 - https://moodle.fei.tuke.sk/pluginfile.php/35699/mod_resource/content/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+PRÍLOHY
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Pavol Almáši, Hung Do Quoc, Matej Čorba
+Operačné systémy
+2023
+8.	Systémová príručka – príručka pre programátora
+
+int semaphore_p(int sem_id);
+Tato funkcia slúži na zníženie hodnoty druhého semaforu zo sady, semafor sa zablokuje. Hodnota sem_flg je mastavena na hodnotu SEM_UNDO.
+V prípade úspešného vykonania vráti 1, inač vracia hodnotu 0; 
+int semaphore_v(int sem_id);
+Tato funkcia slúži na zvýšenie hodnoty, druhého semaforu zo sady, semafor sa odblokuje. Hodnota sem_flg je nastavená na hodnotu SEM_UNDO.
+V prípade úspešného vykonania vráti 1, inač vracia hodnotu 0; 
+void killProcesses(int in);
+Slúži na zastavenie všetkých procesov ktoré boli vytvorené procesom zadanie. Funkcia nemá návratovú hodnotu.
+void handler(int sig);
+Funkcia precitá jeden riadok zo vstupného textového súboru podľa zadania. Do príslušnej pipe podľa zadania zapíše tento načítaný riadok. Je doležíte aby tato funkcia nezbehla paralelné. Funkcia nemá návratovú hodnotu.
+
+
+
+9. 	Príručka používateľa  
+
+Program slúži na spracovanie vstupov p1.txt, p2.txt na výstup serv2.txt podľa priloženej sch (obr. 1).
+Vytvorenie programu
+Ak je program k dispozícii tento odsek preskočte. Program si viete vytvoriť pomocou Makefile
+$ make
+
+Spustanie programu
+$ zadanie <port1> <port2>
+Port1 – parameter prveho portu pre TCP komunikaciu.
+Port2 – parameter druheho portu pre UTP komunikaciu
+
+10. Zdrojový text programu v jazyku C (C++).
+
+Zadanie.cpp
+#include <sys/wait.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h> 
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
+
+int p1, p2, pr, T, S, D, serv1, serv2;
+
+void handler(int sig){
+    printf("signal USR1 received\n");
+}
+
+void killProcesses(int in){
+    sleep(3);
+    kill(serv1, SIGKILL);
+    kill(serv2, SIGKILL);
+    kill(p1, SIGKILL);
+    kill(p2, SIGKILL);
+    kill(pr, SIGKILL);
+    kill(T, SIGKILL);
+    kill(S, SIGKILL);
+    kill(D, SIGKILL);
+
+}
+
+int main(int argc, char const *argv[]){
+    
+    char writePipe1[10];
+    char readPipe1[10];
+    char writePipe2[10];
+    char readPipe2[10];
+    char pid_p1[10];
+    char pid_p2[10];
+    char sm1_str[10];
+    char sm2_str[10];
+    char semafor_1_str[10];
+    char semafor_2_str[10];
+    int R1[2], R2[2];
+    int dupWritePipe1,dupWritePipe2,dupReadPipe1,dupReadPipe2;
+    char port1[10];
+    char port2[10];
+
+    signal(SIGUSR2,killProcesses);
+    signal(SIGUSR1,handler);
+    
+    strcpy(port1, argv[1]);
+    strcpy(port2, argv[2]);
+
+    int SM1 = shmget(ftok(".", 1),151,0666 | IPC_CREAT);  
+    int SM2 = shmget(ftok(".", 2),151,0666 | IPC_CREAT);
+    int SEMAFOR1 = semget(ftok(".",3), 2, 0666 | IPC_CREAT);    
+    int SEMAFOR2 = semget(ftok(".",4), 2, 0666 | IPC_CREAT);
+
+    if(SEMAFOR1 == -1 || SEMAFOR2 == -1) {   
+        perror("semget()");   
+        exit(EXIT_FAILURE);
+    }
+
+    if(SM1 == -1 || SM2 == -1) {   
+        perror("shmget()");   
+        exit(EXIT_FAILURE);
+    }
+
+    if (pipe(R1) == -1) {
+        perror("pipe1");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pipe(R2) == -1) {
+        perror("pipe2");
+        exit(EXIT_FAILURE);
+    }
+
+    semctl(SEMAFOR1,0,SETVAL,1);
+    semctl(SEMAFOR1,1,SETVAL,0);
+    semctl(SEMAFOR2,0,SETVAL,1);
+    semctl(SEMAFOR2,1,SETVAL,0);
+
+    dupWritePipe1 = dup(R1[1]);
+    dupWritePipe2 = dup(R2[1]);
+    dupReadPipe1 = dup(R1[0]);
+    dupReadPipe2 = dup(R2[0]);
+
+    sprintf(writePipe1, "%d", dupWritePipe1);
+    sprintf(readPipe2, "%d", dupReadPipe2);
+
+    sprintf(sm1_str, "%d", SM1);
+    sprintf(semafor_1_str, "%d", SEMAFOR1);
+    sprintf(sm2_str, "%d", SM2);
+    sprintf(semafor_2_str, "%d", SEMAFOR2);
+
+    serv1 = fork();
+    if(serv1 == -1){
+        perror("error serv1");
+        exit(EXIT_FAILURE);
+    }else if(serv1 == 0){
+        char *args[] = {"proc_serv1",port1,port2, NULL};   
+        printf("serv1\n");
+        execve("proc_serv1",args,NULL);
+
+        perror("execve");      
+        exit(EXIT_SUCCESS);
+    }
+    pause();
+
+    serv2 = fork();
+    if(serv2 == -1){
+        perror("error serv2");
+        exit(EXIT_FAILURE);
+    }else if(serv2 == 0){
+        char *args[] = {"proc_serv2",port2, NULL};   
+        printf("serv2\n");    
+        execve("proc_serv2",args,NULL);
+
+        perror("execve");      
+        exit(EXIT_SUCCESS);
+    }
+    pause();
+
+    p1 = fork();
+    if(p1 == -1){
+        perror("error p1");
+        exit(EXIT_FAILURE);
+    }else if(p1 == 0){
+        char *args[] = {"proc_p1", writePipe1 ,NULL};  
+        execve("proc_p1",args,NULL); 
+
+        perror("execve"); 
+        exit(EXIT_SUCCESS);
+    }
+    pause();
+
+    p2 = fork();
+    if(p2 == -1){
+        perror("error p1");
+        exit(EXIT_FAILURE);
+    }else if(p2 == 0){
+        char *args[] = {"proc_p2", writePipe1, NULL};    
+        execve("proc_p2",args,NULL);
+
+        perror("execve");      
+        exit(EXIT_SUCCESS);
+    }
+    pause();
+
+    sprintf(pid_p1,"%d",p1);
+    sprintf(pid_p2,"%d",p2);
+    sprintf(readPipe1,"%d",dupReadPipe1);
+    sprintf(writePipe2,"%d",dupWritePipe2);
+
+    pr = fork();
+    if(pr == -1){
+        perror("error pr");
+        exit(EXIT_FAILURE);
+    }else if(pr == 0){
+        char *args[] = {"proc_pr",pid_p1,pid_p2,readPipe1,writePipe2,NULL};
+        printf("pr\n");   
+        execve("proc_pr",args,NULL);
+
+        perror("execve");      
+        exit(EXIT_SUCCESS);
+    }
+    pause();
+
+    T = fork();
+    if(T == -1){
+        perror("error T");
+        exit(EXIT_FAILURE);
+    }else if(T == 0){
+        char *args[] = {"proc_t",readPipe2,sm1_str,semafor_1_str,NULL};     
+        execve("proc_t",args,NULL);
+
+        perror("execve");      
+        exit(EXIT_SUCCESS);
+    }
+    pause();
+
+    S = fork();
+    if(S == -1){
+        perror("error S");
+        exit(EXIT_FAILURE);
+    }else if(S == 0){
+        char *args[] = {"proc_s",sm1_str,semafor_1_str,sm2_str,semafor_2_str,NULL}; 
+        printf("S\n");     
+        execve("proc_s",args,NULL);
+
+        perror("execve");      
+        exit(EXIT_SUCCESS);
+    }
+    pause();
+
+    D = fork();
+    if(D == -1){
+        perror("error D");
+        exit(EXIT_FAILURE);
+    }else if(D == 0){
+        char *args[] = {"proc_d",sm2_str,semafor_2_str,port1,NULL};     
+        execve("proc_d",args,NULL);
+
+        perror("execve");      
+        exit(EXIT_SUCCESS);
+    }
+    pause();
+    
+    pause();
+    return 0;
+}
+
+
+proc_p1.cpp
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <string.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+
+int pipe_fd, fd;
+
+void handler(int sig){
+
+    char word[151];
+    char c;
+    int i = 0;
+
+    while(read(fd, &c, 1) > 0){
+        word[i++] = c;
+        word[i]='\0'; 
+        if(c =='\n') break;  
+    }  
+     
+    write(pipe_fd,word,strlen(word));
+}
+
+int main(int argc, char const *argv[])
+{   
+    signal(SIGUSR1,handler);
+    if (argc != 2) {
+        perror("2 arguments");
+        exit(EXIT_FAILURE);
+    }
+
+    fd = open("p1.txt",O_RDONLY);
+    if(fd == -1){
+        perror("p1 text");
+        exit(EXIT_FAILURE);
+    }
+
+    pipe_fd = atoi(argv[1]);
+
+    printf("p1\n");
+    kill(getppid(),SIGUSR1);
+
+    while(1){
+        sleep(2);
+    }   
+
+    return 0;
+}
+
+proc_p2.cpp
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <string.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+
+int pipe_fd, fd;
+
+void handler(int sig){
+
+    char word[151];
+    char c;
+    int i = 0;
+
+    while(read(fd, &c, 1) > 0){
+        word[i++] = c;
+        word[i]='\0';
+        if(c =='\n') break;  
+    }  
+     
+    write(pipe_fd,word,strlen(word));
+}
+
+int main(int argc, char const *argv[])
+{   
+    signal(SIGUSR1,handler);
+    if (argc != 2) {
+        perror("2 arguments");
+        exit(EXIT_FAILURE);
+    }
+
+    fd = open("p2.txt",O_RDONLY);
+    if(fd == -1){
+        perror("p2 text");
+        exit(EXIT_FAILURE);
+    }
+
+    pipe_fd = atoi(argv[1]);
+
+    printf("p2\n");
+    kill(getppid(),SIGUSR1);
+
+    while(1){
+        sleep(2);
+    } 
+
+    return 0;
+}
+
+
+proc_t.cpp
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <signal.h>
+#include <sys/types.h>
+
+int semaphore_p(int sem_id){
+    struct sembuf sem_b;
+    sem_b.sem_num = 0;  
+    sem_b.sem_op = -1;
+    sem_b.sem_flg = SEM_UNDO;
+    if (semop(sem_id, &sem_b, 1) == -1) {
+        perror("semaphore_p failed\n");
+        return 0;
+    }
+    return 1;
+} 
+
+int semaphore_v(int sem_id){
+    struct sembuf sem_b;
+    sem_b.sem_num = 1;
+    sem_b.sem_op = 1;
+    sem_b.sem_flg = SEM_UNDO;
+    if (semop(sem_id, &sem_b, 1) == -1) {
+        perror("semaphore_v failed\n");
+        return 0;
+    }
+    return 1;
+} 
+
+int main(int argc, char const *argv[])
+{
+    if (argc != 4) {
+        perror("4 arguments");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("T\n");
+    kill(getppid(),SIGUSR1);
+
+    int pipeRead = atoi(argv[1]);
+    int SM1 = atoi(argv[2]);
+    int SEMAFOR1 = atoi(argv[3]);
+    void *shared_memory = shmat(SM1, NULL, 0);
+
+    char c;
+    char buffer[151];
+    int i;
+
+    while(true){
+        i=0;
+        while(read(pipeRead,&c,1) > 0){       
+            if(c == '\n'){
+                buffer[i] ='\0';
+                break;
+            }
+            buffer[i++] = c;    
+        }
+        if(!semaphore_p(SEMAFOR1)) exit(EXIT_FAILURE);
+        strcpy((char*)shared_memory,buffer);  
+        if(!semaphore_v(SEMAFOR1)) exit(EXIT_FAILURE);
+    }
+    
+    return 0;
+}
+
+proc_d.cpp
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
+int semaphore_p(int sem_id){
+    struct sembuf sem_b;
+    sem_b.sem_num = 1;
+    sem_b.sem_op = -1;
+    sem_b.sem_flg = SEM_UNDO;
+    if (semop(sem_id, &sem_b, 1) == -1) {
+        perror("semaphore_p failed\n");
+        return 0;
+    }
+    return 1;
+} 
+
+int semaphore_v(int sem_id){
+    struct sembuf sem_b;
+    sem_b.sem_num = 0;
+    sem_b.sem_op = 1;
+    sem_b.sem_flg = SEM_UNDO;
+    if (semop(sem_id, &sem_b, 1) == -1) {
+        perror("semaphore_v failed\n");
+        return 0;
+    }
+    return 1;
+} 
+
+int main(int argc, char const *argv[])
+{
+    if (argc != 4)
+    {
+        fprintf(stderr, "4 arguments");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("D\n");
+    kill(getppid(), SIGUSR1);
+
+    int SM2 = atoi(argv[1]);
+    int SEMAFOR2 = atoi(argv[2]);
+    void *shared_memory = shmat(SM2, NULL, 0);
+    int port = atoi(argv[3]);
+
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0)
+    {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
+
+    struct sockaddr_in serv_addr;
+    struct hostent *server;
+    char buffer[151];
+
+    server = gethostbyname("127.0.0.1");
+    if (server == NULL)
+    {
+        perror("ERROR, no such host\n");
+        exit(EXIT_FAILURE);
+    }
+
+    bzero((char *)&serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+    serv_addr.sin_port = htons(port);
+
+    int connId;
+    if ((connId = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr) )) < 0)
+    {
+        printf("Connecting to server...\n");
+    }
+
+    while (true)
+    {
+        if (!semaphore_p(SEMAFOR2)) exit(EXIT_FAILURE);
+        
+        bzero(buffer, 151);
+        strcpy(buffer, (char *)shared_memory);
+
+        if (send(sockfd, buffer, sizeof(buffer), 0) < 0)
+        {
+            perror("ERROR writing to socket\n");
+            exit(EXIT_FAILURE);
+        }
+
+        if (!semaphore_v(SEMAFOR2)) exit(EXIT_FAILURE);
+
+    }
+
+    return 0;
+}
+proc_serv2.cpp
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <signal.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
+int main(int argc, char const *argv[])
+{
+    if(argc != 2){
+        perror("2 arguments");
+        exit(EXIT_FAILURE);
+    }
+
+    kill(getppid(), SIGUSR1);
+
+    int sockfd, portno, output, count = 0;
+    char buffer[151];
+    struct sockaddr_in serv_addr;
+    struct sockaddr_in client_addr;
+    socklen_t client_addr_len = sizeof(client_addr);
+
+    // vytvorenie socketu
+    sockfd = socket(PF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0){
+        perror("ERROR opening socket");
+        exit(EXIT_FAILURE);
+    }
+        
+    bzero((char *)&serv_addr, sizeof(serv_addr));
+    portno = atoi(argv[1]);
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(portno);
+
+    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0){
+        perror("ERROR on binding");
+        exit(EXIT_FAILURE);
+    }
+           
+    output = open("serv2.txt", O_CREAT|O_WRONLY, 0666);
+
+    printf("UDP server uspesne vytvoreny na porte %d.\n", portno);
+    
+    while (1)
+    {
+        bzero(buffer, 151);
+
+        if (recvfrom(sockfd, buffer, 151, 0, (struct sockaddr*)&client_addr, &client_addr_len) < 0){
+            perror("ERROR reading from socket");
+            exit(EXIT_FAILURE);
+        }
+
+        if(write(output,&buffer,strlen(buffer)) < 0){
+            perror("ERROR writing");
+            exit(EXIT_FAILURE);
+        }
+            
+        if(write(output,"\n",1) < 0){
+            perror("ERROR writing");
+            exit(EXIT_FAILURE);
+        }
+
+        count++;
+        if(count == 10) break;
+    }
+
+    kill(getppid(), SIGUSR2);
+    return 0;
+}
+
+
