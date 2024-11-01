@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 class SectionNumberingRemoverTest {
 
-  SectionNumberingRemover remover = new SectionNumberingRemover();
+  SectionNumberingRemover remover = new SectionNumberingRemover(true, true);
 
   @Test
   void testRemoveOuterSectionNumbering() {
