@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.regex.Pattern;
 
 // TODO: move this phase after tokenization
+// TODO: change on multiline
 // TODO: also removes IPs
 @Slf4j
 @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class SectionNumberingRemover implements Preprocessor {
     (2.1.1.) subsection
   */
   public static final Pattern SECTION_NUMBERING_PATTERN = Pattern.compile(
-    "^\\s*(\\d{1,3}\\.?(?:\\d{1,4}\\.?)*)?"
+    "^\\s*(\\d{1,3}\\.?(?:\\d{1,4}\\.?)*)?", Pattern.MULTILINE
   );
 
   /*
@@ -36,7 +37,7 @@ public class SectionNumberingRemover implements Preprocessor {
     But this pattern will try to remove all refs with more than 1 dot (1.1.)
    */
   public static final Pattern INLINE_SECTION_NUMBERING = Pattern.compile(
-    "(\\d{1,3}\\.){2}(:?\\d\\.?){0,10}"
+    "(\\d{1,3}\\.){2}(:?\\d\\.?){0,10}", Pattern.MULTILINE
   );
 
   @Override
@@ -46,19 +47,9 @@ public class SectionNumberingRemover implements Preprocessor {
 
   @Override
   public String process(@NonNull String text) {
-    var stringBuilder = new StringBuilder();
-    for (var line : text.split("\n")) {
-      var cleanOuter = removeOuterSectionNumbering(line);
-      var clean = removeInnerSectionNumbering(cleanOuter);
-      if (text.isBlank()) {
-        // TODO: or leave it
-        continue;
-      }
-
-      stringBuilder.append(clean).append("\n");
-    }
-
-    return stringBuilder.toString();
+    return removeInnerSectionNumbering(
+      removeOuterSectionNumbering(text)
+    );
   }
 
   private String removeInnerSectionNumbering(String text) {

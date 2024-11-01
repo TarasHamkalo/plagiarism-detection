@@ -1,6 +1,7 @@
 package dev.taras.hamkalo.plagdet.config;
 
 import dev.taras.hamkalo.plagdet.Analyzer;
+import dev.taras.hamkalo.plagdet.preprocessing.LinkRemover;
 import dev.taras.hamkalo.plagdet.preprocessing.Preprocessor;
 import dev.taras.hamkalo.plagdet.preprocessing.Preprocessors;
 import dev.taras.hamkalo.plagdet.preprocessing.SectionNumberingRemover;
@@ -21,13 +22,18 @@ public class AppConfig {
   }
 
   @Bean
-  public Preprocessor preprocessor(Preprocessor preprocessors) {
+  public Preprocessor preprocessor(Preprocessor... preprocessors) {
     return new Preprocessors(List.of(preprocessors));
   }
 
   @Bean
   public SectionNumberingRemover sectionNumberingRemover() {
     return new SectionNumberingRemover(true, true);
+  }
+
+  @Bean
+  public LinkRemover linkRemover() {
+    return new LinkRemover();
   }
 
   @Bean

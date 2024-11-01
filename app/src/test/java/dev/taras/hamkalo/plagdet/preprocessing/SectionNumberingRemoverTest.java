@@ -35,14 +35,14 @@ class SectionNumberingRemoverTest {
   @Test
   void testCombinedRemoval() {
     String input = "1 Section Title 1.1.1 with inner reference and a simple number 2 2.2 \n2. Another Section 2.2.2";
-    String expected = " Section Title  with inner reference and a simple number 2 2.2 \n Another Section \n";
+    String expected = " Section Title  with inner reference and a simple number 2 2.2 \n Another Section ";
     String actual = remover.process(input);
     assertEquals(expected, actual);
   }
 
   @Test
   void testNoRemovalForNonSectionNumbering() {
-    String input = "This is a text without any section numbering.";
+    String input = "This is a text without any section 1 numbering.";
     String expected = input;
     String actual = remover.process(input);
     assertEquals(expected, actual);
