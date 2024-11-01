@@ -8,6 +8,9 @@ import dev.taras.hamkalo.plagdet.preprocessing.SectionNumberingRemover;
 import dev.taras.hamkalo.plagdet.readers.ContentReader;
 import dev.taras.hamkalo.plagdet.readers.ContentReaders;
 import dev.taras.hamkalo.plagdet.readers.TextReader;
+import dev.taras.hamkalo.plagdet.transformation.TokenPrinter;
+import dev.taras.hamkalo.plagdet.transformation.TokenTagger;
+import dev.taras.hamkalo.plagdet.transformation.Transformer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,8 +20,26 @@ import java.util.List;
 public class AppConfig {
 
   @Bean
-  public Analyzer analyzer(ContentReaders contentReaders, Preprocessor preprocessor) {
-    return new Analyzer(contentReaders, preprocessor);
+  public Analyzer analyzer(ContentReaders contentReaders,
+                           Preprocessor preprocessor,
+                           Transformer transformer
+  ) {
+    return new Analyzer(contentReaders, preprocessor, transformer);
+  }
+
+  @Bean
+  public Transformer transformer() {
+    return Transformer.of(tagger(), printer());
+  }
+
+  @Bean
+  public TokenTagger tagger() {
+    return new TokenTagger();
+  }
+
+  @Bean
+  public TokenPrinter printer() {
+    return new TokenPrinter();
   }
 
   @Bean
