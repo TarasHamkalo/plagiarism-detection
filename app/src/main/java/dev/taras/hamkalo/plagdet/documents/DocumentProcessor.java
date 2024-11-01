@@ -3,9 +3,17 @@ package dev.taras.hamkalo.plagdet.documents;
 import dev.taras.hamkalo.plagdet.preprocessing.Preprocessor;
 import dev.taras.hamkalo.plagdet.readers.ContentReadException;
 import dev.taras.hamkalo.plagdet.readers.ContentReader;
+import dev.taras.hamkalo.plagdet.transformation.Token;
+import dev.taras.hamkalo.plagdet.transformation.Transformer;
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.pipeline.CoreDocument;
+import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class DocumentProcessor {
@@ -17,13 +25,21 @@ public class DocumentProcessor {
 
   Preprocessor preprocessor;
 
+  Transformer transformer;
+
+  StanfordCoreNLP pipeline;
+
   public DocumentProcessor(String path,
                            ContentReader contentReader,
-                           Preprocessor textPreprocessor
+                           Preprocessor textPreprocessor,
+                           Transformer transformer,
+                           StanfordCoreNLP pipeline
   ) {
     this.documentEntry = new DocumentEntry(path);
     this.contentReader = contentReader;
     this.preprocessor = textPreprocessor;
+    this.transformer = transformer;
+    this.pipeline = pipeline;
   }
 
   public DocumentEntry preprocess() throws DocumentProcessingException {
@@ -44,7 +60,18 @@ public class DocumentProcessor {
   }
 
   public DocumentEntry transform() {
-    throw new UnsupportedOperationException("Not implemented yet");
+    var document = new CoreDocument(documentEntry.getNormalizedContent());
+    pipeline.annotate(document);
+    List<Token> tokens = new ArrayList<>();
+    for (CoreLabel tok : document.tokens()) {
+      tokens.add(
+        transformer.transform(new Token(tok.word(), null, tok.beginPosition(), tok.endPosition()))
+      );
+    }
+
+    documentEntry.setTokens(tokens);
+
+    return documentEntry;
   }
 
 }

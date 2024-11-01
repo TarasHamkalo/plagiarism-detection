@@ -1,11 +1,13 @@
 package dev.taras.hamkalo.plagdet.documents;
 
+import dev.taras.hamkalo.plagdet.transformation.Token;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 
 import java.nio.file.Path;
+import java.util.List;
 
 // TODO: make clean method to remove content strings after transformation
 @Data
@@ -21,6 +23,9 @@ public class DocumentEntry {
 
   @NonFinal
   String normalizedContent;
+
+  @NonFinal
+  List<Token> tokens;
 
   public DocumentEntry(String path) {
     this.id = (long) path.hashCode();

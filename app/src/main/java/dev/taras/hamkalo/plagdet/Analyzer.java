@@ -3,12 +3,15 @@ package dev.taras.hamkalo.plagdet;
 import dev.taras.hamkalo.plagdet.documents.DocumentProcessor;
 import dev.taras.hamkalo.plagdet.preprocessing.Preprocessor;
 import dev.taras.hamkalo.plagdet.readers.ContentReader;
+import dev.taras.hamkalo.plagdet.transformation.Transformer;
+import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 // TODO: normal implementation
 @RequiredArgsConstructor
@@ -21,15 +24,34 @@ public class Analyzer {
 
   Preprocessor preprocessor;
 
+  Transformer transformer;
+
   public String analyze(List<String> paths) {
+    Properties props = new Properties();
+    props.setProperty("annotators", "tokenize");
+//    props.setProperty("tokenize.options", "splitHyphenated=true");
+
+//    props.setProperty("tokenize.whitespace", "false"); // This ensures diacritics are not stripped as part of whitespace handling
+//    props.setProperty("tokenize.options", "normalizeParentheses=false,normalizeOtherBrackets=false");
+
+    StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
+
     List<DocumentProcessor> documentProcessors = new ArrayList<>();
     for (String path : paths) {
-      documentProcessors.add(new DocumentProcessor(path, contentReader, preprocessor));
+      documentProcessors.add(
+        new DocumentProcessor(
+          path,
+          contentReader,
+          preprocessor,
+          transformer,
+          pipeline
+        )
+      );
     }
 
     for (var documentProcessor : documentProcessors) {
-      var documentEntry = documentProcessor.preprocess();
-      System.out.println(documentEntry.getNormalizedContent());
+      documentProcessor.preprocess();
+      var documentEntry = documentProcessor.transform();
     }
 
     return "analysis done";
