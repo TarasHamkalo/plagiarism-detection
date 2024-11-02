@@ -8,6 +8,7 @@ import lombok.experimental.NonFinal;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 
 // TODO: make clean method to remove content strings after transformation
 @Data
@@ -27,8 +28,16 @@ public class DocumentEntry {
   @NonFinal
   List<Token> tokens;
 
+  @NonFinal
+  Metadata metadata;
+
   public DocumentEntry(String path) {
     this.id = (long) path.hashCode();
     this.path = Path.of(path);
+  }
+
+  // TODO: store result
+  public String getContentFromTokens() {
+    return tokens.stream().map(Token::getContent).collect(Collectors.joining(" "));
   }
 }

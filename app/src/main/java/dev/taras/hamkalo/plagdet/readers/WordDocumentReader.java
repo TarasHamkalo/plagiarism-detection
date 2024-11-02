@@ -1,24 +1,42 @@
 package dev.taras.hamkalo.plagdet.readers;
 
+import dev.taras.hamkalo.plagdet.documents.Metadata;
+import org.apache.poi.ooxml.POIXMLProperties;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
-public class WordDocumentReader implements ContentReader {
+public class WordDocumentReader implements ContentReader, MetaReader{
 
   @Override
   public String getContent(Path path) throws ContentReadException {
-    try (XWPFDocument doc = new XWPFDocument(
-      Files.newInputStream(path))) {
-
+    try (XWPFDocument doc = new XWPFDocument(Files.newInputStream(path))) {
       XWPFWordExtractor xwpfWordExtractor = new XWPFWordExtractor(doc);
       return xwpfWordExtractor.getText();
 
     } catch (IOException e) {
       throw new ContentReadException(e.getMessage());
+    }
+
+  }
+
+  @Override
+  public Metadata getMetadata(Path path) throws MetadataReadException {
+    try (XWPFDocument doc = new XWPFDocument(Files.newInputStream(path))) {
+      var properties = doc.getProperties();
+      var coreProps = properties.getCoreProperties();
+      var extProps = properties.getExtendedProperties();
+
+      var totalEditTime = Optional.ofNullable(extProps.getTotalTime()).orElse(0);
+      var author = Optional.ofNullable(coreProps.getCreator()).orElse("unknown");
+      return new Metadata(author, totalEditTime);
+
+    } catch (IOException e) {
+      throw new MetadataReadException(e.getMessage());
     }
 
   }
