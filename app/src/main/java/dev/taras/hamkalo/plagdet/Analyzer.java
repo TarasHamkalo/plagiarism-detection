@@ -1,9 +1,10 @@
 package dev.taras.hamkalo.plagdet;
 
 import dev.taras.hamkalo.plagdet.documents.DocumentProcessor;
-import dev.taras.hamkalo.plagdet.preprocessing.Preprocessor;
+import dev.taras.hamkalo.plagdet.preprocessing.cleaner.Preprocessor;
+import dev.taras.hamkalo.plagdet.preprocessing.filter.TokenFilter;
 import dev.taras.hamkalo.plagdet.readers.ContentReader;
-import dev.taras.hamkalo.plagdet.transformation.Transformer;
+import dev.taras.hamkalo.plagdet.preprocessing.transformation.Transformer;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,8 @@ public class Analyzer {
 
   Transformer transformer;
 
+  TokenFilter tokenFilter;
+
   public String analyze(List<String> paths) {
     Properties props = new Properties();
     props.setProperty("annotators", "tokenize");
@@ -44,6 +47,7 @@ public class Analyzer {
           contentReader,
           preprocessor,
           transformer,
+          tokenFilter,
           pipeline
         )
       );
@@ -52,6 +56,9 @@ public class Analyzer {
     for (var documentProcessor : documentProcessors) {
       documentProcessor.preprocess();
       var documentEntry = documentProcessor.transform();
+      for (var token : documentEntry.getTokens()) {
+        System.out.println(token);
+      }
     }
 
     return "analysis done";

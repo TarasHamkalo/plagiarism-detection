@@ -1,6 +1,6 @@
 package dev.taras.hamkalo.plagdet.documents;
 
-import dev.taras.hamkalo.plagdet.transformation.Token;
+import dev.taras.hamkalo.plagdet.preprocessing.Token;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
