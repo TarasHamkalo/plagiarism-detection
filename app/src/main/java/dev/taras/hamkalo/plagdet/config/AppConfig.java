@@ -1,17 +1,14 @@
 package dev.taras.hamkalo.plagdet.config;
 
 import dev.taras.hamkalo.plagdet.Analyzer;
-import dev.taras.hamkalo.plagdet.preprocessing.Token;
+import dev.taras.hamkalo.plagdet.index.LuceneIndex;
 import dev.taras.hamkalo.plagdet.preprocessing.cleaner.LinkRemover;
 import dev.taras.hamkalo.plagdet.preprocessing.cleaner.Preprocessor;
 import dev.taras.hamkalo.plagdet.preprocessing.cleaner.Preprocessors;
 import dev.taras.hamkalo.plagdet.preprocessing.cleaner.SectionNumberingRemover;
 import dev.taras.hamkalo.plagdet.preprocessing.filter.*;
 import dev.taras.hamkalo.plagdet.preprocessing.transformation.*;
-import dev.taras.hamkalo.plagdet.readers.ContentReader;
-import dev.taras.hamkalo.plagdet.readers.ContentReaders;
-import dev.taras.hamkalo.plagdet.readers.TextReader;
-import dev.taras.hamkalo.plagdet.readers.WordDocumentReader;
+import dev.taras.hamkalo.plagdet.readers.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,9 +21,10 @@ public class AppConfig {
   public Analyzer analyzer(ContentReaders contentReaders,
                            Preprocessor preprocessor,
                            Transformer transformer,
-                           TokenFilter filter
+                           TokenFilter filter,
+                           MetaReader metaReader
   ) {
-    return new Analyzer(contentReaders, preprocessor, transformer, filter);
+    return new Analyzer(contentReaders, preprocessor, transformer, filter, metaReader);
   }
 
   @Bean
@@ -69,7 +67,7 @@ public class AppConfig {
   public TokenTagger tagger() {
     return new TokenTagger();
   }
-//
+
 //  @Bean
 //  public TokenPrinter printer() {
 //    return new TokenPrinter();
@@ -101,8 +99,18 @@ public class AppConfig {
   }
 
   @Bean
+  public MetaReader metaReader() {
+    return wordDocumentReader();
+  }
+
+  @Bean
   public TextReader textReader() {
     return new TextReader();
+  }
+
+  @Bean
+  public LuceneIndex luceneIndex() {
+    return new LuceneIndex();
   }
 
 }

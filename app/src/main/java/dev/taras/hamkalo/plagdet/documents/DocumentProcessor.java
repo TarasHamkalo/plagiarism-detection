@@ -1,11 +1,13 @@
 package dev.taras.hamkalo.plagdet.documents;
 
+import dev.taras.hamkalo.plagdet.preprocessing.Token;
 import dev.taras.hamkalo.plagdet.preprocessing.cleaner.Preprocessor;
 import dev.taras.hamkalo.plagdet.preprocessing.filter.TokenFilter;
+import dev.taras.hamkalo.plagdet.preprocessing.transformation.Transformer;
 import dev.taras.hamkalo.plagdet.readers.ContentReadException;
 import dev.taras.hamkalo.plagdet.readers.ContentReader;
-import dev.taras.hamkalo.plagdet.preprocessing.Token;
-import dev.taras.hamkalo.plagdet.preprocessing.transformation.Transformer;
+import dev.taras.hamkalo.plagdet.readers.MetaReader;
+import dev.taras.hamkalo.plagdet.readers.MetadataReadException;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
@@ -30,6 +32,8 @@ public class DocumentProcessor {
 
   TokenFilter tokenFilter;
 
+  MetaReader metaReader;
+
   StanfordCoreNLP pipeline;
 
   public DocumentProcessor(String path,
@@ -37,6 +41,7 @@ public class DocumentProcessor {
                            Preprocessor textPreprocessor,
                            Transformer transformer,
                            TokenFilter tokenFilter,
+                           MetaReader metaReader,
                            StanfordCoreNLP pipeline
   ) {
     this.documentEntry = new DocumentEntry(path);
@@ -44,14 +49,17 @@ public class DocumentProcessor {
     this.preprocessor = textPreprocessor;
     this.transformer = transformer;
     this.tokenFilter = tokenFilter;
+    this.metaReader = metaReader;
     this.pipeline = pipeline;
   }
 
   public DocumentEntry preprocess() throws DocumentProcessingException {
     try {
       var rawContent = contentReader.getContent(documentEntry.getPath());
+      var meta = metaReader.getMetadata(documentEntry.getPath());
       documentEntry.setContent(rawContent);
-    } catch (ContentReadException e) {
+      documentEntry.setMetadata(meta);
+    } catch (ContentReadException | MetadataReadException e) {
       throw new DocumentProcessingException(
         String.format("Reading failed for document %s", documentEntry.getPath().toString())
       );
@@ -79,7 +87,6 @@ public class DocumentProcessor {
     }
 
     documentEntry.setTokens(tokens);
-
     return documentEntry;
   }
 
