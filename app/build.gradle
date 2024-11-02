@@ -10,6 +10,12 @@ dependencies {
   implementation 'edu.stanford.nlp:stanford-corenlp:4.5.7'
 
   implementation 'org.apache.commons:commons-lang3:3.16.0'
+
+  implementation 'org.docx4j:docx4j:6.1.2'
+
+  implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
+
+  implementation 'org.apache.poi:poi-ooxml:4.1.2'
 }
 
 application {
