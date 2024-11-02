@@ -1,5 +1,6 @@
-package dev.taras.hamkalo.plagdet.transformation;
+package dev.taras.hamkalo.plagdet.preprocessing.transformation;
 
+import dev.taras.hamkalo.plagdet.preprocessing.Token;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;

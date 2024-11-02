@@ -1,4 +1,4 @@
-package dev.taras.hamkalo.plagdet.preprocessing;
+package dev.taras.hamkalo.plagdet.preprocessing.cleaner;
 
 public class NopPreprocessor implements Preprocessor {
 

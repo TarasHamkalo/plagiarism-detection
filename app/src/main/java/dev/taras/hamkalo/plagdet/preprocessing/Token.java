@@ -1,4 +1,4 @@
-package dev.taras.hamkalo.plagdet.transformation;
+package dev.taras.hamkalo.plagdet.preprocessing;
 
 import lombok.AccessLevel;
 import lombok.Value;

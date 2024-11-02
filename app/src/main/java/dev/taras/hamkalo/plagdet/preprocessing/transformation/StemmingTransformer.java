@@ -1,6 +1,7 @@
-package dev.taras.hamkalo.plagdet.transformation;
+package dev.taras.hamkalo.plagdet.preprocessing.transformation;
 
-import dev.taras.hamkalo.plagdet.transformation.stemmers.EssentialDataStemmer;
+import dev.taras.hamkalo.plagdet.preprocessing.Token;
+import dev.taras.hamkalo.plagdet.preprocessing.transformation.stemmers.EssentialDataStemmer;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 

@@ -1,13 +1,10 @@
-package dev.taras.hamkalo.plagdet.preprocessing;
+package dev.taras.hamkalo.plagdet.preprocessing.cleaner;
 
-import dev.taras.hamkalo.plagdet.readers.ContentReadException;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.apache.commons.io.FilenameUtils;
 
-import java.nio.file.Path;
 import java.util.List;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)

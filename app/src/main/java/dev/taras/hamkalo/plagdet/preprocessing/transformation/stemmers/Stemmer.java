@@ -1,4 +1,4 @@
-package dev.taras.hamkalo.plagdet.transformation.stemmers;
+package dev.taras.hamkalo.plagdet.preprocessing.transformation.stemmers;
 
 
 /*

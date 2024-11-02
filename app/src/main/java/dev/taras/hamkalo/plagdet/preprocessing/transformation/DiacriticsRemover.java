@@ -1,5 +1,6 @@
-package dev.taras.hamkalo.plagdet.transformation;
+package dev.taras.hamkalo.plagdet.preprocessing.transformation;
 
+import dev.taras.hamkalo.plagdet.preprocessing.Token;
 import org.apache.commons.lang3.StringUtils;
 
 public class DiacriticsRemover extends Transformer {
