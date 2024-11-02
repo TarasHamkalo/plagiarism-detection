@@ -19,7 +19,7 @@ public class TokenTagger extends Transformer {
       return Token.TokenType.PUNCT;
     } else if (NumberUtils.isParsable(normalized)) {
       return Token.TokenType.NUMBER;
-    } else if (normalized.matches("\\w+")) {
+    } else if (normalized.matches("\\w+")) { // Pattern.UNICODE_CHARACTER_CLASS
       return Token.TokenType.TEXT;
     }
 

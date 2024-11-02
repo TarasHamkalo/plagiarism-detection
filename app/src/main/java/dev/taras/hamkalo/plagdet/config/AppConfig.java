@@ -8,9 +8,7 @@ import dev.taras.hamkalo.plagdet.preprocessing.SectionNumberingRemover;
 import dev.taras.hamkalo.plagdet.readers.ContentReader;
 import dev.taras.hamkalo.plagdet.readers.ContentReaders;
 import dev.taras.hamkalo.plagdet.readers.TextReader;
-import dev.taras.hamkalo.plagdet.transformation.TokenPrinter;
-import dev.taras.hamkalo.plagdet.transformation.TokenTagger;
-import dev.taras.hamkalo.plagdet.transformation.Transformer;
+import dev.taras.hamkalo.plagdet.transformation.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -29,7 +27,28 @@ public class AppConfig {
 
   @Bean
   public Transformer transformer() {
-    return Transformer.of(tagger(), printer());
+    return Transformer.of(
+      tagger(),
+      lowercase(),
+      stemmer(),
+      diacriticsRemover(),
+      printer()
+    );
+  }
+
+  @Bean
+  public StemmingTransformer stemmer() {
+    return new StemmingTransformer();
+  }
+
+  @Bean
+  public LowercaseTransformer lowercase() {
+    return new LowercaseTransformer();
+  }
+
+  @Bean
+  public DiacriticsRemover diacriticsRemover() {
+    return new DiacriticsRemover();
   }
 
   @Bean
