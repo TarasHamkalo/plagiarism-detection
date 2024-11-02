@@ -16,6 +16,22 @@ dependencies {
   implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
 
   implementation 'org.apache.poi:poi-ooxml:4.1.2'
+
+  // https://mvnrepository.com/artifact/org.apache.lucene/lucene-core
+  implementation 'org.apache.lucene:lucene-core:8.10.1'
+
+  // https://mvnrepository.com/artifact/org.apache.lucene/lucene-queryparser
+  implementation 'org.apache.lucene:lucene-queryparser:8.10.1'
+
+  // https://mvnrepository.com/artifact/org.apache.lucene/lucene-analyzers-common
+  implementation 'org.apache.lucene:lucene-analyzers-common:8.10.1'
+//
+//// https://mvnrepository.com/artifact/org.apache.lucene/lucene-analyzers
+//
+//  implementation 'org.apache.lucene:lucene-analyzers:3.6.2'
+//
+//// https://mvnrepository.com/artifact/org.apache.lucene/lucene-misc
+//  implementation 'org.apache.lucene:lucene-misc:10.0.0'
 }
 
 application {
