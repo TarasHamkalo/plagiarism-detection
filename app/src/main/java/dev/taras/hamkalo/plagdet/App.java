@@ -15,10 +15,14 @@ public class App {
   @Bean
   public CommandLineRunner commandLineRunner(Analyzer analyzer) {
     return strings -> {
-//      List<String> expandedPaths = expand("/home/taras-hamkalo/other/data/23-24-ipc-docx/sk");
-//      System.out.println(analyzer.analyze(expandedPaths));
+//      List<String> expandedPaths = Utils.expand("/home/taras-hamkalo/other/data/23-24-ipc-docx/sk");
+//      List<String> expandedPaths = Utils.expand("/home/taras-hamkalo/other/data/ipc/meged-before-23-24/docx");
 
-      var path = "/home/taras-hamkalo/other/data/23-24-ipc-docx/sk/2016-web-posted.docx";
+//      System.out.println(analyzer.addToIndex(expandedPaths));
+
+//      var path = "/home/taras-hamkalo/other/data/23-24-ipc-docx/sk/2016-web-posted.docx";
+//      analyzer.findSimilarTo(path);
+      var path = "/home/taras-hamkalo/other/data/ipc/23-24/text/3465931603.txt";
       analyzer.findSimilarTo(path);
     };
   }
