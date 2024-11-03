@@ -10,6 +10,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 
+// TODO: problem with order of calling, as this filter is called after transformation which stems words
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class StopWordsFilter extends TokenFilter {
 
