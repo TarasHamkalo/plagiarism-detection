@@ -1,3 +1,5 @@
+package demos;
+
 import dev.taras.hamkalo.plagdet.readers.WordDocumentReader;
 import lombok.AccessLevel;
 import lombok.SneakyThrows;
@@ -49,10 +51,10 @@ public class LuceneDemo {
 
     //This query parser will search in title field by default if no field is specified.
     //Also, this will use our Standard analyzer to create terms for the query.
-    QueryParser queryParser = new QueryParser("title", analyzer);
+    QueryParser queryParser = new QueryParser("search_content", analyzer);
     //We pass in the title as it is to the query parser.
     // This will create a term query for us on the terms in our title.
-    Query query = queryParser.parse("title:20");
+    Query query = queryParser.parse("vladyslav");
 
 
     //We perform the search and get top 10 search results.
@@ -70,9 +72,10 @@ public class LuceneDemo {
       float score = scoreDoc.score;
       System.out.println(score);
       Document movie = indexSearcher.doc(docId);
-      System.out.println(String.format("Found: %s", movie.get("title")));
-      System.out.println(String.format("Found: %s", movie.get("content")));
-      System.out.println(String.format("Found: %s", movie.get("content_norm")));
+      System.out.println(String.format("Found: %s", movie.get("path")));
+//      System.out.println(String.format("Found: %s", movie.get("title")));
+//      System.out.println(String.format("Found: %s", movie.get("content")));
+//      System.out.println(String.format("Found: %s", movie.get("content_norm")));
     }
 
     indexReader.close();

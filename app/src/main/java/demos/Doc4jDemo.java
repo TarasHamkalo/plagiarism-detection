@@ -1,3 +1,5 @@
+package demos;
+
 import lombok.SneakyThrows;
 import org.docx4j.openpackaging.exceptions.Docx4JException;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
