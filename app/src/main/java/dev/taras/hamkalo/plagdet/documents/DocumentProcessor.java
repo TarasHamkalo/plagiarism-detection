@@ -8,6 +8,7 @@ import dev.taras.hamkalo.plagdet.readers.ContentReadException;
 import dev.taras.hamkalo.plagdet.readers.ContentReader;
 import dev.taras.hamkalo.plagdet.readers.MetaReader;
 import dev.taras.hamkalo.plagdet.readers.MetadataReadException;
+import dev.taras.hamkalo.plagdet.util.Utils;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
@@ -56,12 +57,20 @@ public class DocumentProcessor {
   public DocumentProcessor preprocess() throws DocumentProcessingException {
     try {
       var rawContent = contentReader.getContent(documentEntry.getPath());
-      var meta = metaReader.getMetadata(documentEntry.getPath());
       documentEntry.setContent(rawContent);
-      documentEntry.setMetadata(meta);
+      // TODO: rewrite with other pattern
+      if (metaReader.supports(Utils.getExtension(documentEntry.getPath()))) {
+        var meta = metaReader.getMetadata(documentEntry.getPath());
+        documentEntry.setMetadata(meta);
+      }
     } catch (ContentReadException | MetadataReadException e) {
+
       throw new DocumentProcessingException(
-        String.format("Reading failed for document %s", documentEntry.getPath().toString())
+        String.format(
+          "Reading failed for document %s. %s",
+          documentEntry.getPath().toString(),
+          e.getMessage()
+        )
       );
     }
 
