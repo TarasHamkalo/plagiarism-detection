@@ -2,6 +2,7 @@ package dev.taras.hamkalo.plagdet.preprocessing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import dev.taras.hamkalo.plagdet.preprocessing.cleaner.LinkRemover;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.junit.jupiter.api.Test;

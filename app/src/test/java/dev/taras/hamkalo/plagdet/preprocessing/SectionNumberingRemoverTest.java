@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.preprocessing;
 
+import dev.taras.hamkalo.plagdet.preprocessing.cleaner.SectionNumberingRemover;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.junit.jupiter.api.Test;
