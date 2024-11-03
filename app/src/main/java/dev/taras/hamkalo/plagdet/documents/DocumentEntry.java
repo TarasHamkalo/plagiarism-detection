@@ -23,9 +23,6 @@ public class DocumentEntry {
   String content;
 
   @NonFinal
-  String normalizedContent;
-
-  @NonFinal
   List<Token> tokens;
 
   @NonFinal

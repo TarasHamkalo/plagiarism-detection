@@ -53,7 +53,7 @@ public class DocumentProcessor {
     this.pipeline = pipeline;
   }
 
-  public DocumentEntry preprocess() throws DocumentProcessingException {
+  public DocumentProcessor preprocess() throws DocumentProcessingException {
     try {
       var rawContent = contentReader.getContent(documentEntry.getPath());
       var meta = metaReader.getMetadata(documentEntry.getPath());
@@ -65,15 +65,11 @@ public class DocumentProcessor {
       );
     }
 
-    // TODO: catch exceptions
-    var normalizedContent = preprocessor.process(documentEntry.getContent());
-    documentEntry.setNormalizedContent(normalizedContent);
-
-    return documentEntry;
+    return this;
   }
 
   public DocumentEntry transform() {
-    var document = new CoreDocument(documentEntry.getNormalizedContent());
+    var document = new CoreDocument(documentEntry.getContent());
     pipeline.annotate(document);
     List<Token> tokens = new ArrayList<>();
     for (CoreLabel tok : document.tokens()) {

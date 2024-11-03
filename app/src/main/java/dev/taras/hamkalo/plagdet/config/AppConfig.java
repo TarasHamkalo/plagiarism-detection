@@ -1,39 +1,33 @@
 package dev.taras.hamkalo.plagdet.config;
 
 import dev.taras.hamkalo.plagdet.Analyzer;
-import dev.taras.hamkalo.plagdet.index.LuceneIndex;
-import dev.taras.hamkalo.plagdet.preprocessing.cleaner.LinkRemover;
-import dev.taras.hamkalo.plagdet.preprocessing.cleaner.Preprocessor;
-import dev.taras.hamkalo.plagdet.preprocessing.cleaner.Preprocessors;
-import dev.taras.hamkalo.plagdet.preprocessing.cleaner.SectionNumberingRemover;
+import dev.taras.hamkalo.plagdet.index.lucene.LuceneIndex;
+import dev.taras.hamkalo.plagdet.preprocessing.cleaner.*;
 import dev.taras.hamkalo.plagdet.preprocessing.filter.*;
 import dev.taras.hamkalo.plagdet.preprocessing.transformation.*;
 import dev.taras.hamkalo.plagdet.readers.*;
+import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import java.util.Properties;
 
 @Configuration
 public class AppConfig {
 
   @Bean
-  public Analyzer analyzer(ContentReaders contentReaders,
-                           Preprocessor preprocessor,
-                           Transformer transformer,
-                           TokenFilter filter,
-                           MetaReader metaReader
-  ) {
-    return new Analyzer(contentReaders, preprocessor, transformer, filter, metaReader);
+  public LuceneIndex luceneIndex() {
+    return new LuceneIndex();
   }
 
   @Bean
   public Transformer transformer() {
     return Transformer.of(
-      tagger(),
-      lowercase(),
-      stemmer(),
-      diacriticsRemover()
+      new TokenTagger(),
+      new LowercaseTransformer(),
+      new StemmingTransformer(),
+      new DiacriticsRemover()
     );
   }
 
@@ -47,45 +41,17 @@ public class AppConfig {
     );
   }
 
-
   @Bean
-  public StemmingTransformer stemmer() {
-    return new StemmingTransformer();
+  public StanfordCoreNLP pipeline() {
+    Properties props = new Properties();
+    props.setProperty("annotators", "tokenize");
+    return new StanfordCoreNLP(props);
   }
-
-  @Bean
-  public LowercaseTransformer lowercase() {
-    return new LowercaseTransformer();
-  }
-
-  @Bean
-  public DiacriticsRemover diacriticsRemover() {
-    return new DiacriticsRemover();
-  }
-
-  @Bean
-  public TokenTagger tagger() {
-    return new TokenTagger();
-  }
-
-//  @Bean
-//  public TokenPrinter printer() {
-//    return new TokenPrinter();
-//  }
 
   @Bean
   public Preprocessor preprocessor(Preprocessor... preprocessors) {
-    return new Preprocessors(List.of(preprocessors));
-  }
-
-  @Bean
-  public SectionNumberingRemover sectionNumberingRemover() {
-    return new SectionNumberingRemover(true, true);
-  }
-
-  @Bean
-  public LinkRemover linkRemover() {
-    return new LinkRemover();
+    return new NopPreprocessor();
+//    return new Preprocessors(List.of(preprocessors));
   }
 
   @Bean
@@ -108,9 +74,5 @@ public class AppConfig {
     return new TextReader();
   }
 
-  @Bean
-  public LuceneIndex luceneIndex() {
-    return new LuceneIndex();
-  }
 
 }
