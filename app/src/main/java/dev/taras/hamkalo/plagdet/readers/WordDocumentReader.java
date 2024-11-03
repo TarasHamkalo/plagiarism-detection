@@ -1,7 +1,7 @@
 package dev.taras.hamkalo.plagdet.readers;
 
 import dev.taras.hamkalo.plagdet.documents.Metadata;
-import org.apache.poi.ooxml.POIXMLProperties;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 
@@ -15,6 +15,7 @@ public class WordDocumentReader implements ContentReader, MetaReader{
   @Override
   public String getContent(Path path) throws ContentReadException {
     try (XWPFDocument doc = new XWPFDocument(Files.newInputStream(path))) {
+      ZipSecureFile.setMinInflateRatio(0);
       XWPFWordExtractor xwpfWordExtractor = new XWPFWordExtractor(doc);
       return xwpfWordExtractor.getText();
 
@@ -35,7 +36,8 @@ public class WordDocumentReader implements ContentReader, MetaReader{
       var author = Optional.ofNullable(coreProps.getCreator()).orElse("unknown");
       return new Metadata(author, totalEditTime);
 
-    } catch (IOException e) {
+      // TODO: exceptions
+    } catch (Exception e) {
       throw new MetadataReadException(e.getMessage());
     }
 

@@ -1,4 +1,4 @@
 logging:
   level:
     dev.taras.hamkalo.plagdet: trace
-    root: debug
+#    root: debug

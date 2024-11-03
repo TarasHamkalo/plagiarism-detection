@@ -1,5 +1,7 @@
 package dev.taras.hamkalo.plagdet.util;
 
+import org.apache.commons.io.FilenameUtils;
+
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -24,4 +26,7 @@ public abstract class Utils {
     return resultPaths;
   }
 
+  public static String getExtension(Path path) {
+    return FilenameUtils.getExtension(path.getFileName().toString());
+  }
 }
