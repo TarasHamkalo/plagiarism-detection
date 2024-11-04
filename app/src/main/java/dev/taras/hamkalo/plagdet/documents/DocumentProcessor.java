@@ -15,10 +15,12 @@ import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class DocumentProcessor {
 
@@ -58,13 +60,7 @@ public class DocumentProcessor {
     try {
       var rawContent = contentReader.getContent(documentEntry.getPath());
       documentEntry.setContent(rawContent);
-      // TODO: rewrite with other pattern
-      if (metaReader.supports(Utils.getExtension(documentEntry.getPath()))) {
-        var meta = metaReader.getMetadata(documentEntry.getPath());
-        documentEntry.setMetadata(meta);
-      }
-    } catch (ContentReadException | MetadataReadException e) {
-
+    } catch (ContentReadException  e) {
       throw new DocumentProcessingException(
         String.format(
           "Reading failed for document %s. %s",
@@ -72,6 +68,16 @@ public class DocumentProcessor {
           e.getMessage()
         )
       );
+    }
+
+    try {
+      var meta = metaReader.getMetadata(documentEntry.getPath());
+      documentEntry.setMetadata(meta);
+    } catch (MetadataReadException e) {
+      log.warn(
+        "Metadata was not read for document {}.\n{}",  documentEntry.getPath(), e.getMessage()
+      );
+
     }
 
     return this;

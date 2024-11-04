@@ -65,8 +65,8 @@ public class AppConfig {
   }
 
   @Bean
-  public MetaReader metaReader() {
-    return wordDocumentReader();
+  public MetaReader metaReaders() {
+    return new MetaReaders(List.of(wordDocumentReader()));
   }
 
   @Bean

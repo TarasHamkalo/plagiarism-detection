@@ -32,9 +32,10 @@ public class WordDocumentReader implements ContentReader, MetaReader{
       var coreProps = properties.getCoreProperties();
       var extProps = properties.getExtendedProperties();
 
-      var totalEditTime = Optional.ofNullable(extProps.getTotalTime()).orElse(0);
-      var author = Optional.ofNullable(coreProps.getCreator()).orElse("unknown");
-      return new Metadata(author, totalEditTime);
+      var totalEditTime = Optional.of(extProps.getTotalTime()).orElse(0);
+      var author = Optional.ofNullable(coreProps.getCreator()).orElse(Metadata.NONE.getAuthorName());
+      var creationDate = coreProps.getCreated();
+      return new Metadata(author, creationDate, totalEditTime);
 
       // TODO: exceptions
     } catch (Exception e) {
@@ -45,7 +46,7 @@ public class WordDocumentReader implements ContentReader, MetaReader{
 
   @Override
   public boolean supports(String extension) {
-    return "DOCX".equals(extension.toUpperCase());
+    return "DOCX".equalsIgnoreCase(extension);
   }
 
 }
