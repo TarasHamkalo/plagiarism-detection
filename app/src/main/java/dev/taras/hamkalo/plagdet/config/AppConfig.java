@@ -1,7 +1,7 @@
 package dev.taras.hamkalo.plagdet.config;
 
 import dev.taras.hamkalo.plagdet.index.FileSystemIndex;
-import dev.taras.hamkalo.plagdet.index.IndexingSequence;
+import dev.taras.hamkalo.plagdet.index.IndexSequence;
 import dev.taras.hamkalo.plagdet.index.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.index.metadata.DocumentRepository;
 import dev.taras.hamkalo.plagdet.index.metadata.MetadataIndex;
@@ -21,12 +21,19 @@ import java.util.Properties;
 public class AppConfig {
 
   @Bean
-  public IndexingSequence indexingSequence(MetadataIndex metadataIndex) {
-    return new IndexingSequence(List.of(
-      new FileSystemIndex(),
+  public IndexSequence indexSequence(FileSystemIndex fileSystemIndex, MetadataIndex metadataIndex) {
+    var pushSequence = List.of(
+      fileSystemIndex,
       metadataIndex,
       new LuceneIndex()
-    ));
+    );
+
+    return new IndexSequence(fileSystemIndex, pushSequence.subList(1, 3), pushSequence);
+  }
+
+  @Bean
+  public FileSystemIndex fileSystemIndex(ContentReaders contentReaders) {
+    return new FileSystemIndex(contentReaders);
   }
 
   @Bean

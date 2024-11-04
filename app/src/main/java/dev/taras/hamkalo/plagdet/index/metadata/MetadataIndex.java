@@ -29,7 +29,7 @@ public class MetadataIndex implements DocumentIndex {
   }
 
   @Override
-  public List<DocumentEntry> retrieveSimilarByContent(DocumentEntry documentEntry) {
+  public List<DocumentEntry> retrieveSimilar(DocumentEntry documentEntry) {
     var authorName = documentEntry.getMetadata().getAuthorName();
     var documents = documentRepository.findByAuthorName(authorName);
     if (documents.isEmpty()) {

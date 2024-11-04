@@ -74,7 +74,7 @@ public class LuceneIndex implements DocumentIndex {
   }
 
   @Override
-  public List<DocumentEntry> retrieveSimilarByContent(DocumentEntry documentEntry) {
+  public List<DocumentEntry> retrieveSimilar(DocumentEntry documentEntry) {
     List<DocumentEntry> results = new ArrayList<>();
     try (IndexReader reader = DirectoryReader.open(indexDirectory)) {
       IndexSearcher searcher = new IndexSearcher(reader);

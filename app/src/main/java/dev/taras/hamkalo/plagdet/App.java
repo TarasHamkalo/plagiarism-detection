@@ -17,6 +17,7 @@ public class App {
   public CommandLineRunner commandLineRunner(Analyzer analyzer) {
     return strings -> {
 //      List<String> expandedPaths = Utils.expand("/home/taras-hamkalo/other/data/23-24-ipc-docx/sk");
+
       var expandedPaths = Utils.expand("/home/taras-hamkalo/other/data/ipc/meged-before-23-24/docx");
       System.out.println(analyzer.addToIndex(expandedPaths));
 

@@ -2,8 +2,11 @@ package dev.taras.hamkalo.plagdet.index;
 
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.Metadata;
+import dev.taras.hamkalo.plagdet.readers.ContentReader;
+import dev.taras.hamkalo.plagdet.readers.ContentReaders;
 import dev.taras.hamkalo.plagdet.util.Utils;
 import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -18,10 +21,13 @@ import java.nio.file.Path;
 import java.util.List;
 
 @Slf4j
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class FileSystemIndex implements DocumentIndex {
 
   public static final String FS_INDEX_PATH = "SIMPLE_FS_INDEX/";
+
+  ContentReaders contentReaders;
 
   @Override
   @SneakyThrows
@@ -68,11 +74,10 @@ public class FileSystemIndex implements DocumentIndex {
    */
   @Override
   @SneakyThrows
-  public List<DocumentEntry> retrieveSimilarByContent(DocumentEntry documentEntry) {
-    var ext = Utils.getExtension(documentEntry.getPath());
-    var location = getIndexLocation(documentEntry, ext);
+  public List<DocumentEntry> retrieveSimilar(DocumentEntry documentEntry) {
     // TODO: location not exist check, corrupted index!
-    String fileContent = FileUtils.readFileToString(new File(location));
+    String fileContent = contentReaders.getContent(documentEntry.getPath());
+    // TODO: readers -> to content -> preprocess
     documentEntry.setContent(fileContent);
 
     return List.of(documentEntry);
