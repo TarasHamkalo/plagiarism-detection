@@ -4,7 +4,9 @@ import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentProcessor;
 import dev.taras.hamkalo.plagdet.index.DocumentIndex;
 import dev.taras.hamkalo.plagdet.index.FileSystemIndex;
+import dev.taras.hamkalo.plagdet.index.IndexingSequence;
 import dev.taras.hamkalo.plagdet.index.lucene.LuceneIndex;
+import dev.taras.hamkalo.plagdet.index.metadata.MetadataIndex;
 import dev.taras.hamkalo.plagdet.preprocessing.cleaner.Preprocessor;
 import dev.taras.hamkalo.plagdet.preprocessing.filter.TokenFilter;
 import dev.taras.hamkalo.plagdet.readers.ContentReader;
@@ -36,9 +38,12 @@ public class Analyzer {
 
   TokenFilter tokenFilter;
 
-  MetaReader metaReader;
+  MetaReader metaReaders;
 
   StanfordCoreNLP pipeline;
+
+  // TODO: can be local
+  IndexingSequence indexingSequence;
 
   public void findSimilarTo(String path) {
     DocumentIndex documentIndex = new LuceneIndex();
@@ -52,9 +57,6 @@ public class Analyzer {
   }
 
   public String addToIndex(List<String> paths) {
-    DocumentIndex luceneIndex = new LuceneIndex();
-    DocumentIndex fsIndex = new FileSystemIndex();
-
     List<DocumentProcessor> documentProcessors = new ArrayList<>();
     for (String path : paths) {
       documentProcessors.add(
@@ -70,8 +72,7 @@ public class Analyzer {
 
       documentEntries.add(documentEntry);
 
-      luceneIndex.pushToIndex(documentEntry);
-      fsIndex.pushToIndex(documentEntry);
+      indexingSequence.pushToIndex(documentEntry);
     }
 
     return "added to index " + documentEntries.size();
@@ -84,7 +85,7 @@ public class Analyzer {
       preprocessor,
       transformer,
       tokenFilter,
-      metaReader,
+      metaReaders,
       pipeline
     );
   }

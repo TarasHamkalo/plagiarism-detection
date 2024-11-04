@@ -1,8 +1,12 @@
 package dev.taras.hamkalo.plagdet.config;
 
-import dev.taras.hamkalo.plagdet.Analyzer;
+import dev.taras.hamkalo.plagdet.index.FileSystemIndex;
+import dev.taras.hamkalo.plagdet.index.IndexingSequence;
 import dev.taras.hamkalo.plagdet.index.lucene.LuceneIndex;
-import dev.taras.hamkalo.plagdet.preprocessing.cleaner.*;
+import dev.taras.hamkalo.plagdet.index.metadata.DocumentRepository;
+import dev.taras.hamkalo.plagdet.index.metadata.MetadataIndex;
+import dev.taras.hamkalo.plagdet.preprocessing.cleaner.NopPreprocessor;
+import dev.taras.hamkalo.plagdet.preprocessing.cleaner.Preprocessor;
 import dev.taras.hamkalo.plagdet.preprocessing.filter.*;
 import dev.taras.hamkalo.plagdet.preprocessing.transformation.*;
 import dev.taras.hamkalo.plagdet.readers.*;
@@ -17,8 +21,17 @@ import java.util.Properties;
 public class AppConfig {
 
   @Bean
-  public LuceneIndex luceneIndex() {
-    return new LuceneIndex();
+  public IndexingSequence indexingSequence(MetadataIndex metadataIndex) {
+    return new IndexingSequence(List.of(
+      new FileSystemIndex(),
+      metadataIndex,
+      new LuceneIndex()
+    ));
+  }
+
+  @Bean
+  public MetadataIndex metadataIndex(DocumentRepository documentRepository) {
+    return new MetadataIndex(documentRepository);
   }
 
   @Bean

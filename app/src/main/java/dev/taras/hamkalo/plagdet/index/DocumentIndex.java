@@ -11,6 +11,4 @@ public interface DocumentIndex {
 
   List<DocumentEntry> retrieveSimilarByContent(DocumentEntry documentEntry);
 
-  DocumentEntry retrieveSimilarByMeta(Metadata metadata);
-
 }

@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet;
 
+import dev.taras.hamkalo.plagdet.util.Utils;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -16,14 +17,15 @@ public class App {
   public CommandLineRunner commandLineRunner(Analyzer analyzer) {
     return strings -> {
 //      List<String> expandedPaths = Utils.expand("/home/taras-hamkalo/other/data/23-24-ipc-docx/sk");
-//      List<String> expandedPaths = Utils.expand("/home/taras-hamkalo/other/data/ipc/meged-before-23-24/docx");
-
-//      System.out.println(analyzer.addToIndex(expandedPaths));
+      var expandedPaths = Utils.expand("/home/taras-hamkalo/other/data/ipc/meged-before-23-24/docx");
+      System.out.println(analyzer.addToIndex(expandedPaths));
 
 //      var path = "/home/taras-hamkalo/other/data/23-24-ipc-docx/sk/2016-web-posted.docx";
 //      analyzer.findSimilarTo(path);
-      var path = "/home/taras-hamkalo/other/data/ipc/23-24/text/3465931603.txt";
-      analyzer.findSimilarTo(path);
+//      var path = "/home/taras-hamkalo/other/data/ipc/23-24/text/3465931603.txt";
+//      analyzer.findSimilarTo(path);
+//      System.out.println(">>>> " + path.hashCode());
+
     };
   }
 }

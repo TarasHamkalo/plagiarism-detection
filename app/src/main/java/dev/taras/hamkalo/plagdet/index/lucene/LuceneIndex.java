@@ -103,15 +103,8 @@ public class LuceneIndex implements DocumentIndex {
     return results;
   }
 
-  @Override
-  public DocumentEntry retrieveSimilarByMeta(Metadata metadata) {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
   private DocumentEntry convertDocumentToDocumentEntry(Document doc) {
-    DocumentEntry entry = new DocumentEntry(doc.get(DocumentFieldNames.PATH.toString()));
-//    entry.setContent(doc.get(DocumentFieldNames.PATH.toString()));
-
+    var entry = new DocumentEntry(doc.get(DocumentFieldNames.PATH.toString()));
     return entry;
   }
 }

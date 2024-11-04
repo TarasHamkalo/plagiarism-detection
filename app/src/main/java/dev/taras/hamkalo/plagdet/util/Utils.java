@@ -28,5 +28,11 @@ public abstract class Utils {
 
   public static String getExtension(Path path) {
     return FilenameUtils.getExtension(path.getFileName().toString());
+
   }
+
+  public static String getFileName(Path path) {
+    return FilenameUtils.getBaseName(path.getFileName().toString());
+  }
+
 }
