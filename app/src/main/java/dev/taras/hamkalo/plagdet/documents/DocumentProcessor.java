@@ -1,95 +1,71 @@
 package dev.taras.hamkalo.plagdet.documents;
 
 import dev.taras.hamkalo.plagdet.preprocessing.Token;
-import dev.taras.hamkalo.plagdet.preprocessing.cleaner.Preprocessor;
 import dev.taras.hamkalo.plagdet.preprocessing.filter.TokenFilter;
 import dev.taras.hamkalo.plagdet.preprocessing.transformation.Transformer;
 import dev.taras.hamkalo.plagdet.readers.ContentReadException;
 import dev.taras.hamkalo.plagdet.readers.ContentReader;
 import dev.taras.hamkalo.plagdet.readers.MetaReader;
 import dev.taras.hamkalo.plagdet.readers.MetadataReadException;
-import dev.taras.hamkalo.plagdet.util.Utils;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import lombok.AccessLevel;
-import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
+@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class DocumentProcessor {
 
-  @Getter
-  DocumentEntry documentEntry;
-
   ContentReader contentReader;
 
-  Preprocessor preprocessor;
+  MetaReader metaReader;
 
   Transformer transformer;
 
   TokenFilter tokenFilter;
 
-  MetaReader metaReader;
-
   StanfordCoreNLP pipeline;
 
-  public DocumentProcessor(String path,
-                           ContentReader contentReader,
-                           Preprocessor textPreprocessor,
-                           Transformer transformer,
-                           TokenFilter tokenFilter,
-                           MetaReader metaReader,
-                           StanfordCoreNLP pipeline
-  ) {
-    this.documentEntry = new DocumentEntry(path);
-    this.contentReader = contentReader;
-    this.preprocessor = textPreprocessor;
-    this.transformer = transformer;
-    this.tokenFilter = tokenFilter;
-    this.metaReader = metaReader;
-    this.pipeline = pipeline;
-  }
+  public DocumentEntry readDocument(String strPath) throws DocumentProcessingException {
+    var path = Path.of(strPath).toAbsolutePath();
+    DocumentEntry documentEntry = new DocumentEntry(path.toString());
 
-  public DocumentProcessor preprocess() throws DocumentProcessingException {
     try {
-      var rawContent = contentReader.getContent(documentEntry.getPath());
-      documentEntry.setContent(rawContent);
-    } catch (ContentReadException  e) {
-      throw new DocumentProcessingException(
-        String.format(
-          "Reading failed for document %s. %s",
-          documentEntry.getPath().toString(),
-          e.getMessage()
-        )
-      );
+      documentEntry.setContent(contentReader.getContent(path));
+    } catch (ContentReadException e) {
+      throw new DocumentProcessingException("Content reading failed for document " + path);
     }
 
     try {
-      var meta = metaReader.getMetadata(documentEntry.getPath());
-      documentEntry.setMetadata(meta);
+      documentEntry.setMetadata(metaReader.getMetadata(path));
     } catch (MetadataReadException e) {
-      log.warn(
-        "Metadata was not read for document {}.\n{}",  documentEntry.getPath(), e.getMessage()
-      );
-
+      log.warn("Metadata reading failed for document {}: {}", path, e.getMessage());
+      documentEntry.setMetadata(Metadata.NONE);
     }
 
-    return this;
+    return documentEntry;
   }
 
-  public DocumentEntry transform() {
-    var document = new CoreDocument(documentEntry.getContent());
+  public DocumentEntry transform(DocumentEntry documentEntry) {
+    CoreDocument document = new CoreDocument(documentEntry.getContent());
     pipeline.annotate(document);
+
     List<Token> tokens = new ArrayList<>();
     for (CoreLabel tok : document.tokens()) {
-      var token = transformer.transform(
-        new Token(tok.word(), null, tok.beginPosition(), tok.endPosition())
+      Token token = transformer.transform(
+        Token.builder()
+          .content(tok.word())
+          .start(tok.beginPosition())
+          .end(tok.endPosition())
+          .build()
       );
 
       if (tokenFilter.validate(token)) {
@@ -100,5 +76,4 @@ public class DocumentProcessor {
     documentEntry.setTokens(tokens);
     return documentEntry;
   }
-
 }

@@ -5,7 +5,6 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,9 +13,7 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DocumentEntry {
 
-  Long id;
-
-  Path path;
+  String contentPath;
 
   String content;
 
@@ -24,13 +21,11 @@ public class DocumentEntry {
 
   Metadata metadata;
 
-  public DocumentEntry(String path) {
-    this.id = (long) path.hashCode();
-    this.path = Path.of(path);
+  public DocumentEntry(String contentPath) {
+    this.contentPath = contentPath;
   }
 
-  // TODO: store result
   public String getContentFromTokens() {
-    return tokens.stream().map(Token::getContent).collect(Collectors.joining(" "));
+    return tokens == null ? "" : tokens.stream().map(Token::getContent).collect(Collectors.joining(" "));
   }
 }

@@ -1,12 +1,14 @@
 package dev.taras.hamkalo.plagdet.preprocessing;
 
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Value;
 import lombok.With;
 import lombok.experimental.FieldDefaults;
 
 @With
 @Value
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Token {
 

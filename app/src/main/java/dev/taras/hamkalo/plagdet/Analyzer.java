@@ -1,17 +1,13 @@
 package dev.taras.hamkalo.plagdet;
 
+import dev.taras.hamkalo.plagdet.analyzers.LuceneAnalyzer;
+import dev.taras.hamkalo.plagdet.analyzers.MetaAnalyzer;
+import dev.taras.hamkalo.plagdet.comparison.JPlagComparator;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentProcessor;
-import dev.taras.hamkalo.plagdet.index.DocumentIndex;
-import dev.taras.hamkalo.plagdet.index.IndexSequence;
+import dev.taras.hamkalo.plagdet.index.FileSystemStore;
 import dev.taras.hamkalo.plagdet.index.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.index.metadata.MetadataIndex;
-import dev.taras.hamkalo.plagdet.preprocessing.cleaner.Preprocessor;
-import dev.taras.hamkalo.plagdet.preprocessing.filter.TokenFilter;
-import dev.taras.hamkalo.plagdet.readers.ContentReader;
-import dev.taras.hamkalo.plagdet.preprocessing.transformation.Transformer;
-import dev.taras.hamkalo.plagdet.readers.MetaReader;
-import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -26,32 +22,52 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class Analyzer {
 
-  List<DocumentProcessor> documentProcessors = new ArrayList<>();
+  DocumentProcessor documentProcessor;
 
-  ContentReader contentReaders;
+  FileSystemStore fileSystemStore;
 
-  Preprocessor preprocessor;
+  MetadataIndex metadataIndex;
 
-  Transformer transformer;
+  LuceneIndex luceneIndex;
 
-  TokenFilter tokenFilter;
+  MetaAnalyzer metaAnalyzer;
 
-  MetaReader metaReaders;
-
-  StanfordCoreNLP pipeline;
-
-  // TODO: can be local
-  IndexSequence indexSequence;
-
-  private final MetadataIndex metadataIndex;
+  LuceneAnalyzer luceneAnalyzer;
 
   public void findSimilarTo(String path) {
-    var docProc = createDocumentProcessor(path);
 
-    var documentEntry = docProc
-      .preprocess()
-      .transform();
+    var target = documentProcessor.readDocument(path);
+    documentProcessor.transform(target);
 
+    // TODO: filter common by path
+    var metaSimilarDocuments = metaAnalyzer.analyze(target);
+    var contentSimilarDocuments = luceneAnalyzer.analyze(target);
+    metaSimilarDocuments.addAll(contentSimilarDocuments);
+
+    JPlagComparator jplag = new JPlagComparator();
+    jplag.compare(target, metaSimilarDocuments);
+  }
+
+  public String addToIndex(List<String> paths) {
+    List<DocumentEntry> documentEntries = new ArrayList<>();
+
+    for (String path : paths) {
+      var documentEntry = documentProcessor.readDocument(path);
+      documentProcessor.transform(documentEntry);
+
+      documentEntry = fileSystemStore.addToStore(documentEntry);
+
+      documentEntries.add(documentEntry);
+
+      metadataIndex.pushToIndex(documentEntry);
+      luceneIndex.pushToIndex(documentEntry);
+    }
+
+    return "added to index " + documentEntries.size();
+  }
+
+
+}
 //    LuceneIndex luceneIndex = new LuceneIndex();
 //    // Only path is returned
 //    // Content should be provided
@@ -60,44 +76,7 @@ public class Analyzer {
 //    // Content should be provided
 //    metadataIndex.retrieveSimilar(documentEntry);
 //    fillContent(...)
-    indexSequence.retrieveSimilar(documentEntry).forEach(System.out::println);
+//    indexSequence.retrieveSimilar(documentEntry).forEach(System.out::println);
 //    createDir( for JPlag )
 //  analyze
 //    indexSequence.
-  }
-
-  public String addToIndex(List<String> paths) {
-    List<DocumentProcessor> documentProcessors = new ArrayList<>();
-    for (String path : paths) {
-      documentProcessors.add(
-        createDocumentProcessor(path)
-      );
-    }
-
-    List<DocumentEntry> documentEntries = new ArrayList<>();
-    for (var documentProcessor : documentProcessors) {
-      var documentEntry = documentProcessor
-        .preprocess()
-        .transform();
-
-      documentEntries.add(documentEntry);
-
-      indexSequence.pushToIndex(documentEntry);
-    }
-
-    return "added to index " + documentEntries.size();
-  }
-
-  private DocumentProcessor createDocumentProcessor(String path) {
-    return new DocumentProcessor(
-      path,
-      contentReaders,
-      preprocessor,
-      transformer,
-      tokenFilter,
-      metaReaders,
-      pipeline
-    );
-  }
-
-}

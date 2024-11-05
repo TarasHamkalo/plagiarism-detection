@@ -18,13 +18,14 @@ public class App {
     return strings -> {
 //      List<String> expandedPaths = Utils.expand("/home/taras-hamkalo/other/data/23-24-ipc-docx/sk");
 
-      var expandedPaths = Utils.expand("/home/taras-hamkalo/other/data/ipc/meged-before-23-24/docx");
-      System.out.println(analyzer.addToIndex(expandedPaths));
+//      var expandedPaths = Utils.expand("/home/taras-hamkalo/other/data/ipc/meged-before-23-24/docx");
+//      System.out.println(analyzer.addToIndex(expandedPaths));
 
 //      var path = "/home/taras-hamkalo/other/data/23-24-ipc-docx/sk/2016-web-posted.docx";
+//      path = "SIMPLE_FS_INDEX/-938587277.docx";
 //      analyzer.findSimilarTo(path);
-//      var path = "/home/taras-hamkalo/other/data/ipc/23-24/text/3465931603.txt";
-//      analyzer.findSimilarTo(path);
+      var path = "/home/taras-hamkalo/other/data/ipc/23-24/text/3465931603.txt";
+      analyzer.findSimilarTo(path);
 //      System.out.println(">>>> " + path.hashCode());
 
     };
