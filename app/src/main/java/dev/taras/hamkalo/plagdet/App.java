@@ -1,6 +1,5 @@
 package dev.taras.hamkalo.plagdet;
 
-import dev.taras.hamkalo.plagdet.util.Utils;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
