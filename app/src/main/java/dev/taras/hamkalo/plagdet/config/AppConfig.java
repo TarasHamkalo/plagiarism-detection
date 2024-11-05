@@ -1,7 +1,9 @@
 package dev.taras.hamkalo.plagdet.config;
 
-import dev.taras.hamkalo.plagdet.index.FileSystemIndex;
-import dev.taras.hamkalo.plagdet.index.IndexSequence;
+import dev.taras.hamkalo.plagdet.analyzers.LuceneAnalyzer;
+import dev.taras.hamkalo.plagdet.analyzers.MetaAnalyzer;
+import dev.taras.hamkalo.plagdet.documents.DocumentProcessor;
+import dev.taras.hamkalo.plagdet.index.FileSystemStore;
 import dev.taras.hamkalo.plagdet.index.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.index.metadata.DocumentRepository;
 import dev.taras.hamkalo.plagdet.index.metadata.MetadataIndex;
@@ -14,6 +16,7 @@ import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Properties;
 
@@ -21,19 +24,42 @@ import java.util.Properties;
 public class AppConfig {
 
   @Bean
-  public IndexSequence indexSequence(FileSystemIndex fileSystemIndex, MetadataIndex metadataIndex) {
-    var pushSequence = List.of(
-      fileSystemIndex,
-      metadataIndex,
-      new LuceneIndex()
+  public DocumentProcessor documentProcessor(ContentReader contentReaders) {
+    return new DocumentProcessor(
+      contentReaders,
+      metaReaders(),
+      transformer(),
+      filter(),
+      pipeline()
     );
-
-    return new IndexSequence(fileSystemIndex, pushSequence.subList(1, 3), pushSequence);
   }
 
   @Bean
-  public FileSystemIndex fileSystemIndex(ContentReaders contentReaders) {
-    return new FileSystemIndex(contentReaders);
+  public MetaAnalyzer metaAnalyzer(MetadataIndex metadataIndex,
+                                   DocumentProcessor documentProcessor
+  ) {
+    return new MetaAnalyzer(metadataIndex, documentProcessor);
+  }
+
+  @Bean
+  public LuceneAnalyzer luceneAnalyzer(LuceneIndex luceneIndex,
+                                       DocumentProcessor documentProcessor
+  ) {
+    return new LuceneAnalyzer(luceneIndex, documentProcessor);
+  }
+//  @Bean
+//  public IndexSequence indexSequence(FileSystemStore fileSystemIndex, MetadataIndex metadataIndex) {
+//    var pushSequence = List.of(
+//      fileSystemIndex,
+//      metadataIndex,
+//    );
+//
+//    return new IndexSequence(fileSystemIndex, pushSequence.subList(1, 3), pushSequence);
+//  }
+
+  @Bean
+  public LuceneIndex luceneIndex() throws IOException {
+    return new LuceneIndex();
   }
 
   @Bean
@@ -59,6 +85,11 @@ public class AppConfig {
       new ShortWordsFilter(),
       new SpecialCharacterFilter()
     );
+  }
+
+  @Bean
+  public FileSystemStore fileSystemStore() {
+    return new FileSystemStore();
   }
 
   @Bean

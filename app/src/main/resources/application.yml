@@ -1,9 +1,12 @@
 logging:
+#  level:
+#    root: error
   level:
     dev.taras.hamkalo.plagdet: trace
-#    root: debug
+    de.jplag: error
 
-  
+#
+
 spring:
   datasource:
 #    url: jdbc:h2:mem:plagdet
@@ -17,7 +20,8 @@ spring:
       maximum-pool-size: 10
   jpa:
     hibernate.ddl-auto: update
-    show-sql: true
+    show-sql: false
+#    show-sql: true
     properties:
       hibernate:
         format_sql: true

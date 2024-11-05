@@ -38,6 +38,10 @@ dependencies {
 
 // https://mvnrepository.com/artifact/com.h2database/h2
   implementation 'com.h2database:h2:2.3.232'
+
+  implementation 'de.jplag:jplag:5.1.0'
+
+  implementation 'de.jplag:text:5.1.0'
 }
 
 application {
