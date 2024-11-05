@@ -1,9 +1,9 @@
 logging:
-#  level:
-#    root: error
   level:
-    dev.taras.hamkalo.plagdet: trace
-    de.jplag: error
+    root: error
+#  level:
+#    dev.taras.hamkalo.plagdet: error
+#    de.jplag: error
 
 #
 

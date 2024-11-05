@@ -24,8 +24,10 @@ public class App {
 //      var path = "/home/taras-hamkalo/other/data/23-24-ipc-docx/sk/2016-web-posted.docx";
 //      path = "SIMPLE_FS_INDEX/-938587277.docx";
 //      analyzer.findSimilarTo(path);
+      var start = System.nanoTime();
       var path = "/home/taras-hamkalo/other/data/ipc/23-24/text/3465931603.txt";
       analyzer.findSimilarTo(path);
+      System.out.println((System.nanoTime() - start) * 1e-9);
 //      System.out.println(">>>> " + path.hashCode());
 
     };

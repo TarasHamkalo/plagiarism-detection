@@ -8,6 +8,7 @@ import de.jplag.options.JPlagOptions;
 import de.jplag.text.NaturalLanguage;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.util.Utils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Slf4j
 public class JPlagComparator {
 
   public static final String IPC_TXT_TEMPLATE = "/home/taras-hamkalo/repositories/plagiarism-detection/app/src/main/resources/ipc.txt";
@@ -28,8 +30,9 @@ public class JPlagComparator {
 
     try {
       File oldSubmissionsDir = Files.createTempDirectory("jplag_tokens").toFile();
-      System.out.println(
-        "Temporary directory for old submissions created at: " + oldSubmissionsDir.getAbsolutePath()
+      log.warn(
+        "Temporary directory for old submissions created at: {} ",
+        oldSubmissionsDir.getAbsolutePath()
       );
 
       for (DocumentEntry entry : old) {
@@ -38,8 +41,8 @@ public class JPlagComparator {
         tempPathToOriginal.put(tokenFile.getPath(), entry.getContentPath());
         try (FileWriter writer = new FileWriter(tokenFile)) {
           writer.append(entry.getContentFromTokens());
-          System.out.printf(
-            "Tokens for document %s written to: %s\n", fname, tokenFile.getAbsolutePath()
+          log.warn(
+            "Tokens for document {} written to: {}", fname, tokenFile.getAbsolutePath()
           );
         }
       }
@@ -50,8 +53,8 @@ public class JPlagComparator {
       tempPathToOriginal.put(tokenFile.getPath(), target.getContentPath());
       try (FileWriter writer = new FileWriter(tokenFile)) {
         writer.append(target.getContentFromTokens());
-        System.out.printf(
-          "Tokens for document target written to: %s\n", fname, tokenFile.getAbsolutePath()
+        log.warn(
+          "Tokens for document target written to: {}\n", tokenFile.getAbsolutePath()
         );
       }
 
@@ -69,9 +72,9 @@ public class JPlagComparator {
       printJPlagComparison(result.getAllComparisons(), tempPathToOriginal, target.getContentPath());
 
     } catch (IOException e) {
-      System.err.println("Error creating temporary directory or writing tokens: " + e.getMessage());
+      log.error("Error creating temporary directory or writing tokens: {}", e.getMessage());
     } catch (Exception e) {
-      System.err.println("Error during JPlag comparison: " + e.getMessage());
+      log.error("Error during JPlag comparison: {}", e.getMessage());
     }
   }
 

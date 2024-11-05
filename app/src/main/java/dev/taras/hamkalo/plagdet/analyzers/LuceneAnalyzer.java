@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +29,7 @@ public class LuceneAnalyzer {
       return Collections.emptyList();
     }
 
+    System.out.println("- Lucene analyzer -\n");
     System.out.println("File analyzed: " + documentEntry.getContentPath());
     var retrieved = index.retrieveSimilar(documentEntry);
     if (retrieved.isEmpty()) {
@@ -36,8 +38,7 @@ public class LuceneAnalyzer {
     }
 
     System.out.println("Found " + retrieved.size() + " similar documents.");
-    System.out.println("Listing:");
-    System.out.println("Document name: Similarity score");
+    System.out.println("Listing (name: score):");
 
     List<DocumentEntry> results = new ArrayList<>();
     for (var result: retrieved) {
@@ -56,11 +57,13 @@ public class LuceneAnalyzer {
       }
     }
 
+    System.out.println("\n-      End      -\n");
     return results;
   }
 
   private void printResult(LuceneIndex.LuceneResult result) {
-    System.out.printf("%s: %.2f\n", result.documentEntry().getContentPath(), result.score());
+    var path = Path.of(result.documentEntry().getContentPath()).toAbsolutePath();
+    System.out.printf("\t%s: %.2f\n", path, result.score());
   }
 
 

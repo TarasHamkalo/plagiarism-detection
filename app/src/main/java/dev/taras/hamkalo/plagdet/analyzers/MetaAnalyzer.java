@@ -24,6 +24,8 @@ public class MetaAnalyzer {
   DocumentProcessor documentProcessor;
 
   public List<DocumentEntry> analyze(DocumentEntry documentEntry) {
+    System.out.println("- Meta analyzer -\n");
+
     printDocumentMeta(documentEntry.getContentPath(), documentEntry.getMetadata());
 
     var retrieved = index.retrieveSimilar(documentEntry);
@@ -51,6 +53,7 @@ public class MetaAnalyzer {
       }
 
     }
+    System.out.println("\n-      End      -\n");
 
     return result;
   }
