@@ -7,10 +7,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 // TODO: add exceptions
 @RequiredArgsConstructor
@@ -20,16 +18,15 @@ public class MetadataIndex implements DocumentIndex {
   DocumentRepository documentRepository;
 
   @Override
-  public DocumentEntry pushToIndex(DocumentEntry documentEntry) {
+  public void pushToIndex(DocumentEntry documentEntry) {
     // TODO: there should not be any
     // TODO: check for duplicates and throw exception
-    var ignored = documentRepository.save(DocumentEntity.from(documentEntry));
-
-    return documentEntry;
+    documentRepository.save(DocumentEntity.from(documentEntry));
   }
 
   @Override
   public List<DocumentEntry> retrieveSimilar(DocumentEntry documentEntry) {
+    // TODO: handle "Unknown", limit to 10
     var authorName = documentEntry.getMetadata().getAuthorName();
     var documents = documentRepository.findByAuthorName(authorName);
     if (documents.isEmpty()) {
@@ -44,7 +41,7 @@ public class MetadataIndex implements DocumentIndex {
       entity.getAuthorName(), entity.getCreationDate(), entity.getTotalEditTime()
     );
 
-    var targetDocumentEntry = new DocumentEntry(entity.getPath());
+    var targetDocumentEntry = new DocumentEntry(entity.getFileStoragePath());
     targetDocumentEntry.setMetadata(meta);
 
     return targetDocumentEntry;

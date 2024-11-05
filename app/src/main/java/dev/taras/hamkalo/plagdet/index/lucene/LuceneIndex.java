@@ -1,15 +1,14 @@
 package dev.taras.hamkalo.plagdet.index.lucene;
 
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
-import dev.taras.hamkalo.plagdet.documents.Metadata;
 import dev.taras.hamkalo.plagdet.index.DocumentIndex;
 import jakarta.annotation.PreDestroy;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.ToString;
 import lombok.experimental.FieldDefaults;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -26,85 +25,79 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class LuceneIndex implements DocumentIndex {
+public class LuceneIndex {
 
   public static final Path LUCENE_INDEX_PATH = Path.of("lucene_index");
 
+  Directory indexDirectory = new MMapDirectory(LUCENE_INDEX_PATH);
+
+  public LuceneIndex() throws IOException {
+  }
+
   public enum DocumentFieldNames {
     ID, PATH, CONTENT, SEARCH_CONTENT
-//    ID("id"), PATH("path"), CONTENT("content"), SEARCH_CONTENT("search_content");
-//    String val;
   }
 
-  Directory indexDirectory;
-
-  @SneakyThrows
-  public LuceneIndex() {
-    this.indexDirectory = new MMapDirectory(LUCENE_INDEX_PATH);
-  }
+  public record LuceneResult(DocumentEntry documentEntry, double score) {}
 
   @PreDestroy
-  @SneakyThrows
-  public void close() {
-    // TODO: exceptions for index closing
-    this.indexDirectory.close();
+  public void close() throws IOException {
+    indexDirectory.close();
   }
 
-  @Override
-  public DocumentEntry pushToIndex(DocumentEntry documentEntry) {
+  public void pushToIndex(DocumentEntry documentEntry) {
     var conf = new IndexWriterConfig(new DocumentEntryAnalyzer(documentEntry));
     try (IndexWriter writer = new IndexWriter(indexDirectory, conf)) {
       Document doc = new Document();
       doc.add(new StringField(
-        DocumentFieldNames.PATH.toString(),
-        documentEntry.getPath().toString(),
-        Field.Store.YES
+        DocumentFieldNames.PATH.toString(), documentEntry.getContentPath(), Field.Store.YES
       ));
 
-      doc.add(new TextField(DocumentFieldNames.SEARCH_CONTENT.toString(), "", Field.Store.NO)); // field value is ignore
+      doc.add(new TextField(DocumentFieldNames.SEARCH_CONTENT.toString(), "", Field.Store.NO));
+
       writer.addDocument(doc);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to index document", e);
     }
-
-    return documentEntry;
   }
 
-  @Override
-  public List<DocumentEntry> retrieveSimilar(DocumentEntry documentEntry) {
-    List<DocumentEntry> results = new ArrayList<>();
+  /**
+   *
+   * @param documentEntry
+   * @return document and similarity score for given query
+   */
+  public List<LuceneResult> retrieveSimilar(DocumentEntry documentEntry) {
+    List<LuceneResult> results = new ArrayList<>();
+
     try (IndexReader reader = DirectoryReader.open(indexDirectory)) {
       IndexSearcher searcher = new IndexSearcher(reader);
-
       MoreLikeThis mlt = new MoreLikeThis(reader);
       mlt.setFieldNames(new String[]{DocumentFieldNames.SEARCH_CONTENT.toString()});
-      // TODO: adjust min term freq
-//      mlt.setMinTermFreq(0);
       mlt.setAnalyzer(new DocumentEntryAnalyzer(documentEntry));
 
-      var stringReader = new StringReader("");
-      Query query = mlt.like(DocumentFieldNames.SEARCH_CONTENT.toString(), stringReader);
-      TopDocs similarDocs = searcher.search(query, 11);
+      Query query = mlt.like(DocumentFieldNames.SEARCH_CONTENT.toString(), new StringReader(""));
+      TopDocs similarDocs = searcher.search(query, 10);
+
       for (ScoreDoc scoreDoc : similarDocs.scoreDocs) {
-        Document doc = searcher.doc(scoreDoc.doc);
-//        System.out.println(searcher.explain(query, scoreDoc.doc));
-        System.out.println(doc.get(DocumentFieldNames.PATH.toString()) + ": " + scoreDoc.score);
-        results.add(convertDocumentToDocumentEntry(doc));
+        var doc = searcher.doc(scoreDoc.doc);
+        results.add(
+          new LuceneResult(convertDocumentToDocumentEntry(doc), scoreDoc.score)
+        );
       }
 
     } catch (IOException e) {
-      // TODO: Exceptions LUCENE
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to retrieve similar documents", e);
     }
 
     return results;
   }
 
   private DocumentEntry convertDocumentToDocumentEntry(Document doc) {
-    var entry = new DocumentEntry(doc.get(DocumentFieldNames.PATH.toString()));
-    return entry;
+    return new DocumentEntry(doc.get(DocumentFieldNames.PATH.toString()));
   }
 }

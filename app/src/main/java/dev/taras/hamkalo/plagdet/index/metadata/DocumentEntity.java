@@ -3,10 +3,10 @@ package dev.taras.hamkalo.plagdet.index.metadata;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.Accessors;
 import lombok.experimental.FieldDefaults;
 
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.Date;
 
 
@@ -26,7 +26,7 @@ public class DocumentEntity implements Serializable {
 
   // TODO: path which should point to the FS index document copy
   @Column(nullable = false, unique = true)
-  String path;
+  String fileStoragePath;
 
   @Column(nullable = false, unique = false) // TODO: NOT UNIQUE
   String authorName;
@@ -39,8 +39,9 @@ public class DocumentEntity implements Serializable {
 
   public static DocumentEntity from(DocumentEntry documentEntry) {
     var meta = documentEntry.getMetadata();
+    var contentPath = Path.of(documentEntry.getContentPath()).toAbsolutePath();
     return DocumentEntity.builder()
-      .path(documentEntry.getPath().toAbsolutePath().toString())
+      .fileStoragePath(contentPath.toString())
       .authorName(meta.getAuthorName())
       .creationDate(meta.getCreationDate())
       .totalEditTime(meta.getTotalEditTime())
