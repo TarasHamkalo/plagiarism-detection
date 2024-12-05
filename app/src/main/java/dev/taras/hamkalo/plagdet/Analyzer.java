@@ -2,7 +2,9 @@ package dev.taras.hamkalo.plagdet;
 
 import dev.taras.hamkalo.plagdet.analyzers.LuceneAnalyzer;
 import dev.taras.hamkalo.plagdet.analyzers.MetaAnalyzer;
+import dev.taras.hamkalo.plagdet.comparison.ngram.FullFingerprintingComparator;
 import dev.taras.hamkalo.plagdet.comparison.JPlagComparator;
+import dev.taras.hamkalo.plagdet.comparison.ngram.Ngram;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentProcessor;
 import dev.taras.hamkalo.plagdet.index.FileSystemStore;
@@ -11,6 +13,7 @@ import dev.taras.hamkalo.plagdet.index.metadata.MetadataIndex;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -26,13 +29,29 @@ public class Analyzer {
 
   FileSystemStore fileSystemStore;
 
+  @NonFinal
   MetadataIndex metadataIndex;
 
+  @NonFinal
   LuceneIndex luceneIndex;
 
+  @NonFinal
   MetaAnalyzer metaAnalyzer;
 
+  @NonFinal
   LuceneAnalyzer luceneAnalyzer;
+
+  public void compare(String path1, String path2) {
+    var document1 = documentProcessor.readDocument(path1);
+    documentProcessor.transform(document1);
+
+    var document2 = documentProcessor.readDocument(path2);
+    documentProcessor.transform(document2);
+
+    var comparator = new FullFingerprintingComparator();
+    comparator.compare(document1, document2);
+
+  }
 
   public void findSimilarTo(String path) {
 
@@ -68,15 +87,3 @@ public class Analyzer {
 
 
 }
-//    LuceneIndex luceneIndex = new LuceneIndex();
-//    // Only path is returned
-//    // Content should be provided
-//    luceneIndex.retrieveSimilar(documentEntry);
-//    // path and metadata, path to docx or txt (fs index will store orig + txt normalized)
-//    // Content should be provided
-//    metadataIndex.retrieveSimilar(documentEntry);
-//    fillContent(...)
-//    indexSequence.retrieveSimilar(documentEntry).forEach(System.out::println);
-//    createDir( for JPlag )
-//  analyze
-//    indexSequence.

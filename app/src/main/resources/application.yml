@@ -5,27 +5,20 @@ logging:
 #    dev.taras.hamkalo.plagdet: error
 #    de.jplag: error
 
-#
-
-spring:
-  datasource:
-#    url: jdbc:h2:mem:plagdet
+#spring:
+#  datasource:
+##    url: jdbc:h2:mem:plagdet
+#    url: jdbc:postgresql://localhost/plagdet
 #    username: taras
 #    password: taras
-    url: jdbc:postgresql://localhost/plagdet
-    username: taras
-    password: taras
-
-    hikari:
-      maximum-pool-size: 10
-  jpa:
-    hibernate.ddl-auto: update
-    show-sql: false
-#    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-#        jdbc:
-#        jdbc.lob.non_contextual_creation=true
-
-
+#
+#    hikari:
+#      maximum-pool-size: 10
+#  jpa:
+#    hibernate.ddl-auto: update
+#    show-sql: false
+#    properties:
+#      hibernate:
+#        format_sql: true
+#
+#
