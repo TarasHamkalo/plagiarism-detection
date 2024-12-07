@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DocumentEntry {
 
+  Integer id;
+
   String contentPath;
 
   String content;
@@ -22,6 +24,7 @@ public class DocumentEntry {
   Metadata metadata;
 
   public DocumentEntry(String contentPath) {
+    this.id = contentPath.hashCode();
     this.contentPath = contentPath;
   }
 
