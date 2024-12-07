@@ -7,7 +7,6 @@ import lombok.Value;
 import lombok.experimental.FieldDefaults;
 
 import java.util.List;
-import java.util.Objects;
 
 @Value
 @Builder
@@ -21,18 +20,4 @@ public class Ngram {
 
   Integer end;
 
-//  @Override
-//  public boolean equals(Object o) {
-//    if (this == o) return true;
-//    if (o == null || getClass() != o.getClass()) return false;
-//    Ngram other = (Ngram) o;
-//    // compare ordered
-//    return Objects.equals(other.contentStrings, contentStrings);
-//  }
-//
-//  @Override
-//  public int hashCode() {
-//    return Objects.hash(contentStrings);
-//  }
-//
 }

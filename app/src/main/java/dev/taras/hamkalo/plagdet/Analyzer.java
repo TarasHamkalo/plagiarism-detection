@@ -2,20 +2,25 @@ package dev.taras.hamkalo.plagdet;
 
 import dev.taras.hamkalo.plagdet.analyzers.LuceneAnalyzer;
 import dev.taras.hamkalo.plagdet.analyzers.MetaAnalyzer;
-import dev.taras.hamkalo.plagdet.comparison.ngram.FullFingerprintingComparator;
 import dev.taras.hamkalo.plagdet.comparison.JPlagComparator;
+import dev.taras.hamkalo.plagdet.comparison.ngram.FullFingerprintingComparator;
 import dev.taras.hamkalo.plagdet.comparison.ngram.Ngram;
+import dev.taras.hamkalo.plagdet.comparison.ngram.Ngrams;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentProcessor;
 import dev.taras.hamkalo.plagdet.index.FileSystemStore;
 import dev.taras.hamkalo.plagdet.index.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.index.metadata.MetadataIndex;
+import demos.WordAnnotatorDemo;
+import dev.taras.hamkalo.plagdet.util.Utils;
+import edu.stanford.nlp.ling.Word;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +55,13 @@ public class Analyzer {
 
     var comparator = new FullFingerprintingComparator();
     comparator.compare(document1, document2);
+//    WordAnnotatorDemo wordAnnotatorDemo = new WordAnnotatorDemo();
+//    ArrayList<String> words = new ArrayList<>(document1.getTokens().stream().map(t -> t.getContent()).toList());
+//    Ngrams.ngrams(words, 5).forEach(System.out::println);
 
+//    Ngrams.skipgrams(words, 3, 2, Ngrams.SORT_NGRAMS).forEach(System.out::println);
+
+//    wordAnnotatorDemo.createAnnotatedWordDocument(path1, Utils.getFileName(Path.of(path1)) + "_annotated", );
   }
 
   public void findSimilarTo(String path) {

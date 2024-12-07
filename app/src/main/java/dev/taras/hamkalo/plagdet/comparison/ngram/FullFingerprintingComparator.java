@@ -5,7 +5,7 @@ import dev.taras.hamkalo.plagdet.preprocessing.Token;
 import edu.stanford.nlp.util.Sets;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Function;
@@ -22,10 +22,58 @@ public class FullFingerprintingComparator {
     System.out.println("Jaccard on WNG: " + jaccardSimilarity(documentNgrams1, documentNgrams2, this::ngramToString));
     System.out.println("Jaccard on CNG: " + jaccardSimilarity(documentNgrams1, documentNgrams2, this::ngramToSortedString));
 
-    var skigrams1 = createSwng(first, 3, 5);
-    var skigrams2 = createSwng(second, 3, 5);
+    var skigrams1 = createSwng(first, 4, 2);
+
+    var skigrams2 = createSwng(second, 4, 2);
     System.out.println("Jaccard on SWNG: " + jaccardSimilarity(skigrams1, skigrams2, this::ngramToString));
     System.out.println("Jaccard on CSNG: " + jaccardSimilarity(skigrams1, skigrams2, this::ngramToSortedString));
+
+//  ** pair matches **
+    var matches = pairMatches(first, second, skigrams1, skigrams2, this::ngramToSortedString);
+
+//  ** filter and expand matches **
+    var filtering = new Filtering();
+//
+    filtering.expandAndMerge(matches);
+  }
+
+  public HashMap<String, List<Fragment>> pairMatches(DocumentEntry doc1,
+                                                     DocumentEntry doc2,
+                                                     List<Ngram> ngrams1,
+                                                     List<Ngram> ngrams2,
+                                                     Function<Ngram, String> mapper) {
+    // string -> list(fragments) # додавай лише спільні
+    var ngramsMap1 = new HashMap<String, List<Ngram>>();
+    ngrams1.forEach(ngram -> ngramsMap1.computeIfAbsent(mapper.apply(ngram), (k) -> new ArrayList<>()).add(ngram));
+
+    var ngramsMap2 = new HashMap<String, List<Ngram>>();
+    ngrams2.forEach(ngram -> ngramsMap2.computeIfAbsent(mapper.apply(ngram), (k) -> new ArrayList<>()).add(ngram));
+    // string -> document position mapping
+    var matches = new HashMap<String, List<Fragment>>();
+    for (var ngram : ngramsMap1.keySet()) {
+      if (ngramsMap2.containsKey(ngram)) {
+        ngramsMap1.get(ngram).stream().map(n -> {
+          return Fragment.builder()
+            .documentEntry(doc1)
+            .containedNgram(List.of(n))
+            .start(n.getStart())
+            .end(n.getEnd())
+            .build();
+        }).forEach(f -> matches.computeIfAbsent(ngram, (k) -> new ArrayList<>()).add(f));
+
+
+        ngramsMap2.get(ngram).stream().map(n -> {
+          return Fragment.builder()
+            .documentEntry(doc2)
+            .containedNgram(List.of(n))
+            .start(n.getStart())
+            .end(n.getEnd())
+            .build();
+        }).forEach(f -> matches.computeIfAbsent(ngram, (k) -> new ArrayList<>()).add(f));
+      }
+    }
+
+    return matches;
   }
 
   // Overlap n - 1
@@ -56,10 +104,18 @@ public class FullFingerprintingComparator {
   public List<Ngram> createSwng(DocumentEntry document, int n, int k) {
     final var tokens = document.getTokens();
 
-//    var skipgrams = new ArrayList<Ngram>();
+    var filter = new HashSet<Ngram>();
     var result = new ArrayList<Ngram>();
     for (int i = 0; i < tokens.size() - n - k + 1; i++) {
-      createSubsequences(tokens, i, n, k, new ArrayList<>(), result);
+      var subsequences = new ArrayList<Ngram>();
+      createSubsequences(tokens, i, n, k, new ArrayList<>(), subsequences);
+      // can generate few equal subsequences (when first skips are in front and later ngram)
+      for (var subsequence : subsequences) {
+        if (!filter.contains(subsequence)) {
+          result.add(subsequence);
+          filter.add(subsequence);
+        }
+      }
     }
 
     return result;
@@ -73,7 +129,7 @@ public class FullFingerprintingComparator {
       var skipgram = Ngram.builder()
         .start(current.get(0).getStart())
         .end(current.get(current.size() - 1).getEnd())
-        .contentStrings(current.parallelStream().map(Token::getContent).collect(Collectors.toList()))
+        .contentStrings(current.stream().map(Token::getContent).collect(Collectors.toList()))
         .build();
       result.add(skipgram);
       return;
@@ -92,17 +148,18 @@ public class FullFingerprintingComparator {
                                   Function<Ngram, String> mapper) {
     var ngramsSet1 = ngrams1.parallelStream().map(mapper).collect(Collectors.toSet());
     var ngramsSet2 = ngrams2.parallelStream().map(mapper).collect(Collectors.toSet());
+
     double unionSize = Sets.union(ngramsSet1, ngramsSet2).size() * 1.0;
     double intersectionSize = Sets.intersection(ngramsSet1, ngramsSet2).size() * 1.0;
+
     System.out.println(intersectionSize);
     System.out.println(unionSize);
+
     return intersectionSize / unionSize;
   }
 
-
   public String ngramToString(Ngram ngram) {
-    return ngram.getContentStrings().stream()
-      .reduce("", (agg, s) -> agg + s);
+    return String.join("", ngram.getContentStrings());
   }
 
   public String ngramToSortedString(Ngram ngram) {
