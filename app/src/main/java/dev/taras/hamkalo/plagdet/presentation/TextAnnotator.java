@@ -37,11 +37,11 @@ public class TextAnnotator {
       int start = positions[0] + offset;
       int end = positions[1] + offset;
 
-      annotatedContent.insert(end, String.format("</end fid=%d>", fragment.getId()));
-      offset += String.format("</end fid=%d>", fragment.getId()).length();
+      annotatedContent.insert(end, String.format("</frag fid=%d>", fragment.getId()));
+      offset += String.format("</frag fid=%d>", fragment.getId()).length();
 
-      annotatedContent.insert(start, String.format("<start fid=%d>", fragment.getId()));
-      offset += String.format("<start fid=%d>", fragment.getId()).length();
+      annotatedContent.insert(start, String.format("<frag fid=%d>", fragment.getId()));
+      offset += String.format("<frag fid=%d>", fragment.getId()).length();
     }
 
     String outputPath = document.getContentPath() + "_annotated.txt";

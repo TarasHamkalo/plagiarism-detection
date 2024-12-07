@@ -412,3 +412,12 @@ cython_debug/
 
 # Ignore Gradle build output directory
 build
+
+
+SIMPLE_FS_INDEX/**
+lucene_index/**
+*zip
+/app/src/main/resources/files/2013_2014_Lipka_Adam_217_11_dokumentacia_-Dokumentácia_Adam_Lipka1.docx
+/app/src/main/resources/files/2013_2014_Lipka_Adam_217_11_dokumentacia_-Dokumentácia_Adam_Lipka1.txt
+/app/src/main/resources/files/2013_2014_Molcan_David_185_11_dokumentacia_-Dokumentаcia_MolЯan_Dаvid.docx
+/app/src/main/resources/files/2013_2014_Molcan_David_185_11_dokumentacia_-Dokumentаcia_MolЯan_Dаvid.txt

@@ -45,6 +45,19 @@ public class Fragment {
     this.firstEnd = Math.max(firstEnd, sharedShingle.getFirstEnd());
 
     this.secondStart = Math.min(secondStart, sharedShingle.getSecondStart());
-    this.secondEnd = Math.min(secondEnd, sharedShingle.getSecondEnd());
+    this.secondEnd = Math.max(secondEnd, sharedShingle.getSecondEnd());
   }
+
+  public int maxCovered() {
+    return Math.max(firstEnd - firstStart, secondEnd - secondStart);
+  }
+
+  public int firstCovered() {
+    return firstEnd - firstStart;
+  }
+
+  public int secondCovered() {
+    return secondEnd - secondStart;
+  }
+
 }
