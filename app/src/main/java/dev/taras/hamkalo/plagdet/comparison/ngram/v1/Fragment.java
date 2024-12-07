@@ -1,5 +1,6 @@
-package dev.taras.hamkalo.plagdet.comparison.ngram;
+package dev.taras.hamkalo.plagdet.comparison.ngram.v1;
 
+import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.ToString;
@@ -12,9 +13,12 @@ import java.util.List;
 @Builder
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Ngram {
+public class Fragment {
 
-  List<String> contentStrings;
+  @ToString.Exclude
+  DocumentEntry documentEntry;
+
+  List<Ngram> containedNgram;
 
   Integer start;
 

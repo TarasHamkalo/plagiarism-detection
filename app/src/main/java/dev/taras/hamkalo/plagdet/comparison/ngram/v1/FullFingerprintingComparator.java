@@ -1,4 +1,4 @@
-package dev.taras.hamkalo.plagdet.comparison.ngram;
+package dev.taras.hamkalo.plagdet.comparison.ngram.v1;
 
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.preprocessing.Token;
@@ -24,10 +24,18 @@ public class FullFingerprintingComparator {
 
     var skigrams1 = createSwng(first, 4, 2);
 
+
+    // _ _ a b c <-> a _ b _ c skipgrams ?
+
+    // кожен документ отримає н грами -- не важливий порядок, але важлива перевірка
+    // тобі потрібно зпарувати н грами -- важлива перевірка, кожна подібна двійка - до фрагменту
+    // далі ці двійки сортуємо наприклад за стартом в першому документі
+    // збираємо за подібністю
+
+    // далі потрібно зєднані н грами розширити та фільтрувати
     var skigrams2 = createSwng(second, 4, 2);
     System.out.println("Jaccard on SWNG: " + jaccardSimilarity(skigrams1, skigrams2, this::ngramToString));
     System.out.println("Jaccard on CSNG: " + jaccardSimilarity(skigrams1, skigrams2, this::ngramToSortedString));
-
 //  ** pair matches **
     var matches = pairMatches(first, second, skigrams1, skigrams2, this::ngramToSortedString);
 
@@ -72,7 +80,6 @@ public class FullFingerprintingComparator {
         }).forEach(f -> matches.computeIfAbsent(ngram, (k) -> new ArrayList<>()).add(f));
       }
     }
-
     return matches;
   }
 

@@ -1,4 +1,4 @@
-package dev.taras.hamkalo.plagdet.comparison.ngram;
+package dev.taras.hamkalo.plagdet.comparison.ngram.v1;
 
 import java.util.Collections;
 import java.util.HashMap;
