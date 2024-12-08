@@ -7,8 +7,8 @@ import java.util.Comparator;
 import java.util.List;
 
 public class PostProcessing {
-
-  private static final int MERGE_DISTANCE = 20;
+  // Alzahrani 2015 used 300 characters
+  private static final int MERGE_DISTANCE = 300;
 
   public static List<Fragment> expandAndFilter(List<SharedShingle> sharedShingles) {
     long id = 0;

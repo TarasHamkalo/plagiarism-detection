@@ -1,15 +1,15 @@
 package dev.taras.hamkalo.plagdet.comparison.ngram.v2.shingles;
 
-import java.util.List;
-
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
 
 /**
  * Holds the least comparison unit
  */
-@Value
+@Data
 @Builder
+@AllArgsConstructor
 public class Shingle {
 
   String content;
