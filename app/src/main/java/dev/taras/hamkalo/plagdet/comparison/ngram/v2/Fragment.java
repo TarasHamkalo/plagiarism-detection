@@ -2,6 +2,8 @@ package dev.taras.hamkalo.plagdet.comparison.ngram.v2;
 
 import dev.taras.hamkalo.plagdet.comparison.ngram.v2.shingles.SharedShingle;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
 
@@ -9,6 +11,8 @@ import lombok.experimental.FieldDefaults;
  * Holds paired shingles for particular document
  */
 @Data
+@Builder
+@AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Fragment {
 
