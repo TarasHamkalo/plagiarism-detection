@@ -1,6 +1,12 @@
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$InputDir
+)
 # $File = New-TemporaryFile
 # Remove-Item $File -Force
 # $TMP_DIR = New-Item -Itemtype Directory -Path "$($ENV:Temp)\$($File.Name)" 
+
+
 $HTML_HEAD = @"
 <html lang="sk">
 <head>
@@ -32,7 +38,9 @@ $HTML_END = @"
 function AppendHtmlRow {
     param($metadata, $OutputFilePath)
     # $submitter = Split-Path -Path $metadata.FilePath -Parent
-    $submitter = Split-Path -Leaf $(Split-Path -Path $metadata.FilePath -Parent)
+    # $submitter = Split-Path -Leaf $(Split-Path -Path $metadata.FilePath -Parent)
+    $pattern = '\d{4}_\d{4}_[A-Za-z]+_[A-Za-z]+_\d+_\d+_dokumentacia_'
+    $submitter = ($metadata.FilePath | Select-String -Pattern $pattern).Matches.Value
 
     $htmlRow = @"
 <tr>
@@ -131,13 +139,12 @@ function WriteSingleSubmission {
     param (
         $docxDocumentPaths, $OutputFilePath
     )
-    
-    foreach ($docxPath in $docxDocumentPaths) {
 
-        if ([string]::IsNullOrWhiteSpace($docxPath)) {
-            continue  
-        }
-        
+    $filteredDocxPaths = $docxDocumentPaths | Where-Object { 
+        -not [string]::IsNullOrWhiteSpace($_) -and -not (Split-Path -Leaf $_).StartsWith('.') 
+    }
+    
+    foreach ($docxPath in $filteredDocxPaths) {      
         try {
             $metadata = ReadMetadata $docxPath
             AppendHtmlRow $metadata $OutputFilePath
@@ -147,7 +154,7 @@ function WriteSingleSubmission {
     }
 }
 
-$InputDir = "test_files"
+# $InputDir = "test_files"
 
 $InputPath = Join-path $(pwd) $InputDir
 $OutputPath = Join-path $(pwd) "out"
@@ -174,44 +181,4 @@ foreach ($submission in $zippedSubmssions) {
 
 $HTML_END | Add-Content $OutputFilePath
 
-# Get-ChildItem -Path $InputPath -Filter "*.docx" | ForEach-Object {
-#     $SourceFile = $_.FullName
-#     $TargetFile = Join-Path -Path $TmpPath -ChildPath ($_.BaseName + ".zip")
-#     Copy-Item -Path $SourceFile -Destination $TargetFile
-#     Write-Output "Copied and renamed: $SourceFile -> $TargetFile"
-    
-# }
-
-
-
-# submission/[doc, docx] ->  {
-#     doc -> docx -> meta to output
-#     docx ->}
-
-
-# | ForEach-Object {
-#     $_.FullName
-# }
-# New-Item -ItemType Directory -Force -Path $OutputPath, $TmpPath | Out-Null
-# Copy-Item $InputPath/*.docx to $TmpPath/*.zip
-# Copy-Item "$InputPath/*.docx" $TmpPath
-# Expand-Archive -Path $InputDir "*.docx" 
-# Get-ChildItem -Path $InputDir -Filter *.docx 
-# New-Item -Path $OutputDirName -ItemType Directory -Force | Out-Null
-# New-Item -Path "$OutputDirName/$TmpDirName" -ItemType Directory -Force | Out-Null
-
-
-# Expand-Archive "$INPUT_PATH/2013_2014_Angelovic_Kamil_296_11_dokumentacia_.zip" $OUTPUT_PATH/
-# Copy-Item "$INPUT_PATH/*.zip"
-
-
-# Copy-Item "$INPUT_PATH/*.docx" "$OUTPUT_PATH/*.zip"
-
-# Expand-Archive -Path "C:\Downloads\Install.zip" -DestinationPath "C:\Downloads"
-
-
-# $appProps = Get-Content "./docProps/app.xml"
-# $coreProps = Get-Content "./docProps/core.xml"
-# $xmlFileMinusFormatData = $xmlFile[1..($xmlFile.Length - 1)] #we need to remove the first line
-# $usableXml = [xml]$xmlFileMinusFormatData # Convert to xml for easy handling
-# $usableXml.Courses.CourseEntry.Count # just a count of rows
+Remove-Item $TmpPath -Recurse
