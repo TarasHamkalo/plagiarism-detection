@@ -1,7 +1,8 @@
-package dev.taras.hamkalo.plagdet.readers;
+package dev.taras.hamkalo.plagdet.io.reader;
 
-import dev.taras.hamkalo.plagdet.documents.Metadata;
-import dev.taras.hamkalo.plagdet.util.Utils;
+import dev.taras.hamkalo.plagdet.io.reader.exception.ContentReadException;
+
+import org.apache.commons.io.FilenameUtils;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -12,23 +13,23 @@ import java.util.List;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
-public class MetaReaders implements MetaReader {
+public class ContentReaders implements ContentReader {
 
   @NonNull
-  List<MetaReader> readers;
+  List<ContentReader> readers;
 
   @Override
-  public Metadata getMetadata(Path path) throws MetadataReadException {
+  public String getContent(Path path) throws ContentReadException {
 
-    String extension = Utils.getExtension(path);
+    String extension = FilenameUtils.getExtension(path.getFileName().toString());
 
     for (var reader : readers) {
       if (reader.supports(extension)) {
-        return reader.getMetadata(path);
+        return reader.getContent(path);
       }
     }
 
-    throw new MetadataReadException("Extension is not supported: " + extension);
+    throw new ContentReadException("Extension is not supported: " + extension);
   }
 
   @Override

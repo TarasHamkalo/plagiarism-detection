@@ -1,6 +1,8 @@
-package dev.taras.hamkalo.plagdet.readers;
+package dev.taras.hamkalo.plagdet.io.reader;
 
-import dev.taras.hamkalo.plagdet.documents.Metadata;
+import dev.taras.hamkalo.plagdet.io.Metadata;
+import dev.taras.hamkalo.plagdet.io.reader.exception.ContentReadException;
+import dev.taras.hamkalo.plagdet.io.reader.exception.MetadataReadException;
 import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -35,9 +37,8 @@ public class WordDocumentReader implements ContentReader, MetaReader{
       var totalEditTime = Optional.of(extProps.getTotalTime()).orElse(0);
       var author = Optional.ofNullable(coreProps.getCreator()).orElse(Metadata.NONE.getAuthorName());
       var creationDate = coreProps.getCreated();
-      return new Metadata(author, creationDate, totalEditTime);
 
-      // TODO: exceptions
+      return new Metadata(author, creationDate, totalEditTime);
     } catch (Exception e) {
       throw new MetadataReadException(e.getMessage());
     }

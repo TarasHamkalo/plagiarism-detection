@@ -1,3 +1,4 @@
+//file:noinspection GroovyAssignabilityCheck
 plugins {
   id 'org.springframework.boot' version "${springBootVersion}"
   id 'io.spring.dependency-management' version "$springDependencyManagementPluginVersion"
@@ -20,9 +21,14 @@ allprojects {
     mavenCentral()
   }
 
+  java {
+    withSourcesJar()
+    withJavadocJar()
+  }
+
   tasks.withType(JavaCompile).configureEach {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
   }
 }
 

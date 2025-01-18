@@ -1,4 +1,4 @@
-package dev.taras.hamkalo.plagdet.readers;
+package dev.taras.hamkalo.plagdet.io.reader.exception;
 
 public class ContentReadException extends RuntimeException {
 

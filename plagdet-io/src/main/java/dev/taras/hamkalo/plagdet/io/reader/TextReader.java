@@ -1,4 +1,6 @@
-package dev.taras.hamkalo.plagdet.readers;
+package dev.taras.hamkalo.plagdet.io.reader;
+
+import dev.taras.hamkalo.plagdet.io.reader.exception.ContentReadException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,7 +21,6 @@ public class TextReader implements ContentReader {
 
   @Override
   public boolean supports(String extension) {
-    // TODO: matches any
     return Set.of("txt", "tex", "").contains(extension.toLowerCase());
   }
 
