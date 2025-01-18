@@ -1,0 +1,22 @@
+plugins {
+  id 'java-library'
+}
+
+repositories {
+  mavenCentral()
+
+  flatDir {
+    dirs '../libs'
+  }
+}
+
+dependencies {
+  implementation ':morphodita:'
+
+  api 'edu.stanford.nlp:stanford-corenlp:4.5.7'
+
+}
+
+tasks.compileJava {
+  options.compilerArgs -= ["-Xlint:unchecked,rawtypes", "-Werror"]
+}
