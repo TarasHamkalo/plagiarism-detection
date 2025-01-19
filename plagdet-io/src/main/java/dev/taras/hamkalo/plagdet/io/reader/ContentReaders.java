@@ -1,6 +1,6 @@
 package dev.taras.hamkalo.plagdet.io.reader;
 
-import dev.taras.hamkalo.plagdet.io.reader.exception.ContentReadException;
+import dev.taras.hamkalo.plagdet.io.exception.ContentReadException;
 
 import org.apache.commons.io.FilenameUtils;
 import lombok.AccessLevel;

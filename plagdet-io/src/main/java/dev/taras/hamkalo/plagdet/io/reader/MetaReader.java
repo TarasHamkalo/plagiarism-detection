@@ -1,7 +1,7 @@
 package dev.taras.hamkalo.plagdet.io.reader;
 
 import dev.taras.hamkalo.plagdet.io.Metadata;
-import dev.taras.hamkalo.plagdet.io.reader.exception.MetadataReadException;
+import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
 
 import java.nio.file.Path;
 
