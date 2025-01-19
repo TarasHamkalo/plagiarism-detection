@@ -12,7 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public class WordDocumentReader implements ContentReader, MetaReader{
+public class DocxDocumentReader implements ContentReader, MetaReader{
 
   @Override
   public String getContent(Path path) throws ContentReadException {
@@ -38,7 +38,7 @@ public class WordDocumentReader implements ContentReader, MetaReader{
       var author = Optional.ofNullable(coreProps.getCreator()).orElse(Metadata.NONE.getAuthorName());
       var creationDate = coreProps.getCreated();
 
-      return new Metadata(author, creationDate, totalEditTime);
+      return new Metadata(author, creationDate, (long) totalEditTime);
     } catch (Exception e) {
       throw new MetadataReadException(e.getMessage());
     }

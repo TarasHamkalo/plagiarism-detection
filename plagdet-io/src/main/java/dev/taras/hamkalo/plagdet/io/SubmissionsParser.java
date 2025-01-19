@@ -10,13 +10,15 @@ import dev.taras.hamkalo.plagdet.io.reader.MetaReaders;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.FilenameUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.charset.Charset;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,8 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -35,9 +35,9 @@ public class SubmissionsParser {
     "\\d{4}_\\d{4}_([A-Z][a-z]+_[A-Z][a-z]+)_"
   );
 
-  public static final String DEFAULT_ARCHIVE_EXT = ".zip";
+  public static final String DEFAULT_ARCHIVE_EXT = "zip";
 
-  public static final Set<String> SUPPORTED_FILE_FORMATS = Set.of(".docx", ".doc");
+  public static final Set<String> SUPPORTED_FILE_FORMATS = Set.of("docx", "doc");
 
   ContentReader contentReader;
 
@@ -77,12 +77,13 @@ public class SubmissionsParser {
       var submission = new Submission();
       submission.setPath(submissionFile.toPath());
 
-      var submitterName = extractSubmitter(file.toPath());
+      var submitterName = extractSubmitter(submissionFile.toPath());
       try {
         if (isSupportedArchive(submissionFile)) {
           var files = extractArchiveSingleLevel(
             submissionFile, SubmissionsParser.SUPPORTED_FILE_FORMATS
           );
+
           submission.setFiles(files.stream()
             .map(this::readFileData)
             .peek(f -> f.setSubmitter(submitterName))
@@ -122,27 +123,34 @@ public class SubmissionsParser {
 
     var result = new ArrayList<File>();
 
-    try (var zis = new ZipInputStream(new FileInputStream(file), Charset.forName("cp437"))) {
-      Path tempDir = Files.createTempDirectory(null);
-      ZipEntry entry;
+    try (InputStream fis = new FileInputStream(file);
+         BufferedInputStream bis = new BufferedInputStream(fis);
+         ArchiveInputStream<ZipArchiveEntry> ais = new ZipArchiveInputStream(bis)) {
+
+      Path tempDir = Files.createTempDirectory("extracted_");
+      ArchiveEntry entry;
       byte[] buffer = new byte[2048];
-      while ((entry = zis.getNextEntry()) != null) {
-        File newFile = new File(tempDir.toFile(), entry.getName());
+      while ((entry = ais.getNextEntry()) != null) {
+        String baseName = FilenameUtils.getBaseName(entry.getName());
         if (entry.isDirectory() ||
-            entry.getName().startsWith(".") ||
             entry.getName().contains("../") ||
-            entry.getName().contains("/")) {
+            baseName.startsWith(".")) {
+          continue;
+        }
+
+        if (entry.getName().chars().filter(c -> c == '/').count() > 1) {
           continue;
         }
 
         if (preservedFormats != null &&
-            preservedFormats.contains(FilenameUtils.getExtension(entry.getName()))) {
+            !preservedFormats.contains(FilenameUtils.getExtension(entry.getName()))) {
           continue;
         }
-
+        File newFile = new File(tempDir.toFile(), entry.getName());
+        newFile.getParentFile().mkdirs();
         try (var fos = new FileOutputStream(newFile)) {
           int length;
-          while ((length = zis.read(buffer)) > 0) {
+          while ((length = ais.read(buffer)) > 0) {
             fos.write(buffer, 0, length);
           }
 
@@ -169,6 +177,7 @@ public class SubmissionsParser {
   private static boolean isSupportedArchive(File file) {
     return file.isFile() && file.toPath().toString().endsWith(DEFAULT_ARCHIVE_EXT);
   }
+
 
 
 }
