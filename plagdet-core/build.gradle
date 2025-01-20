@@ -19,6 +19,33 @@ tasks.withType(JavaExec).configureEach {
 }
 
 dependencies {
-  implementation project(':plagdet-preprocessing')
-  implementation project(':plagdet-io')
+
+  implementation 'org.apache.lucene:lucene-core:8.10.1'
+
+  implementation 'org.apache.lucene:lucene-queryparser:8.10.1'
+
+  implementation 'org.apache.lucene:lucene-analyzers-common:8.10.1'
+
+  implementation 'org.apache.poi:poi-ooxml:5.4.0'
+
+  implementation 'org.apache.poi:poi:5.4.0'
+
+  implementation 'org.apache.poi:poi-scratchpad:5.4.0'
+
+  implementation 'org.apache.commons:commons-lang3:3.16.0'
+
+  implementation 'commons-io:commons-io:2.17.0'
+
+  implementation 'org.apache.commons:commons-compress:1.27.1'
+
+  implementation ':morphodita:'
+
+  implementation 'edu.stanford.nlp:stanford-corenlp:4.5.7'
+
+  implementation 'ch.qos.logback:logback-core:1.5.16'
+
+  implementation 'ch.qos.logback:logback-classic:1.5.16'
+
+
+
 }

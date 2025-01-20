@@ -14,14 +14,18 @@ public class DocumentAnnotator {
 
   StanfordCoreNLP pipeline;
 
-  public void annotateDocuments(List<Submission> submissions) {
+  public void annotateSubmissions(List<Submission> submissions) {
     for (Submission submission : submissions) {
       for (var document : submission.getDocuments()) {
-        CoreDocument coreDocument = new CoreDocument(document.getFileData().getContent());
-        pipeline.annotate(coreDocument);
-        document.setCoreDocument(coreDocument);
+        annotateDocument(document);
       }
     }
+  }
+
+  public void annotateDocument(DocumentEntry document) {
+    CoreDocument coreDocument = new CoreDocument(document.getFileData().getContent());
+    pipeline.annotate(coreDocument);
+    document.setCoreDocument(coreDocument);
   }
 
 }

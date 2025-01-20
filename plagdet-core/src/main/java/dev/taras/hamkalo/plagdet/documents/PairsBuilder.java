@@ -1,13 +1,11 @@
 package dev.taras.hamkalo.plagdet.documents;
 
-import dev.taras.hamkalo.plagdet.comparision.Fragment;
+import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.io.SubmissionsParser;
 import dev.taras.hamkalo.plagdet.io.reader.ContentReader;
 import dev.taras.hamkalo.plagdet.io.reader.ContentReaders;
 import dev.taras.hamkalo.plagdet.io.reader.MetaReader;
 import dev.taras.hamkalo.plagdet.io.reader.MetaReaders;
-import edu.stanford.nlp.pipeline.CoreDocument;
-import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 
@@ -18,6 +16,8 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PairsBuilder {
 
+  public static final int SIMILAR_DOCUMENTS_LIMIT = 10;
+
   ContentReader contentReader;
 
   MetaReader metadataReader;
@@ -26,23 +26,73 @@ public class PairsBuilder {
 
   DocumentAnnotator annotator;
 
+  LuceneIndex luceneIndex;
+
   public PairsBuilder(List<ContentReader> contentReaders,
-                                List<MetaReader> metaReaders,
-                                DocumentAnnotator annotator) {
+                      List<MetaReader> metaReaders,
+                      DocumentAnnotator annotator,
+                      LuceneIndex luceneIndex) {
     this.contentReader = new ContentReaders(contentReaders);
     this.metadataReader = new MetaReaders(metaReaders);
     this.submissionsParser = new SubmissionsParser(contentReaders, metaReaders);
     this.annotator = annotator;
+    this.luceneIndex = luceneIndex;
   }
 
   public List<DocumentPair> build(String inputPath) {
     List<Submission> submissions = this.submissionsParser.parseSubmissions(inputPath);
-    annotator.annotateDocuments(submissions);
+    annotator.annotateSubmissions(submissions);
     // for each document find by meta and lucene
-    return generatePairs(submissions);
+    var pairs = generatePairs(submissions);
+    pairs.addAll(generatePairsByLuceneSimilarity(submissions));
+    pairs.addAll(generatePairsByMetadataSimilarity(submissions));
+    return pairs;
   }
 
-  private static List<DocumentPair> generatePairs(List<Submission> submissions) {
+  private List<DocumentPair> generatePairsByMetadataSimilarity(List<Submission> submissions) {
+    List<DocumentPair> pairs = new ArrayList<>();
+    for (var submission : submissions) {
+      for (var document : submission.getDocuments()) {
+        var creator = document.getFileData().getMetadata().getCreator();
+        var similarDocuments = luceneIndex.retrieveByCreator(creator, SIMILAR_DOCUMENTS_LIMIT);
+        for (var similar : similarDocuments) {
+          var similarDocument = new DocumentEntry(true, similar, null);
+          annotator.annotateDocument(document);
+
+          pairs.add(DocumentPair.builder()
+            .first(document)
+            .second(similarDocument)
+            .build()
+          );
+        }
+      }
+    }
+
+    return pairs;
+  }
+
+  private List<DocumentPair> generatePairsByLuceneSimilarity(List<Submission> submissions) {
+    List<DocumentPair> pairs = new ArrayList<>();
+    for (var submission : submissions) {
+      for (var document : submission.getDocuments()) {
+        var similarDocuments = luceneIndex.retrieveSimilar(document, SIMILAR_DOCUMENTS_LIMIT);
+        for (var similar : similarDocuments) {
+          var similarDocument = new DocumentEntry(true, similar.fileData(), null);
+          annotator.annotateDocument(document);
+
+          pairs.add(DocumentPair.builder()
+            .first(document)
+            .second(similarDocument)
+            .build()
+          );
+        }
+      }
+    }
+
+    return pairs;
+  }
+
+  private List<DocumentPair> generatePairs(List<Submission> submissions) {
     List<DocumentPair> pairs = new ArrayList<>();
     for (int i = 0; i < submissions.size(); i++) {
       Submission first = submissions.get(i);

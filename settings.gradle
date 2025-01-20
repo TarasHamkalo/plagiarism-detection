@@ -7,9 +7,9 @@ rootProject.name = 'plagiarism-detection'
 
 [
   'plagdet-core',
-  'plagdet-io',
-  'plagdet-preprocessing',
-  'app'
+//  'plagdet-io',
+//  'plagdet-preprocessing',
+//  'app'
 ].forEach {
   include it
 }
