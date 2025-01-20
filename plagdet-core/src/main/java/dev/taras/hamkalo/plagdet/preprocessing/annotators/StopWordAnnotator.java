@@ -25,7 +25,6 @@ public class StopWordAnnotator implements Annotator {
     this.stopwordSet = loadStopwordSet();
   }
 
-
   private static CharArraySet loadStopwordSet() throws IOException {
     var stopWordsPath = Path.of(
       ClassLoader.getSystemClassLoader().getResource(STOP_WORD_RESOURCE).getPath()

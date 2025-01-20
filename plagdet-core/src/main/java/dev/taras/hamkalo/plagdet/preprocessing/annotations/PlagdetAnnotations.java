@@ -43,4 +43,22 @@ public class PlagdetAnnotations {
     }
 
   }
+
+  public class TemplateAnnotation implements CoreAnnotation<Boolean> {
+
+    @Override
+    public Class<Boolean> getType() {
+      return Boolean.class;
+    }
+
+  }
+
+  public class CodeSegmentAnnotation implements CoreAnnotation<String> {
+
+    @Override
+    public Class<String> getType() {
+      return String.class;
+    }
+  }
+
 }
