@@ -15,9 +15,9 @@ import java.util.Set;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DocumentPair {
 
-  Document first;
+  DocumentEntry first;
 
-  Document second;
+  DocumentEntry second;
 
   Set<Fragment> commonFragments;
 

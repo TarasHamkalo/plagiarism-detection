@@ -9,7 +9,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Document {
+public class DocumentEntry {
 
   boolean  indexed;
 
