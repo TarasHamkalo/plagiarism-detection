@@ -4,8 +4,6 @@ import cz.cuni.mff.ufal.morphodita.Forms;
 import cz.cuni.mff.ufal.morphodita.Morpho;
 import cz.cuni.mff.ufal.morphodita.TaggedLemmas;
 import cz.cuni.mff.ufal.morphodita.Tagger;
-import dev.taras.hamkalo.plagdet.preprocessing.annotations.WordAnnotation;
-import dev.taras.hamkalo.plagdet.preprocessing.annotations.WordsAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -53,6 +51,7 @@ public class MorphoditaStanfordAdapter implements Annotator {
       var tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
       var texts = tokens.stream()
         .map(CoreLabel::originalText)
+        .map(String::toLowerCase)
         .toList();
 
       Forms forms = new Forms(texts);
