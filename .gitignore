@@ -419,3 +419,5 @@ lucene_index/**
 *zip
 /app/src/main/resources/files/**
 /.env.*
+/libs/
+/plagdet-core/src/main/resources/files/

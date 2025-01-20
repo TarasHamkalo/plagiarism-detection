@@ -1,0 +1,24 @@
+plugins {
+  id 'application'
+}
+
+repositories {
+  mavenCentral()
+
+  flatDir {
+    dirs '../libs'
+  }
+}
+
+application {
+  mainClass = 'dev.taras.hamkalo.plagdet.Main'
+}
+
+tasks.withType(JavaExec).configureEach {
+  systemProperty 'java.library.path', '../libs'
+}
+
+dependencies {
+  implementation project(':plagdet-preprocessing')
+  implementation project(':plagdet-io')
+}

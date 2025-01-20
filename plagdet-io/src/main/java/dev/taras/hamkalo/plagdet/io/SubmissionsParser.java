@@ -1,5 +1,7 @@
 package dev.taras.hamkalo.plagdet.io;
 
+import dev.taras.hamkalo.plagdet.documents.Document;
+import dev.taras.hamkalo.plagdet.documents.Submission;
 import dev.taras.hamkalo.plagdet.io.exception.ContentReadException;
 import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
 import dev.taras.hamkalo.plagdet.io.exception.ParsingException;
@@ -14,9 +16,8 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
-import org.apache.commons.compress.compressors.CompressorException;
-import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -50,8 +51,8 @@ public class SubmissionsParser {
     this.metadataReader = new MetaReaders(metaReaders);
   }
 
-  public List<Submission> parseSubmissions(String strPath) throws ParsingException {
-    var path = Path.of(strPath);
+  public List<Submission> parseSubmissions(String inputPath) throws ParsingException {
+    var path = Path.of(inputPath);
     var file = path.toFile();
     if (!file.exists()) {
       throw new ParsingException("Path does not exist");
@@ -84,15 +85,16 @@ public class SubmissionsParser {
             submissionFile, SubmissionsParser.SUPPORTED_FILE_FORMATS
           );
 
-          submission.setFiles(files.stream()
+          submission.setDocuments(files.stream()
             .map(this::readFileData)
             .peek(f -> f.setSubmitter(submitterName))
+            .map(f -> new Document(false, f, null))
             .toList()
           );
         } else {
           var fileData = readFileData(submissionFile);
           fileData.setSubmitter(submitterName);
-          submission.setFiles(List.of(fileData));
+          submission.setDocuments(List.of(new Document(false, fileData, null)));
         }
 
         submissions.add(submission);
@@ -129,7 +131,6 @@ public class SubmissionsParser {
 
       Path tempDir = Files.createTempDirectory("extracted_");
       ArchiveEntry entry;
-      byte[] buffer = new byte[2048];
       while ((entry = ais.getNextEntry()) != null) {
         String baseName = FilenameUtils.getBaseName(entry.getName());
         if (entry.isDirectory() ||
@@ -149,11 +150,7 @@ public class SubmissionsParser {
         File newFile = new File(tempDir.toFile(), entry.getName());
         newFile.getParentFile().mkdirs();
         try (var fos = new FileOutputStream(newFile)) {
-          int length;
-          while ((length = ais.read(buffer)) > 0) {
-            fos.write(buffer, 0, length);
-          }
-
+          IOUtils.copy(ais, fos);
         }
 
         result.add(newFile);

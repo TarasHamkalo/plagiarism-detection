@@ -19,6 +19,10 @@ allprojects {
 
   repositories {
     mavenCentral()
+
+    flatDir {
+      dirs 'libs'
+    }
   }
 
   java {
@@ -30,6 +34,7 @@ allprojects {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
   }
+
 }
 
 
@@ -37,6 +42,10 @@ subprojects {
   dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-devtools'
+
+    implementation 'ch.qos.logback:logback-core:1.5.16'
+
+    testImplementation 'ch.qos.logback:logback-classic:1.5.16'
 
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"
     compileOnly "org.projectlombok:lombok:$lombokVersion"

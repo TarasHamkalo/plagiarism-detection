@@ -1,6 +1,7 @@
-package dev.taras.hamkalo.plagdet.io;
+package dev.taras.hamkalo.plagdet.documents;
 
 
+import dev.taras.hamkalo.plagdet.io.FileData;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
@@ -14,6 +15,6 @@ public class Submission {
 
   Path path;
 
-  List<FileData> files;
+  List<Document> documents;
 
 }
