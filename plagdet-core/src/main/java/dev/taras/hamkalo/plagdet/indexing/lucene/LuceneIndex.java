@@ -1,6 +1,7 @@
 package dev.taras.hamkalo.plagdet.indexing.lucene;
 
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
+import dev.taras.hamkalo.plagdet.indexing.exception.IndexingException;
 import dev.taras.hamkalo.plagdet.io.FileData;
 import dev.taras.hamkalo.plagdet.io.Metadata;
 import lombok.AccessLevel;
@@ -49,7 +50,7 @@ public class LuceneIndex {
 
       writer.addDocument(doc);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to index document", e);
+      throw new IndexingException("Failed to index document", e);
     }
   }
 
@@ -61,7 +62,9 @@ public class LuceneIndex {
   }
 
   private static void addMetadata(Metadata metadata, Document doc) {
-    doc.add(new StringField(LuceneConstants.CREATOR, metadata.getCreator(), Store.YES));
+    Optional.ofNullable(metadata.getCreator()).ifPresent(creator -> {
+      doc.add(new StringField(LuceneConstants.CREATOR, creator, Store.YES));
+    });
 
     Optional.ofNullable(metadata.getCreationDate()).ifPresent(date -> {
       doc.add(new StringField(LuceneConstants.CREATION_DATE, dateString(date), Store.YES));
@@ -70,7 +73,9 @@ public class LuceneIndex {
     var totalEditTime = metadata.getTotalEditTime().toString();
     doc.add(new StringField(LuceneConstants.TOTAL_EDIT_TIME, totalEditTime, Store.YES));
 
-    doc.add(new StringField(LuceneConstants.MODIFIER, metadata.getModifier(), Store.YES));
+    Optional.ofNullable(metadata.getModifier()).ifPresent(modifier -> {
+      doc.add(new StringField(LuceneConstants.MODIFIER, modifier, Store.YES));
+    });
 
     Optional.ofNullable(metadata.getModificationDate()).ifPresent(date -> {
       doc.add(new StringField(LuceneConstants.MODIFICATION_DATE, dateString(date), Store.YES));
@@ -97,7 +102,7 @@ public class LuceneIndex {
       Query query = mlt.like(LuceneConstants.SEARCH_CONTENT, new StringReader(""));
       return executeSearch(query, limit, reader);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to retrieve similar documents", e);
+      throw new IndexingException("Failed to retrieve similar documents", e);
     }
   }
 
@@ -113,7 +118,7 @@ public class LuceneIndex {
       }
 
     } catch (IOException e) {
-      throw new RuntimeException("Failed to search index", e);
+      throw new IndexingException("Failed to search index", e);
     }
 
     return results;

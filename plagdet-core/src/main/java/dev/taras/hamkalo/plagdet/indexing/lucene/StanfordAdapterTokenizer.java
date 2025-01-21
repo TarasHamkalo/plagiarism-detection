@@ -34,7 +34,6 @@ public class StanfordAdapterTokenizer extends Tokenizer {
 
   public StanfordAdapterTokenizer(CoreDocument coreDocument, boolean filterStopwords) {
     this.coreDocument = coreDocument;
-//    this.tokensIterator = coreDocument.tokens().iterator();
     this.tokensIterator = coreDocument.annotation()
       .get(PlagdetAnnotations.WordsAnnotation.class)
       .iterator();
@@ -54,7 +53,6 @@ public class StanfordAdapterTokenizer extends Tokenizer {
     if (token == null) {
       return false;
     }
-    log.debug(token.word());
 
     termAttr.setEmpty().append(token.lemma());
     offsetAttr.setOffset(token.beginPosition(), token.endPosition());
@@ -78,6 +76,8 @@ public class StanfordAdapterTokenizer extends Tokenizer {
   @Override
   public void reset() throws IOException {
     super.reset();
-    this.tokensIterator = coreDocument.tokens().iterator();
+    this.tokensIterator = coreDocument.annotation()
+      .get(PlagdetAnnotations.WordsAnnotation.class)
+      .iterator();
   }
 }

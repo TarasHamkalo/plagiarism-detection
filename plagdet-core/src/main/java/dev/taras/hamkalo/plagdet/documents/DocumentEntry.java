@@ -11,12 +11,18 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DocumentEntry {
 
-  boolean  indexed;
+  boolean indexed;
+
+  boolean template;
 
   FileData fileData;
 
   @EqualsAndHashCode.Exclude
   CoreDocument coreDocument;
+
+  public String getId() {
+    return this.fileData.getSubmitter() + this.fileData.getPath();
+  }
 
   // тут могло б бути декілька файлів як для одної директорії
   // тут має бути сет біграм для фільтрування вступної множини

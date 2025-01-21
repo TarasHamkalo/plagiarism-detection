@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.documents;
 
+import dev.taras.hamkalo.plagdet.indexing.exception.IndexingException;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.io.SubmissionsParser;
 import dev.taras.hamkalo.plagdet.io.reader.ContentReader;
@@ -8,11 +9,13 @@ import dev.taras.hamkalo.plagdet.io.reader.MetaReader;
 import dev.taras.hamkalo.plagdet.io.reader.MetaReaders;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+@Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PairsBuilder {
 
@@ -53,17 +56,21 @@ public class PairsBuilder {
     List<DocumentPair> pairs = new ArrayList<>();
     for (var submission : submissions) {
       for (var document : submission.getDocuments()) {
-        var creator = document.getFileData().getMetadata().getCreator();
-        var similarDocuments = luceneIndex.retrieveByCreator(creator, SIMILAR_DOCUMENTS_LIMIT);
-        for (var similar : similarDocuments) {
-          var similarDocument = new DocumentEntry(true, similar, null);
-          annotator.annotateDocument(document);
+        try {
+          var creator = document.getFileData().getMetadata().getCreator();
+          var similarDocuments = luceneIndex.retrieveByCreator(creator, SIMILAR_DOCUMENTS_LIMIT);
+          for (var similar : similarDocuments) {
+            var similarDocument = new DocumentEntry(true, similar, null);
+            annotator.annotateDocument(document);
 
-          pairs.add(DocumentPair.builder()
-            .first(document)
-            .second(similarDocument)
-            .build()
-          );
+            pairs.add(DocumentPair.builder()
+              .first(document)
+              .second(similarDocument)
+              .build()
+            );
+          }
+        } catch (IndexingException e) {
+          log.error(e.getMessage());
         }
       }
     }
@@ -75,16 +82,22 @@ public class PairsBuilder {
     List<DocumentPair> pairs = new ArrayList<>();
     for (var submission : submissions) {
       for (var document : submission.getDocuments()) {
-        var similarDocuments = luceneIndex.retrieveSimilar(document, SIMILAR_DOCUMENTS_LIMIT);
-        for (var similar : similarDocuments) {
-          var similarDocument = new DocumentEntry(true, similar.fileData(), null);
-          annotator.annotateDocument(document);
+        try {
+          var similarDocuments = luceneIndex.retrieveSimilar(document, SIMILAR_DOCUMENTS_LIMIT);
 
-          pairs.add(DocumentPair.builder()
-            .first(document)
-            .second(similarDocument)
-            .build()
-          );
+          for (var similar : similarDocuments) {
+            var similarDocument = new DocumentEntry(true, false, similar.fileData(), null);
+            annotator.annotateDocument(document);
+
+            pairs.add(DocumentPair.builder()
+              .first(document)
+              .second(similarDocument)
+              .build()
+            );
+          }
+
+        } catch (IndexingException e) {
+          log.error(e.getMessage());
         }
       }
     }
@@ -100,7 +113,12 @@ public class PairsBuilder {
         for (int j = i + 1; j < submissions.size(); j++) {
           Submission second = submissions.get(j);
           for (var secondDocument : second.getDocuments()) {
-            pairs.add(new DocumentPair(firstDocument, secondDocument, new HashSet<>()));
+            pairs.add(
+              DocumentPair.builder()
+                .first(firstDocument)
+                .second(secondDocument)
+                .build()
+            );
           }
         }
       }

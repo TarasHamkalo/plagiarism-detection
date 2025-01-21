@@ -7,8 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
-import static dev.taras.hamkalo.plagdet.indexing.lucene.DocumentFieldNames.SEARCH_CONTENT;
-
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -27,7 +25,7 @@ public class DocumentAnalyzer extends Analyzer {
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     log.warn("Tokens for other field: {}", fieldName);
-    if (fieldName.equals(SEARCH_CONTENT.toString())) {
+    if (fieldName.equals(LuceneConstants.SEARCH_CONTENT)) {
       var tokenizer = new StanfordAdapterTokenizer(document.getCoreDocument(), removeStopwords);
       return new TokenStreamComponents(tokenizer);
     }

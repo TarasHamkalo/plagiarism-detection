@@ -3,28 +3,31 @@ package dev.taras.hamkalo.plagdet.io;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Date;
+import java.util.Optional;
 
 @Value
 @Builder
 @AllArgsConstructor
 public class Metadata {
 
-  public static final Metadata NONE = new Metadata("Unknown", "Unknown", null, 0L, 0, null, null);
+  public static final Metadata NONE = new Metadata(null, null, null, 0L, 0, null, null);
 
-  String creator;
+  @Nullable String creator;
 
-  String modifier;
+  @Nullable String modifier;
 
-  Date creationDate;
+  @Nullable Date creationDate;
 
-  Long totalEditTime;
+  @NotNull Long totalEditTime;
 
-  Integer revisionsNumber;
+  @NotNull Integer revisionsNumber;
 
-  Date modificationDate;
+  @Nullable Date modificationDate;
 
-  Date lastPrinted;
+  @Nullable Date lastPrinted;
 
 }
