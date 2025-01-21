@@ -24,7 +24,7 @@ public class DocumentAnalyzer extends Analyzer {
 
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    log.warn("Tokens for other field: {}", fieldName);
+    log.debug("Tokens for other field: {}", fieldName);
     if (fieldName.equals(LuceneConstants.SEARCH_CONTENT)) {
       var tokenizer = new StanfordAdapterTokenizer(document.getCoreDocument(), removeStopwords);
       return new TokenStreamComponents(tokenizer);
