@@ -29,12 +29,26 @@ public class DocDocumentReader implements ContentReader, MetaReader {
   public Metadata getMetadata(Path path) throws MetadataReadException {
     try (HWPFDocument doc = new HWPFDocument(Files.newInputStream(path))) {
       SummaryInformation summaryInfo = doc.getSummaryInformation();
-      DocumentSummaryInformation docSummaryInfo = doc.getDocumentSummaryInformation();
-      var author = Optional.ofNullable(summaryInfo.getAuthor()).orElse(Metadata.NONE.getCreator());
-      var creationDate = summaryInfo.getCreateDateTime();
-      var totalEditTime = summaryInfo.getEditTime();
 
-      return new Metadata(author, creationDate, totalEditTime);
+      String author = Optional.ofNullable(summaryInfo.getAuthor())
+        .orElse(Metadata.NONE.getCreator());
+      String modifier = Optional.ofNullable(summaryInfo.getLastAuthor())
+        .orElse(Metadata.NONE.getModifier());
+      var creationDate = summaryInfo.getCreateDateTime();
+      var modificationDate = summaryInfo.getLastSaveDateTime();
+      var totalEditTime = summaryInfo.getEditTime();
+      var lastPrinted = summaryInfo.getLastPrinted();
+      var revisionsNumber = summaryInfo.getRevNumber();
+
+      return Metadata.builder()
+        .creator(author)
+        .modifier(modifier)
+        .creationDate(creationDate)
+        .modificationDate(modificationDate)
+        .totalEditTime(totalEditTime)
+        .lastPrinted(lastPrinted)
+        .revisionsNumber(revisionsNumber != null ? Integer.parseInt(revisionsNumber) : 0)
+        .build();
     } catch (Exception e) {
       throw new MetadataReadException(e.getMessage());
     }
