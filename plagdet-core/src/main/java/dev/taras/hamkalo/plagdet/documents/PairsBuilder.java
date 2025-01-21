@@ -60,8 +60,8 @@ public class PairsBuilder {
           var creator = document.getFileData().getMetadata().getCreator();
           var similarDocuments = luceneIndex.retrieveByCreator(creator, SIMILAR_DOCUMENTS_LIMIT);
           for (var similar : similarDocuments) {
-            var similarDocument = new DocumentEntry(true, similar, null);
-            annotator.annotateDocument(document);
+            var similarDocument = new DocumentEntry(true, false, similar, null);
+            annotator.annotateDocument(similarDocument);
 
             pairs.add(DocumentPair.builder()
               .first(document)
@@ -87,7 +87,8 @@ public class PairsBuilder {
 
           for (var similar : similarDocuments) {
             var similarDocument = new DocumentEntry(true, false, similar.fileData(), null);
-            annotator.annotateDocument(document);
+            annotator.annotateDocument(similarDocument);
+
 
             pairs.add(DocumentPair.builder()
               .first(document)
