@@ -14,6 +14,7 @@ import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -189,4 +190,19 @@ public class LuceneIndex {
       return null;
     }
   }
+
+  public double inverseTermFrequency(@NotNull String term) {
+    try (IndexReader reader = DirectoryReader.open(indexDirectory)) {
+      double totalDocs = reader.numDocs() * 1.0;
+      int docFreq = reader.docFreq(new Term(LuceneConstants.SEARCH_CONTENT, term));
+      if (docFreq == 0) {
+          return Math.log(totalDocs + 1);
+      }
+
+      return Math.log((totalDocs) / (docFreq + 1));
+    } catch (IOException e) {
+      throw new IndexingException("Failed to retrieve similar documents", e);
+    }
+  }
+
 }
