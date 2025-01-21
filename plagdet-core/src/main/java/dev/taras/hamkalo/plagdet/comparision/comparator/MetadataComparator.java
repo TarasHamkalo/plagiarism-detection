@@ -4,12 +4,13 @@ import dev.taras.hamkalo.plagdet.comparision.Direction;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.io.Metadata;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class MetadataComparator {
+public class MetadataComparator implements DocumentComparator {
 
   private static final double CREATION_DATE_WEIGHT = 2.0;
 
@@ -21,7 +22,7 @@ public class MetadataComparator {
 
   private static final double REVISIONS_NUMBER_WEIGHT = 1.0;
 
-  public void compare(DocumentPair documentPair) {
+  public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {
     var first = documentPair.getFirst().getFileData().getMetadata();
     var second = documentPair.getSecond().getFileData().getMetadata();
 
@@ -54,6 +55,8 @@ public class MetadataComparator {
         .comments(comments)
         .build()
     );
+
+    return score == 1 ? ComparisonResult.PLAGIARIZED : ComparisonResult.CONTINUE;
   }
 
   public boolean nullableEquals(String s1, String s2) {
@@ -113,17 +116,9 @@ public class MetadataComparator {
     return result;
   }
 
-
-  private int compareNullableStrings(String s1, String s2) {
-    if (s1 == null && s2 == null) return 0;
-    if (s1 == null) return -1;
-    if (s2 == null) return 1;
-    return s1.compareTo(s2);
-  }
-
   private int compareNullableDates(Date d1, Date d2) {
     if (d1 == null && d2 == null) return 0;
-    if (d1 == null) return 1; // return 1 not specified date is also strange, was -1
+    if (d1 == null) return 1;
     if (d2 == null) return -1;
     return d1.compareTo(d2);
   }

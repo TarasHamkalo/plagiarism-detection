@@ -8,15 +8,18 @@ import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.util.Sets;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-@FieldDefaults(level = AccessLevel.PRIVATE)
-public class ShingleComparator {
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class ShingleComparator implements DocumentComparator {
 
   Map<String, Set<Shingle>> documentToShingle;
 
@@ -24,31 +27,44 @@ public class ShingleComparator {
 
   int overlap;
 
-  public ShingleComparator(int size, int overlap) {
-    if (overlap >= size - 1) {
+  double plagiarizedLevel;
+
+  double discardLevel;
+
+  public ShingleComparator(double plagiarizedLevel, double discardLevel, int size, int overlap) {
+    if (overlap > size - 1) {
       throw new IllegalArgumentException("Overlap should be less than size");
     }
 
     this.size = size;
     this.overlap = overlap;
+    this.plagiarizedLevel = plagiarizedLevel;
+    this.discardLevel = discardLevel;
+    this.documentToShingle = new HashMap<>();
   }
 
-  // TODO: add mark for template submission
-  public void compare(DocumentPair documentPair) {
+  public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {
     if (documentPair.getFirst().isTemplate() || documentPair.getSecond().isTemplate()) {
-      return;
+      return ComparisonResult.CONTINUE;
     }
 
     var firstShingles = getDocumentShingles(documentPair.getFirst());
     var secondShingles = getDocumentShingles(documentPair.getSecond());
-    documentPair.getPlagScores().add(
-      PlagScore.builder()
-        .score(jaccardSimilarity(firstShingles, secondShingles))
-        .direction(Direction.UNCERTAIN)
-        .comments(List.of("Jaccard coefficient"))
-        .build()
-    );
+    var plagScore = PlagScore.builder()
+      .score(jaccardSimilarity(firstShingles, secondShingles))
+      .direction(Direction.UNCERTAIN)
+      .comments(List.of("Jaccard coefficient"))
+      .build();
 
+    documentPair.getPlagScores().add(plagScore);
+
+    if(plagScore.getScore() > plagiarizedLevel) {
+      return ComparisonResult.PLAGIARIZED;
+    } else if (plagScore.getScore() < discardLevel) {
+      return ComparisonResult.DISCARD;
+    }
+
+    return ComparisonResult.CONTINUE;
   }
 
   private Set<Shingle> getDocumentShingles(@NotNull DocumentEntry documentEntry) {
@@ -57,13 +73,13 @@ public class ShingleComparator {
     );
   }
 
-  private Set<Shingle> generateShingles(CoreDocument coreDocument) {
+  private Set<Shingle> generateShingles(@NotNull CoreDocument coreDocument) {
     final int step = size - overlap;
 
     var wordTokens = coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
       .filter(t ->
-        t.get(PlagdetAnnotations.StopWordAnnotation.class) &&
-        t.get(PlagdetAnnotations.CodeSegmentAnnotation.class)
+        !t.get(PlagdetAnnotations.StopWordAnnotation.class) ||
+        !t.get(PlagdetAnnotations.CodeSegmentAnnotation.class)
       ).toList();
 
 
