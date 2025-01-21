@@ -4,6 +4,8 @@ import dev.taras.hamkalo.plagdet.io.FileData;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Data
 @Builder
@@ -15,8 +17,10 @@ public class DocumentEntry {
 
   boolean template;
 
-  FileData fileData;
+  @NotNull FileData fileData;
 
+  @Nullable
+  @ToString.Exclude
   @EqualsAndHashCode.Exclude
   CoreDocument coreDocument;
 

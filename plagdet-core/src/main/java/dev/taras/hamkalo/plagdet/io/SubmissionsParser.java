@@ -88,13 +88,13 @@ public class SubmissionsParser {
           submission.setDocuments(files.stream()
             .map(this::readFileData)
             .peek(f -> f.setSubmitter(submitterName))
-            .map(f -> new DocumentEntry(false, f, null))
+            .map(f -> new DocumentEntry(false, false, f, null))
             .toList()
           );
         } else {
           var fileData = readFileData(submissionFile);
           fileData.setSubmitter(submitterName);
-          submission.setDocuments(List.of(new DocumentEntry(false, fileData, null)));
+          submission.setDocuments(List.of(new DocumentEntry(false, false, fileData, null)));
         }
 
         submissions.add(submission);
