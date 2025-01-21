@@ -53,11 +53,11 @@ public class PlagdetAnnotations {
 
   }
 
-  public class CodeSegmentAnnotation implements CoreAnnotation<String> {
+  public class CodeSegmentAnnotation implements CoreAnnotation<Boolean> {
 
     @Override
-    public Class<String> getType() {
-      return String.class;
+    public Class<Boolean> getType() {
+      return Boolean.class;
     }
   }
 

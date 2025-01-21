@@ -2,6 +2,7 @@ package dev.taras.hamkalo.plagdet.preprocessing.annotators;
 
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
 import lombok.AccessLevel;
@@ -36,11 +37,12 @@ public class StopWordAnnotator implements Annotator {
 
   @Override
   public void annotate(Annotation annotation) {
-    for (var coreLabel : annotation.get(PlagdetAnnotations.WordsAnnotation.class)) {
-      coreLabel.set(
-        PlagdetAnnotations.StopWordAnnotation.class,
-        stopwordSet.contains(coreLabel.word().toLowerCase())
-      );
+    for (var coreLabel : annotation.get(CoreAnnotations.TokensAnnotation.class)) {
+      var isStopword = false;
+      if (coreLabel.get(PlagdetAnnotations.WordAnnotation.class) != null) {
+          isStopword = stopwordSet.contains(coreLabel.word().toLowerCase());
+      }
+      coreLabel.set(PlagdetAnnotations.StopWordAnnotation.class, isStopword);
     }
 
   }
@@ -55,6 +57,7 @@ public class StopWordAnnotator implements Annotator {
   @Override
   public Set<Class<? extends CoreAnnotation>> requires() {
     return Set.of(
+      CoreAnnotations.TokensAnnotation.class,
       PlagdetAnnotations.WordAnnotation.class,
       PlagdetAnnotations.WordsAnnotation.class
     );
