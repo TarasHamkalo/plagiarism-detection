@@ -20,10 +20,11 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class SentenceComparator {
+public class SentenceComparator implements DocumentComparator {
 
   public static final String POS_LEMMA_MODEL_RESOURCE = "models/sk.poslemma.prim-10.0-public-saneword2vec.bin";
 
@@ -51,7 +52,8 @@ public class SentenceComparator {
     Map.entry("Sy", 0.0)
   );
 
-  @Nullable Word2Vec word2Vec;
+  @Nullable
+  Word2Vec word2Vec;
 
   @NotNull
   final LuceneIndex luceneIndex;
@@ -64,18 +66,19 @@ public class SentenceComparator {
     this.luceneIndex = luceneIndex;
   }
 
-  public void compare(@NotNull DocumentPair documentPair) {
+  public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {
     var seeds = seed(documentPair);
-    var clusters = extension(seeds, MAX_GAP);
-    var filtered = filtering(clusters);
-
-    System.out.println(filtered);
-    System.out.println(filtered.size());
+    var fragments = extension(seeds, MAX_GAP);
+    var filtered = filtering(fragments);
+//    if (!filtered.isEmpty()) {
+//      documentPair.setPlagCases(
+//        filtered.stream().map(Fragment::toPlagCase).collect(Collectors.toList())
+//      );
+//    }
+    return ComparisonResult.CONTINUE;
   }
 
   private List<Fragment> filtering(List<Fragment> fragments) {
-
-
     var filteredFragments = removeOverlapping(fragments);
     filteredFragments = removeShort(filteredFragments);
 
@@ -118,7 +121,7 @@ public class SentenceComparator {
       int j = i + 1;
       for (; j < fragments.size(); j++) {
         var target = fragments.get(j);
-        if (!overlap(source, target)) {
+        if (!overlaps(source, target)) {
           break;
         }
       }
@@ -168,13 +171,13 @@ public class SentenceComparator {
 
   /**
    * Computes fragment quality considering overlapped part "fitness" and complement "fitness"
-   * @implNote Fragment should be sorted by second document
+   * @implNote Fragment will be sorted by second document
    */
   private double fragmentQuality(Fragment fragment,
                                  List<CoreSentence> overlap,
                                  List<CoreSentence> complement) {
-    var secondCoreDocument = fragment.getSeeds().getFirst().getSecondSent().document();
     fragment.sortSeedsBySideIndex(1);
+    var secondCoreDocument = fragment.getSeeds().get(0).getSecondSent().document();
 
     int secondStartIndex = fragment.getStartSideIndex(1);
     int secondEndIndex = fragment.getEndSideIndex(1);
@@ -220,7 +223,7 @@ public class SentenceComparator {
    * Also clusters should be sorted, e.g. target's first document start pos > source start post
    * @return True if source and target clusters overlap on side of first document in document pair
    */
-  private boolean overlap(Fragment source, Fragment target) {
+  private boolean overlaps(Fragment source, Fragment target) {
     return source.getEndSideIndex(0) - target.getStartSideIndex(0) > 0;
   }
 
@@ -235,24 +238,25 @@ public class SentenceComparator {
    * @return List of fragment with having similarity score at least MIN_CLUSTER_SIDE_SIM
    */
   private @NotNull List<Fragment> validation(@NotNull List<Fragment> fragments, int sentMaxGap) {
-    List<Fragment> newClusters = new ArrayList<>();
-    for (var cluster : fragments) {
-      var sideSim = sideSimilarity(cluster);
+    List<Fragment> newFragments = new ArrayList<>();
+    for (var fragment : fragments) {
+      var sideSim = sideSimilarity(fragment);
       if (sideSim < MIN_FRAGMENT_SIDE_SIM) {
-        log.warn("Sim is {}, so splitting cluster with {} seeds", sideSim, cluster.getSeeds().size());
+        log.warn("Sim is {}, so splitting fragment with {} seeds", sideSim, fragment.getSeeds().size());
         if (sentMaxGap > 0) {
-          newClusters.addAll(extension(cluster.getSeeds(), sentMaxGap - 1));
+          newFragments.addAll(extension(fragment.getSeeds(), sentMaxGap - 1));
         }
       } else {
-        newClusters.add(cluster);
+        newFragments.add(fragment);
       }
     }
-    return fragments;
+
+    return newFragments;
   }
 
   private double sideSimilarity(@NotNull Fragment fragment) {
     var firstAccVector = getSideAccVector(fragment, 0);
-    var secondAccVector = getSideAccVector(fragment, 0);
+    var secondAccVector = getSideAccVector(fragment, 1);
 
     return Transforms.cosineSim(firstAccVector, secondAccVector);
   }
@@ -276,7 +280,6 @@ public class SentenceComparator {
 
   /**
    * Merges seeds into continuous fragments, considering only one side of document pair
-   *
    * @return list of merged seeds
    */
   private @NotNull List<Fragment> clusterOneSide(@NotNull List<Seed> seeds, int sentMaxGap, int side) {
@@ -303,7 +306,7 @@ public class SentenceComparator {
     }
 
     if (cluster.size() >= MIN_CLUSTER_SIZE) {
-      clusters.add(dev.taras.hamkalo.plagdet.comparision.Fragment.builder().seeds(new ArrayList<>(cluster)).build());
+      clusters.add(Fragment.builder().seeds(new ArrayList<>(cluster)).build());
     }
 
     return clusters;
@@ -374,13 +377,13 @@ public class SentenceComparator {
       INDArray other = getWordVector(wordToken.tag() + wordToken.lemma());
       if (other != null) {
         log.debug("Word vector is of shape {}", other.shapeInfoToString());
-        other = other.mul(posWeights.getOrDefault(wordToken.tag(), 0.0));
+        other.muli(posWeights.getOrDefault(wordToken.tag(), 0.0));
         log.debug(
           "Word {}, has idf {}", wordToken.lemma(),
           luceneIndex.inverseTermFrequency(wordToken.lemma())
         );
-        other = other.mul(luceneIndex.inverseTermFrequency(wordToken.lemma()));
-        accVector = accVector.add(other);
+        other.muli(luceneIndex.inverseTermFrequency(wordToken.lemma()));
+        accVector.addi(other);
       }
     }
 
