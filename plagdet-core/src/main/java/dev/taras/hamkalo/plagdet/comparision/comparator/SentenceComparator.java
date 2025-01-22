@@ -252,7 +252,7 @@ public class SentenceComparator {
    * @return list of merged seeds
    */
   private @NotNull List<Cluster> clusterOneSide(@NotNull List<Seed> seeds, int sentMaxGap, int side) {
-    seeds.sort(Comparator.comparingInt(s -> s.getSideOffset(side)));
+    seeds.sort(Comparator.comparingInt(s -> s.getSideIndex(side)));
 
     var clusters = new ArrayList<Cluster>();
     var cluster = new ArrayList<Seed>();
