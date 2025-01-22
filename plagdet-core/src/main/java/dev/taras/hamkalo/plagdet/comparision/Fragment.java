@@ -15,7 +15,7 @@ import java.util.List;
 @Data
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Cluster {
+public class Fragment {
 
   @NotNull List<Seed> seeds;
 
@@ -70,7 +70,7 @@ public class Cluster {
    * @return Insersect of all sentences covered by interval this.firstSeed.start - this.lastSeed.end
    *   and other...
    */
-  public @Nullable List<CoreSentence> intersect(Cluster other) {
+  public @Nullable List<CoreSentence> intersect(Fragment other) {
     var coreDocument = firstSeed().getFirstSent().document();
     // should be the same --> var secondCoreDocument = other.firstSeed().getFirstSent().document();
 
@@ -90,7 +90,7 @@ public class Cluster {
    * @param other Cluster for same document pair
    * @return Complement of overlapping parts of this and other
    */
-  public @Nullable List<CoreSentence> complement(Cluster other) {
+  public @Nullable List<CoreSentence> complement(Fragment other) {
     var coreDocument = firstSeed().getFirstSent().document();
 
     int firstStart = getStartSideIndex(0);
@@ -108,7 +108,7 @@ public class Cluster {
     return complement;
   }
 
-  public Cluster copy() {
-    return Cluster.builder().seeds(new ArrayList<>(seeds)).build();
+  public Fragment copy() {
+    return Fragment.builder().seeds(new ArrayList<>(seeds)).build();
   }
 }

@@ -1,6 +1,6 @@
 package dev.taras.hamkalo.plagdet.comparision.comparator;
 
-import dev.taras.hamkalo.plagdet.comparision.Cluster;
+import dev.taras.hamkalo.plagdet.comparision.Fragment;
 import dev.taras.hamkalo.plagdet.comparision.Seed;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
@@ -29,11 +29,13 @@ public class SentenceComparator {
 
   public static final int WORD_VECTOR_SIZE = 200;
 
-  public static final int MAX_GAP = 1;
+  public static final int MAX_GAP = 2;
 
   public static final int MIN_CLUSTER_SIZE = 3;
 
-  private static final double MIN_CLUSTER_SIDE_SIM = 0.8;
+  public static final double MIN_FRAGMENT_SIDE_SIM = 0.8;
+
+  public static final int MIN_FRAGMENT_CHAR_LENGTH = 150;
 
   public static final Map<String, Double> posWeights = Map.ofEntries(
     Map.entry("Nn", 0.5),
@@ -67,48 +69,74 @@ public class SentenceComparator {
     var clusters = extension(seeds, MAX_GAP);
     var filtered = filtering(clusters);
 
-    System.out.println(clusters.size());
+    System.out.println(filtered);
     System.out.println(filtered.size());
-//    clusterOneSide(seeds, 2, 0);
-//    extension(seeds);
   }
 
-  private List<Cluster> filtering(List<Cluster> clusters) {
-    List<Cluster> filteredClusters = new ArrayList<>();
+  private List<Fragment> filtering(List<Fragment> fragments) {
 
+
+    var filteredFragments = removeOverlapping(fragments);
+    filteredFragments = removeShort(filteredFragments);
+
+    return filteredFragments;
+  }
+
+  private List<Fragment> removeShort(List<Fragment> fragments) {
+    var filteredFragments = new ArrayList<Fragment>();
+    for (var fragment : fragments) {
+      fragment.sortSeedsBySideIndex(0);
+      var firstSideLength =
+        fragment.lastSeed().getSideOffset(0) - fragment.firstSeed().getSideOffset(0);
+
+      fragment.sortSeedsBySideIndex(1);
+      var secondSideLength =
+        fragment.lastSeed().getSideOffset(1) - fragment.firstSeed().getSideOffset(1);
+
+      if (firstSideLength > MIN_FRAGMENT_CHAR_LENGTH &&
+          secondSideLength > MIN_FRAGMENT_CHAR_LENGTH) {
+        filteredFragments.add(fragment);
+      }
+    }
+
+    return filteredFragments;
+  }
+
+  private List<Fragment> removeOverlapping(List<Fragment> fragments) {
     // after that sorting, whenever we find non overlapping cluster,
     // there is no need to proceed further
-    for (var cluster : clusters) {
-      cluster.sortSeedsBySideIndex(0);
+    for (var fragment : fragments) {
+      fragment.sortSeedsBySideIndex(0);
     }
-    clusters.sort(Comparator.comparingInt(c -> c.getStartSideIndex(0)));
+
+    fragments.sort(Comparator.comparingInt(c -> c.getStartSideIndex(0)));
+    var filteredFragments = new ArrayList<Fragment>();
 
     int i = 0;
-    for (; i < clusters.size();) {
-      var source = clusters.get(i);
+    while (i < fragments.size()) {
+      var source = fragments.get(i);
       int j = i + 1;
-      for (; j < clusters.size(); j++) {
-        var target = clusters.get(j);
+      for (; j < fragments.size(); j++) {
+        var target = fragments.get(j);
         if (!overlap(source, target)) {
           break;
         }
       }
 
       if (j == i + 1) {
-        filteredClusters.add(source);
+        filteredFragments.add(source);
         i++;
       } else {
-        int best = pickBestCluster(clusters.subList(i, j));
-        filteredClusters.add(clusters.get(i + best));
+        int best = pickBestCluster(fragments.subList(i, j));
+        filteredFragments.add(fragments.get(i + best));
         i = j;
       }
-
     }
 
-    return filteredClusters;
+    return filteredFragments;
   }
 
-  private int pickBestCluster(List<Cluster> overlapping) {
+  private int pickBestCluster(List<Fragment> overlapping) {
     var pivot = overlapping.get(0);
     int maxi = 0;
     double maxSim = Double.MIN_VALUE;
@@ -139,17 +167,17 @@ public class SentenceComparator {
   }
 
   /**
-   * Computes cluster quality considering overlapped part "fitness" and complement "fitness"
-   * @implNote Cluster should be sorted by second document
+   * Computes fragment quality considering overlapped part "fitness" and complement "fitness"
+   * @implNote Fragment should be sorted by second document
    */
-  private double fragmentQuality(Cluster cluster,
+  private double fragmentQuality(Fragment fragment,
                                  List<CoreSentence> overlap,
                                  List<CoreSentence> complement) {
-    var secondCoreDocument = cluster.getSeeds().getFirst().getSecondSent().document();
-    cluster.sortSeedsBySideIndex(1);
+    var secondCoreDocument = fragment.getSeeds().getFirst().getSecondSent().document();
+    fragment.sortSeedsBySideIndex(1);
 
-    int secondStartIndex = cluster.getStartSideIndex(1);
-    int secondEndIndex = cluster.getEndSideIndex(1);
+    int secondStartIndex = fragment.getStartSideIndex(1);
+    int secondEndIndex = fragment.getEndSideIndex(1);
     var secondDocumentSentences = secondCoreDocument.sentences()
       .subList(secondStartIndex, secondEndIndex + 1);
 
@@ -192,25 +220,25 @@ public class SentenceComparator {
    * Also clusters should be sorted, e.g. target's first document start pos > source start post
    * @return True if source and target clusters overlap on side of first document in document pair
    */
-  private boolean overlap(Cluster source, Cluster target) {
+  private boolean overlap(Fragment source, Fragment target) {
     return source.getEndSideIndex(0) - target.getStartSideIndex(0) > 0;
   }
 
-  private List<Cluster> extension(List<Seed> seeds, int sentMaxGap) {
-    var clusters = clustering(seeds, sentMaxGap, 0);
-    clusters = validation(clusters, sentMaxGap);
-    return clusters;
+  private List<Fragment> extension(List<Seed> seeds, int sentMaxGap) {
+    var fragments = clustering(seeds, sentMaxGap, 0);
+    fragments = validation(fragments, sentMaxGap);
+    return fragments;
   }
 
   /**
-   * Split cluster each time it sides have low similarity score
-   * @return List of clusters with having similarity score at least MIN_CLUSTER_SIDE_SIM
+   * Split fragment each time it sides have low similarity score
+   * @return List of fragment with having similarity score at least MIN_CLUSTER_SIDE_SIM
    */
-  private @NotNull List<Cluster> validation(@NotNull List<Cluster> clusters, int sentMaxGap) {
-    List<Cluster> newClusters = new ArrayList<>();
-    for (var cluster : clusters) {
+  private @NotNull List<Fragment> validation(@NotNull List<Fragment> fragments, int sentMaxGap) {
+    List<Fragment> newClusters = new ArrayList<>();
+    for (var cluster : fragments) {
       var sideSim = sideSimilarity(cluster);
-      if (sideSim < MIN_CLUSTER_SIDE_SIM) {
+      if (sideSim < MIN_FRAGMENT_SIDE_SIM) {
         log.warn("Sim is {}, so splitting cluster with {} seeds", sideSim, cluster.getSeeds().size());
         if (sentMaxGap > 0) {
           newClusters.addAll(extension(cluster.getSeeds(), sentMaxGap - 1));
@@ -219,19 +247,19 @@ public class SentenceComparator {
         newClusters.add(cluster);
       }
     }
-    return clusters;
+    return fragments;
   }
 
-  private double sideSimilarity(@NotNull Cluster cluster) {
-    var firstAccVector = getSideAccVector(cluster, 0);
-    var secondAccVector = getSideAccVector(cluster, 0);
+  private double sideSimilarity(@NotNull Fragment fragment) {
+    var firstAccVector = getSideAccVector(fragment, 0);
+    var secondAccVector = getSideAccVector(fragment, 0);
 
     return Transforms.cosineSim(firstAccVector, secondAccVector);
   }
 
-  private @NotNull INDArray getSideAccVector(@NotNull Cluster cluster, int side) {
+  private @NotNull INDArray getSideAccVector(@NotNull Fragment fragment, int side) {
     var sideAccVector = Nd4j.zeros(WORD_VECTOR_SIZE);
-    var seeds = cluster.getSeeds();
+    var seeds = fragment.getSeeds();
     seeds.sort(Comparator.comparingInt(s -> s.getSideIndex(side)));
 
     var minSentIndex = seeds.get(0).getSideIndex(side);
@@ -251,10 +279,10 @@ public class SentenceComparator {
    *
    * @return list of merged seeds
    */
-  private @NotNull List<Cluster> clusterOneSide(@NotNull List<Seed> seeds, int sentMaxGap, int side) {
+  private @NotNull List<Fragment> clusterOneSide(@NotNull List<Seed> seeds, int sentMaxGap, int side) {
     seeds.sort(Comparator.comparingInt(s -> s.getSideIndex(side)));
 
-    var clusters = new ArrayList<Cluster>();
+    var clusters = new ArrayList<Fragment>();
     var cluster = new ArrayList<Seed>();
     for (Seed seed : seeds) {
       if (cluster.isEmpty()) {
@@ -267,7 +295,7 @@ public class SentenceComparator {
         cluster.add(seed);
       } else {
         if (cluster.size() >= MIN_CLUSTER_SIZE) {
-          clusters.add(Cluster.builder().seeds(new ArrayList<>(cluster)).build());
+          clusters.add(Fragment.builder().seeds(new ArrayList<>(cluster)).build());
         }
         cluster.clear();
         cluster.add(seed);
@@ -275,19 +303,19 @@ public class SentenceComparator {
     }
 
     if (cluster.size() >= MIN_CLUSTER_SIZE) {
-      clusters.add(Cluster.builder().seeds(new ArrayList<>(cluster)).build());
+      clusters.add(dev.taras.hamkalo.plagdet.comparision.Fragment.builder().seeds(new ArrayList<>(cluster)).build());
     }
 
     return clusters;
   }
 
-  private List<Cluster> clustering(List<Seed> seeds, int sentMaxGap, int side) {
+  private List<Fragment> clustering(List<Seed> seeds, int sentMaxGap, int side) {
     var clusters = clusterOneSide(seeds, sentMaxGap, side);
     if (clusters.size() == 1) {
       return clusters;
     }
 
-    List<Cluster> newClusters = new ArrayList<>();
+    List<Fragment> newClusters = new ArrayList<>();
     for (var cluster : clusters) {
       newClusters.addAll(clustering(cluster.getSeeds(), sentMaxGap, side + 1));
     }
