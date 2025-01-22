@@ -1,13 +1,13 @@
 package dev.taras.hamkalo.plagdet.comparision.comparator;
 
 import dev.taras.hamkalo.plagdet.comparision.Fragment;
+import dev.taras.hamkalo.plagdet.comparision.Seed;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.util.CoreMap;
 import lombok.AccessLevel;
-import lombok.NonNull;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
@@ -16,7 +16,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.factory.ops.NDMath;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.nio.file.Path;
@@ -28,7 +27,9 @@ public class SentenceComparator {
 
   public static final String POS_LEMMA_MODEL_RESOURCE = "models/sk.poslemma.prim-10.0-public-saneword2vec.bin";
 
-  public static final int VECTOR_SIZE = 300;
+  public static final int VECTOR_SIZE = 200;
+
+  public static final int MAX_GAP = 2;
 
   public static final Map<String, Double> posWeights = Map.ofEntries(
     Map.entry("Nn", 0.5),
@@ -48,24 +49,104 @@ public class SentenceComparator {
 
   @NotNull LuceneIndex luceneIndex;
 
-  @NotNull Map<String, INDArray> sentenceToWeightedMeanVector;
-
-  @Nullable List<Fragment> seeds;
-
-  @Nullable DocumentPair documentPair;
+  @NotNull Map<String, INDArray> sentenceToWeightedAccVector;
 
   public SentenceComparator(@NotNull LuceneIndex luceneIndex) {
-    this.sentenceToWeightedMeanVector = new HashMap<>();
-    this.seeds = new ArrayList<>();
+    this.sentenceToWeightedAccVector = new HashMap<>();
     this.luceneIndex = luceneIndex;
   }
 
-  private static Word2Vec loadWordVectors() {
-    var modelPath = Path.of(
-      ClassLoader.getSystemClassLoader().getResource(POS_LEMMA_MODEL_RESOURCE).getPath()
-    );
+  public void compare(@NotNull DocumentPair documentPair) {
+    var seeds = seed(documentPair);
+    mergeSeeds(seeds, 2, 0);
+//    extension(seeds);
+  }
 
-    return WordVectorSerializer.readWord2VecModel(modelPath.toFile());
+  private void extension(List<Seed> fragments) {
+    var clusters = clustering(fragments);
+  }
+
+  /**
+   * Merges seeds into continuous fragments, considering only one side of document pair
+   * @return list of merged seeds
+   */
+  private List<Fragment> mergeSeeds(List<Seed> seeds, int sentMaxGap, int side) {
+    seeds.sort(Comparator.comparingInt(s -> s.getSideOffset(side)));
+//    for (var seed : seeds) {
+//      log.warn("\nSeed at {}:\n{}\n", seed.getSideOffset(side), seed.toString());
+//    }
+    var fragments = new ArrayList<Fragment>();
+    var merged = new ArrayList<Seed>();
+    for (var seed : seeds) {
+//      seed.
+    }
+
+    return null;
+  }
+
+  private List<Fragment> clustering(List<Seed> seeds) {
+    return null;
+  }
+
+  private List<Seed> seed(DocumentPair documentPair) {
+    var seeds = new ArrayList<Seed>();
+
+    var firstSents = documentPair.getFirst().getCoreDocument().annotation()
+      .get(CoreAnnotations.SentencesAnnotation.class).stream()
+      .filter(s -> !s.get(PlagdetAnnotations.CodeSegmentAnnotation.class))
+      .toList();
+
+    var secondSents = documentPair.getSecond().getCoreDocument().annotation()
+      .get(CoreAnnotations.SentencesAnnotation.class).stream()
+      .filter(s -> !s.get(PlagdetAnnotations.CodeSegmentAnnotation.class))
+      .toList();
+
+    for (var firstSent : firstSents) {
+      var firstSentAccVector = getAccVector(firstSent);
+      log.debug(Arrays.toString(firstSentAccVector.toDoubleVector()));
+      for (var secondSent : secondSents) {
+        var secondSentAccVector = getAccVector(secondSent);
+        var similarity = Transforms.cosineSim(firstSentAccVector, secondSentAccVector);
+        if (!Double.isNaN(similarity) && similarity > 0.85) {
+          seeds.add(Seed.builder()
+            .firstSent(firstSent)
+            .secondSent(secondSent)
+            .build()
+          );
+        }
+
+      }
+    }
+
+    return seeds;
+  }
+
+  private @NotNull INDArray getAccVector(@NotNull CoreMap sentence) {
+    return sentenceToWeightedAccVector.computeIfAbsent(
+      sentence.get(CoreAnnotations.TextAnnotation.class), (key) -> computeAccVector(sentence));
+  }
+
+  private @NotNull INDArray computeAccVector(@NotNull CoreMap sentence) {
+    INDArray accVector = Nd4j.zeros(SentenceComparator.VECTOR_SIZE);
+    for (var wordToken : sentence.get(PlagdetAnnotations.WordsAnnotation.class)) {
+      if (wordToken.get(PlagdetAnnotations.StopWordAnnotation.class)) {
+        continue;
+      }
+
+      INDArray other = getWordVector(wordToken.tag() + wordToken.lemma());
+      if (other != null) {
+        log.debug("Word vector is of shape {}", other.shapeInfoToString());
+        other = other.mul(posWeights.getOrDefault(wordToken.tag(), 0.0));
+        log.debug(
+          "Word {}, has idf {}", wordToken.lemma(),
+          luceneIndex.inverseTermFrequency(wordToken.lemma())
+        );
+        other = other.mul(luceneIndex.inverseTermFrequency(wordToken.lemma()));
+        accVector = accVector.add(other);
+      }
+    }
+
+    return accVector;
   }
 
   public @Nullable INDArray getWordVector(@NotNull String word) {
@@ -81,75 +162,12 @@ public class SentenceComparator {
     return null;
   }
 
-  public void compare(DocumentPair documentPair) {
-    word2Vec = loadWordVectors();
-    this.documentPair = documentPair;
-    seed();
-    for (var seed : seeds) {
-      System.out.println(seed);
-    }
-  }
+  private static @Nullable Word2Vec loadWordVectors() {
+    var modelPath = Path.of(
+      ClassLoader.getSystemClassLoader().getResource(POS_LEMMA_MODEL_RESOURCE).getPath()
+    );
 
-  private void seed() {
-    this.seeds = new ArrayList<>();
-    var srcSents = documentPair.getFirst().getCoreDocument().annotation()
-      .get(CoreAnnotations.SentencesAnnotation.class).stream()
-      .filter(s -> !s.get(PlagdetAnnotations.CodeSegmentAnnotation.class))
-      .toList();
-
-    var suspSents = documentPair.getSecond().getCoreDocument().annotation()
-      .get(CoreAnnotations.SentencesAnnotation.class).stream()
-      .filter(s -> !s.get(PlagdetAnnotations.CodeSegmentAnnotation.class))
-      .toList();
-
-    for (var srcSent : srcSents) {
-      var srcSentMeanVector = getMeanVector(srcSent);
-//      log.warn(srcSentMeanVector.shapeInfoToString());
-      log.debug(Arrays.toString(srcSentMeanVector.toDoubleVector()));
-      for (var suspSent : suspSents) {
-        var suspSentMeanVector = getMeanVector(suspSent);
-        var similarity = Transforms.cosineSim(srcSentMeanVector, suspSentMeanVector);
-        if (!Double.isNaN(similarity) && similarity > 0.85) {
-          seeds.add(Fragment.builder()
-            .firstSentences(Set.of(srcSent))
-            .secondSentences(Set.of(suspSent))
-            .build()
-          );
-        }
-//        log.warn(Arrays.toString(suspSentMeanVector.toDoubleVector()));
-//        log.warn(
-//          "\nSimilarity {}\nSent 1:{}\nSent 2:{}",
-//          Transforms.cosineSim(srcSentMeanVector, suspSentMeanVector),
-//          srcSent.get(CoreAnnotations.TextAnnotation.class),
-//          suspSent.get(CoreAnnotations.TextAnnotation.class)
-//        );
-      }
-    }
-
-  }
-
-  private INDArray getMeanVector(CoreMap sentence) {
-    return sentenceToWeightedMeanVector.computeIfAbsent(
-      sentence.get(CoreAnnotations.TextAnnotation.class), (key) -> computeMeanVector(sentence));
-  }
-
-  private INDArray computeMeanVector(CoreMap sentence) {
-    INDArray meanVector = Nd4j.zeros(word2Vec.vectorSize());
-    for (var wordToken : sentence.get(PlagdetAnnotations.WordsAnnotation.class)) {
-      if (wordToken.get(PlagdetAnnotations.StopWordAnnotation.class)) {
-        continue;
-      }
-
-      INDArray other = getWordVector(wordToken.tag() + wordToken.lemma());
-      if (other != null) {
-        log.debug("Word vector is of shape {}", other.shapeInfoToString());
-        other = other.mul(posWeights.getOrDefault(wordToken.tag(), 0.0));
-        log.debug("Word {}, has idf {}", wordToken.lemma(), luceneIndex.inverseTermFrequency(wordToken.lemma()));
-        other = other.mul(luceneIndex.inverseTermFrequency(wordToken.lemma()));
-        meanVector = meanVector.add(other);
-      }
-    }
-    return meanVector;
+    return WordVectorSerializer.readWord2VecModel(modelPath.toFile());
   }
 
 }
