@@ -29,7 +29,7 @@ public class SentenceComparator {
 
   public static final int WORD_VECTOR_SIZE = 200;
 
-  public static final int MAX_GAP = 2;
+  public static final int MAX_GAP = 1;
 
   public static final int MIN_CLUSTER_SIZE = 3;
 
@@ -51,9 +51,11 @@ public class SentenceComparator {
 
   @Nullable Word2Vec word2Vec;
 
-  @NotNull LuceneIndex luceneIndex;
+  @NotNull
+  final LuceneIndex luceneIndex;
 
-  @NotNull Map<String, INDArray> sentenceToWeightedAccVector;
+  @NotNull
+  final Map<String, INDArray> sentenceToWeightedAccVector;
 
   public SentenceComparator(@NotNull LuceneIndex luceneIndex) {
     this.sentenceToWeightedAccVector = new HashMap<>();
@@ -63,9 +65,135 @@ public class SentenceComparator {
   public void compare(@NotNull DocumentPair documentPair) {
     var seeds = seed(documentPair);
     var clusters = extension(seeds, MAX_GAP);
+    var filtered = filtering(clusters);
+
     System.out.println(clusters.size());
+    System.out.println(filtered.size());
 //    clusterOneSide(seeds, 2, 0);
 //    extension(seeds);
+  }
+
+  private List<Cluster> filtering(List<Cluster> clusters) {
+    List<Cluster> filteredClusters = new ArrayList<>();
+
+    // after that sorting, whenever we find non overlapping cluster,
+    // there is no need to proceed further
+    for (var cluster : clusters) {
+      cluster.sortSeedsBySideIndex(0);
+    }
+    clusters.sort(Comparator.comparingInt(c -> c.getStartSideIndex(0)));
+
+    int i = 0;
+    for (; i < clusters.size();) {
+      var source = clusters.get(i);
+      int j = i + 1;
+      for (; j < clusters.size(); j++) {
+        var target = clusters.get(j);
+        if (!overlap(source, target)) {
+          break;
+        }
+      }
+
+      if (j == i + 1) {
+        filteredClusters.add(source);
+        i++;
+      } else {
+        int best = pickBestCluster(clusters.subList(i, j));
+        filteredClusters.add(clusters.get(i + best));
+        i = j;
+      }
+
+    }
+
+    return filteredClusters;
+  }
+
+  private int pickBestCluster(List<Cluster> overlapping) {
+    var pivot = overlapping.get(0);
+    int maxi = 0;
+    double maxSim = Double.MIN_VALUE;
+    for (int i = 1; i < overlapping.size(); i++) {
+      var other = overlapping.get(i);
+      var overlappedSents = pivot.intersect(other);
+      var overlapToPivotComplement = pivot.complement(other);
+      var overlapToOtherComplement = other.complement(pivot);
+
+      double pivotFragmentQuality = fragmentQuality(pivot.copy(), overlappedSents, overlapToPivotComplement);
+      double otherFragmentQuality = fragmentQuality(other.copy(), overlappedSents, overlapToOtherComplement);
+      if (pivotFragmentQuality > otherFragmentQuality) {
+        if (pivotFragmentQuality > maxSim) {
+          maxi = 0;
+          maxSim = pivotFragmentQuality;
+        }
+      }
+
+      if (otherFragmentQuality > pivotFragmentQuality) {
+        if (otherFragmentQuality > maxSim) {
+          maxi = i;
+          maxSim = otherFragmentQuality;
+        }
+      }
+    }
+
+    return maxi;
+  }
+
+  /**
+   * Computes cluster quality considering overlapped part "fitness" and complement "fitness"
+   * @implNote Cluster should be sorted by second document
+   */
+  private double fragmentQuality(Cluster cluster,
+                                 List<CoreSentence> overlap,
+                                 List<CoreSentence> complement) {
+    var secondCoreDocument = cluster.getSeeds().getFirst().getSecondSent().document();
+    cluster.sortSeedsBySideIndex(1);
+
+    int secondStartIndex = cluster.getStartSideIndex(1);
+    int secondEndIndex = cluster.getEndSideIndex(1);
+    var secondDocumentSentences = secondCoreDocument.sentences()
+      .subList(secondStartIndex, secondEndIndex + 1);
+
+    double overlapToFragmentSim = fragmentSimilarityAsymmetric(overlap, secondDocumentSentences);
+    double complementToFragmentSim = fragmentSimilarityAsymmetric(complement, secondDocumentSentences);
+
+    return overlapToFragmentSim + (1 - overlapToFragmentSim) * complementToFragmentSim;
+  }
+
+  /**
+   * Compares first fragment to the second using average bestMatch
+   */
+  private double fragmentSimilarityAsymmetric(List<CoreSentence> firstFragment,
+                                              List<CoreSentence> secondFragment) {
+
+    double bestMatchSum = 0.0;
+    for (var firstSent : firstFragment) {
+      var firstSentAccVector = getAccVector(firstSent);
+      double maxSim = Double.NaN;
+      for (var secondSent : secondFragment) {
+        var secondSentAccVector = getAccVector(secondSent);
+        double sim = Transforms.cosineSim(firstSentAccVector, secondSentAccVector);
+        if (Double.isNaN(maxSim)) {
+          maxSim = sim;
+        } else if (!Double.isNaN(sim)) {
+          maxSim = Math.max(maxSim, sim);
+        }
+      }
+
+      if (Double.isNaN(maxSim)) {
+        bestMatchSum += maxSim;
+      }
+    }
+
+    return bestMatchSum / secondFragment.size();
+  }
+
+  /**
+   * Cluster seeds are expected to be sorted by the first document position
+   * Also clusters should be sorted, e.g. target's first document start pos > source start post
+   * @return True if source and target clusters overlap on side of first document in document pair
+   */
+  private boolean overlap(Cluster source, Cluster target) {
+    return source.getEndSideIndex(0) - target.getStartSideIndex(0) > 0;
   }
 
   private List<Cluster> extension(List<Seed> seeds, int sentMaxGap) {
@@ -248,8 +376,10 @@ public class SentenceComparator {
     var modelPath = Path.of(
       ClassLoader.getSystemClassLoader().getResource(POS_LEMMA_MODEL_RESOURCE).getPath()
     );
-
-    return WordVectorSerializer.readWord2VecModel(modelPath.toFile());
+    log.warn("Loading Word2Vec model from {}", modelPath);
+    var word2vec = WordVectorSerializer.readWord2VecModel(modelPath.toFile());
+    log.warn("Loading Word2Vec model done");
+    return word2vec;
   }
 
 }
