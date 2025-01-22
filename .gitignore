@@ -415,9 +415,10 @@ build
 
 
 SIMPLE_FS_INDEX/**
-lucene_index/**
 *zip
 /app/src/main/resources/files/**
 /.env.*
 /libs/
 /plagdet-core/src/main/resources/files/
+/plagdet-core/lucene_index/
+/plagdet-core/src/main/resources/models/
