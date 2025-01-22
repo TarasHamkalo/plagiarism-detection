@@ -1,6 +1,6 @@
 package dev.taras.hamkalo.plagdet.comparision.comparator;
 
-import dev.taras.hamkalo.plagdet.comparision.Fragment;
+import dev.taras.hamkalo.plagdet.comparision.Cluster;
 import dev.taras.hamkalo.plagdet.comparision.Seed;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
@@ -60,12 +60,16 @@ public class SentenceComparator {
 
   public void compare(@NotNull DocumentPair documentPair) {
     var seeds = seed(documentPair);
-    mergeSeeds(seeds, 2, 0);
+    var clusters = clustering(seeds, 0);
+    for (var cluster : clusters) {
+      System.out.println(cluster);
+    }
+//    clusterOneSide(seeds, 2, 0);
 //    extension(seeds);
   }
 
   private void extension(List<Seed> fragments) {
-    var clusters = clustering(fragments);
+//    var clusters = clustering(fragments);
   }
 
   /**
@@ -73,38 +77,48 @@ public class SentenceComparator {
    *
    * @return list of merged seeds
    */
-  private List<Fragment> mergeSeeds(List<Seed> seeds, int sentMaxGap, int side) {
+  private List<Cluster> clusterOneSide(List<Seed> seeds, int sentMaxGap, int side) {
     seeds.sort(Comparator.comparingInt(s -> s.getSideOffset(side)));
 
-    var fragments = new ArrayList<Fragment>();
-    var merged = new ArrayList<Seed>();
+    var clusters = new ArrayList<Cluster>();
+    var cluster = new ArrayList<Seed>();
     for (Seed seed : seeds) {
-      if (merged.isEmpty()) {
-        merged.add(seed);
+      if (cluster.isEmpty()) {
+        cluster.add(seed);
         continue;
       }
 
-      var lastSeed = merged.get(merged.size() - 1);
+      var lastSeed = cluster.get(cluster.size() - 1);
       if (lastSeed.isAdjacent(seed, side, sentMaxGap)) {
-        merged.add(seed);
+        cluster.add(seed);
       } else {
-        if (merged.size() >= MIN_CLUSTER_SIZE) {
-          fragments.add(Fragment.builder().seeds(new ArrayList<>(merged)).build());
+        if (cluster.size() >= MIN_CLUSTER_SIZE) {
+          clusters.add(Cluster.builder().seeds(new ArrayList<>(cluster)).build());
         }
-        merged.clear();
-        merged.add(seed);
+        cluster.clear();
+        cluster.add(seed);
       }
     }
 
-    if (merged.size() >= MIN_CLUSTER_SIZE) {
-      fragments.add(Fragment.builder().seeds(new ArrayList<>(merged)).build());
+    if (cluster.size() >= MIN_CLUSTER_SIZE) {
+      clusters.add(Cluster.builder().seeds(new ArrayList<>(cluster)).build());
     }
 
-    return fragments;
+    return clusters;
   }
 
-  private List<Fragment> clustering(List<Seed> seeds) {
-    return null;
+  private List<Cluster> clustering(List<Seed> seeds, int side) {
+    var clusters = clusterOneSide(seeds, MAX_GAP, side);
+    if (clusters.size() == 1) {
+      return clusters;
+    }
+
+    List<Cluster> newClusters = new ArrayList<>();
+    for (var cluster : clusters) {
+      newClusters.addAll(clustering(cluster.getSeeds(), side + 1));
+    }
+
+    return newClusters;
   }
 
   private List<Seed> seed(DocumentPair documentPair) {

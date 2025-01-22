@@ -1,7 +1,7 @@
 package dev.taras.hamkalo.plagdet.documents;
 
 
-import dev.taras.hamkalo.plagdet.comparision.Fragment;
+import dev.taras.hamkalo.plagdet.comparision.Cluster;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -24,7 +24,7 @@ public class DocumentPair {
 
   @NotNull
   @Builder.Default
-  Set<Fragment> commonFragments = new HashSet<>();
+  Set<Cluster> commonFragments = new HashSet<>();
 
   @NotNull
   @Builder.Default
