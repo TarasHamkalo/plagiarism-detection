@@ -25,8 +25,16 @@ public class Seed {
     return secondSent.coreMap().get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
   }
 
+  public CoreSentence getSideSentence(int side) {
+    return (side % 2) == 0 ? firstSent : secondSent;
+  }
+
   public int getSideOffset(int side) {
     return (side % 2) == 0 ? firstOffset() : secondOffset();
+  }
+
+  public int getSideIndex(int side) {
+    return (side % 2) == 0 ? firstSentIndex : secondSentIndex;
   }
 
   public boolean isAdjacent(Seed other, int side, int gap) {

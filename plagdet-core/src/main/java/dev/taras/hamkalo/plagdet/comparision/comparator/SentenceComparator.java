@@ -27,11 +27,13 @@ public class SentenceComparator {
 
   public static final String POS_LEMMA_MODEL_RESOURCE = "models/sk.poslemma.prim-10.0-public-saneword2vec.bin";
 
-  public static final int VECTOR_SIZE = 200;
+  public static final int WORD_VECTOR_SIZE = 200;
 
   public static final int MAX_GAP = 2;
 
   public static final int MIN_CLUSTER_SIZE = 3;
+
+  private static final double MIN_CLUSTER_SIDE_SIM = 0.8;
 
   public static final Map<String, Double> posWeights = Map.ofEntries(
     Map.entry("Nn", 0.5),
@@ -60,16 +62,60 @@ public class SentenceComparator {
 
   public void compare(@NotNull DocumentPair documentPair) {
     var seeds = seed(documentPair);
-    var clusters = clustering(seeds, 0);
-    for (var cluster : clusters) {
-      System.out.println(cluster);
-    }
+    var clusters = extension(seeds, MAX_GAP);
+    System.out.println(clusters.size());
 //    clusterOneSide(seeds, 2, 0);
 //    extension(seeds);
   }
 
-  private void extension(List<Seed> fragments) {
-//    var clusters = clustering(fragments);
+  private List<Cluster> extension(List<Seed> seeds, int sentMaxGap) {
+    var clusters = clustering(seeds, sentMaxGap, 0);
+    clusters = validation(clusters, sentMaxGap);
+    return clusters;
+  }
+
+  /**
+   * Split cluster each time it sides have low similarity score
+   * @return List of clusters with having similarity score at least MIN_CLUSTER_SIDE_SIM
+   */
+  private @NotNull List<Cluster> validation(@NotNull List<Cluster> clusters, int sentMaxGap) {
+    List<Cluster> newClusters = new ArrayList<>();
+    for (var cluster : clusters) {
+      var sideSim = sideSimilarity(cluster);
+      if (sideSim < MIN_CLUSTER_SIDE_SIM) {
+        log.warn("Sim is {}, so splitting cluster with {} seeds", sideSim, cluster.getSeeds().size());
+        if (sentMaxGap > 0) {
+          newClusters.addAll(extension(cluster.getSeeds(), sentMaxGap - 1));
+        }
+      } else {
+        newClusters.add(cluster);
+      }
+    }
+    return clusters;
+  }
+
+  private double sideSimilarity(@NotNull Cluster cluster) {
+    var firstAccVector = getSideAccVector(cluster, 0);
+    var secondAccVector = getSideAccVector(cluster, 0);
+
+    return Transforms.cosineSim(firstAccVector, secondAccVector);
+  }
+
+  private @NotNull INDArray getSideAccVector(@NotNull Cluster cluster, int side) {
+    var sideAccVector = Nd4j.zeros(WORD_VECTOR_SIZE);
+    var seeds = cluster.getSeeds();
+    seeds.sort(Comparator.comparingInt(s -> s.getSideIndex(side)));
+
+    var minSentIndex = seeds.get(0).getSideIndex(side);
+    var maxSentIndex = seeds.get(seeds.size() - 1).getSideIndex(side);
+
+    var coreDocument = seeds.get(0).getSideSentence(side).document();
+    for (var sent : coreDocument.sentences().subList(minSentIndex, maxSentIndex)) {
+      var sentAccVector = getAccVector(sent);
+      sideAccVector.addi(sentAccVector);
+    }
+
+    return sideAccVector;
   }
 
   /**
@@ -77,7 +123,7 @@ public class SentenceComparator {
    *
    * @return list of merged seeds
    */
-  private List<Cluster> clusterOneSide(List<Seed> seeds, int sentMaxGap, int side) {
+  private @NotNull List<Cluster> clusterOneSide(@NotNull List<Seed> seeds, int sentMaxGap, int side) {
     seeds.sort(Comparator.comparingInt(s -> s.getSideOffset(side)));
 
     var clusters = new ArrayList<Cluster>();
@@ -107,15 +153,15 @@ public class SentenceComparator {
     return clusters;
   }
 
-  private List<Cluster> clustering(List<Seed> seeds, int side) {
-    var clusters = clusterOneSide(seeds, MAX_GAP, side);
+  private List<Cluster> clustering(List<Seed> seeds, int sentMaxGap, int side) {
+    var clusters = clusterOneSide(seeds, sentMaxGap, side);
     if (clusters.size() == 1) {
       return clusters;
     }
 
     List<Cluster> newClusters = new ArrayList<>();
     for (var cluster : clusters) {
-      newClusters.addAll(clustering(cluster.getSeeds(), side + 1));
+      newClusters.addAll(clustering(cluster.getSeeds(), sentMaxGap, side + 1));
     }
 
     return newClusters;
@@ -163,7 +209,7 @@ public class SentenceComparator {
   }
 
   private @NotNull INDArray computeAccVector(@NotNull CoreMap sentence) {
-    INDArray accVector = Nd4j.zeros(SentenceComparator.VECTOR_SIZE);
+    INDArray accVector = Nd4j.zeros(SentenceComparator.WORD_VECTOR_SIZE);
     for (var wordToken : sentence.get(PlagdetAnnotations.WordsAnnotation.class)) {
       if (wordToken.get(PlagdetAnnotations.StopWordAnnotation.class)) {
         continue;
