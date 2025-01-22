@@ -31,6 +31,8 @@ public class SentenceComparator {
 
   public static final int MAX_GAP = 2;
 
+  public static final int MIN_CLUSTER_SIZE = 3;
+
   public static final Map<String, Double> posWeights = Map.ofEntries(
     Map.entry("Nn", 0.5),
     Map.entry("Aj", 0.3),
@@ -68,20 +70,37 @@ public class SentenceComparator {
 
   /**
    * Merges seeds into continuous fragments, considering only one side of document pair
+   *
    * @return list of merged seeds
    */
   private List<Fragment> mergeSeeds(List<Seed> seeds, int sentMaxGap, int side) {
     seeds.sort(Comparator.comparingInt(s -> s.getSideOffset(side)));
-    for (var seed : seeds) {
-      log.warn("\nSeed at {}:\n{}\n", seed.getSideOffset(side), seed);
-    }
+
     var fragments = new ArrayList<Fragment>();
     var merged = new ArrayList<Seed>();
-//    for (var seed : seeds) {
-//
-//    }
+    for (Seed seed : seeds) {
+      if (merged.isEmpty()) {
+        merged.add(seed);
+        continue;
+      }
 
-    return null;
+      var lastSeed = merged.get(merged.size() - 1);
+      if (lastSeed.isAdjacent(seed, side, sentMaxGap)) {
+        merged.add(seed);
+      } else {
+        if (merged.size() >= MIN_CLUSTER_SIZE) {
+          fragments.add(Fragment.builder().seeds(new ArrayList<>(merged)).build());
+        }
+        merged.clear();
+        merged.add(seed);
+      }
+    }
+
+    if (merged.size() >= MIN_CLUSTER_SIZE) {
+      fragments.add(Fragment.builder().seeds(new ArrayList<>(merged)).build());
+    }
+
+    return fragments;
   }
 
   private List<Fragment> clustering(List<Seed> seeds) {

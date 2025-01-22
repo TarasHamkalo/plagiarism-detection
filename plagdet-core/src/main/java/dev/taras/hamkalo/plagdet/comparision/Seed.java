@@ -31,9 +31,9 @@ public class Seed {
 
   public boolean isAdjacent(Seed other, int side, int gap) {
     if (side % 2 == 0) {
-      return Math.abs(firstSentIndex - other.firstSentIndex) < gap;
+      return Math.abs(firstSentIndex - other.firstSentIndex) <= gap;
     } else {
-      return Math.abs(secondSentIndex - other.secondSentIndex) < gap;
+      return Math.abs(secondSentIndex - other.secondSentIndex) <= gap;
     }
   }
 
