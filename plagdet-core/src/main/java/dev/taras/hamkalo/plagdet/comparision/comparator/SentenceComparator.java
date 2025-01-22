@@ -5,7 +5,7 @@ import dev.taras.hamkalo.plagdet.comparision.Seed;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
-import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.util.CoreMap;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
@@ -72,14 +72,14 @@ public class SentenceComparator {
    */
   private List<Fragment> mergeSeeds(List<Seed> seeds, int sentMaxGap, int side) {
     seeds.sort(Comparator.comparingInt(s -> s.getSideOffset(side)));
-//    for (var seed : seeds) {
-//      log.warn("\nSeed at {}:\n{}\n", seed.getSideOffset(side), seed.toString());
-//    }
+    for (var seed : seeds) {
+      log.warn("\nSeed at {}:\n{}\n", seed.getSideOffset(side), seed);
+    }
     var fragments = new ArrayList<Fragment>();
     var merged = new ArrayList<Seed>();
-    for (var seed : seeds) {
-//      seed.
-    }
+//    for (var seed : seeds) {
+//
+//    }
 
     return null;
   }
@@ -91,39 +91,42 @@ public class SentenceComparator {
   private List<Seed> seed(DocumentPair documentPair) {
     var seeds = new ArrayList<Seed>();
 
-    var firstSents = documentPair.getFirst().getCoreDocument().annotation()
-      .get(CoreAnnotations.SentencesAnnotation.class).stream()
-      .filter(s -> !s.get(PlagdetAnnotations.CodeSegmentAnnotation.class))
-      .toList();
+    var firstSents = documentPair.getFirst().getCoreDocument().sentences();
+    var secondSents = documentPair.getSecond().getCoreDocument().sentences();
 
-    var secondSents = documentPair.getSecond().getCoreDocument().annotation()
-      .get(CoreAnnotations.SentencesAnnotation.class).stream()
-      .filter(s -> !s.get(PlagdetAnnotations.CodeSegmentAnnotation.class))
-      .toList();
+    for (int i = 0; i < firstSents.size(); i++) {
+      var firstSent = firstSents.get(i);
+      if (firstSent.coreMap().get(PlagdetAnnotations.CodeSegmentAnnotation.class)) {
+        continue;
+      }
 
-    for (var firstSent : firstSents) {
       var firstSentAccVector = getAccVector(firstSent);
-      log.debug(Arrays.toString(firstSentAccVector.toDoubleVector()));
-      for (var secondSent : secondSents) {
+      for (int j = 0; j < secondSents.size(); j++) {
+        var secondSent = secondSents.get(j);
+        if (secondSent.coreMap().get(PlagdetAnnotations.CodeSegmentAnnotation.class)) {
+          continue;
+        }
+
         var secondSentAccVector = getAccVector(secondSent);
         var similarity = Transforms.cosineSim(firstSentAccVector, secondSentAccVector);
         if (!Double.isNaN(similarity) && similarity > 0.85) {
           seeds.add(Seed.builder()
+            .firstSentIndex(i)
+            .secondSentIndex(j)
             .firstSent(firstSent)
             .secondSent(secondSent)
             .build()
           );
         }
-
       }
     }
 
     return seeds;
   }
 
-  private @NotNull INDArray getAccVector(@NotNull CoreMap sentence) {
+  private @NotNull INDArray getAccVector(@NotNull CoreSentence sentence) {
     return sentenceToWeightedAccVector.computeIfAbsent(
-      sentence.get(CoreAnnotations.TextAnnotation.class), (key) -> computeAccVector(sentence));
+      sentence.text(), (key) -> computeAccVector(sentence.coreMap()));
   }
 
   private @NotNull INDArray computeAccVector(@NotNull CoreMap sentence) {

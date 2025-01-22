@@ -1,7 +1,7 @@
 package dev.taras.hamkalo.plagdet.comparision;
 
 import edu.stanford.nlp.ling.CoreAnnotations;
-import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.pipeline.CoreSentence;
 import lombok.Builder;
 import lombok.Value;
 
@@ -9,24 +9,32 @@ import lombok.Value;
 @Builder
 public class Seed {
 
-  CoreMap firstSent;
+  int firstSentIndex;
 
-  CoreMap secondSent;
+  int secondSentIndex;
+
+  CoreSentence firstSent;
+
+  CoreSentence secondSent;
 
   public int firstOffset() {
-    return firstSent.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+    return firstSent.coreMap().get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
   }
 
   public int secondOffset() {
-    return secondSent.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+    return secondSent.coreMap().get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
   }
 
   public int getSideOffset(int side) {
     return (side % 2) == 0 ? firstOffset() : secondOffset();
   }
 
-//  public boolean isAdjacent(Seed other, int side, int gap) {
-//
-//  }
+  public boolean isAdjacent(Seed other, int side, int gap) {
+    if (side % 2 == 0) {
+      return Math.abs(firstSentIndex - other.firstSentIndex) < gap;
+    } else {
+      return Math.abs(secondSentIndex - other.secondSentIndex) < gap;
+    }
+  }
 
 }
