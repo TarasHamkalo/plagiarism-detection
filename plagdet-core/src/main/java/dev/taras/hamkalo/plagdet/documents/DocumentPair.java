@@ -1,7 +1,7 @@
 package dev.taras.hamkalo.plagdet.documents;
 
 
-import dev.taras.hamkalo.plagdet.comparision.Fragment;
+import dev.taras.hamkalo.plagdet.comparision.PlagCase;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -9,7 +9,9 @@ import lombok.Data;
 import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 
@@ -24,7 +26,7 @@ public class DocumentPair {
 
   @NotNull
   @Builder.Default
-  Set<Fragment> commonFragments = new HashSet<>();
+  List<PlagCase> plagCases = new ArrayList<>();
 
   @NotNull
   @Builder.Default

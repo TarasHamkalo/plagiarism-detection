@@ -111,4 +111,22 @@ public class Fragment {
   public Fragment copy() {
     return Fragment.builder().seeds(new ArrayList<>(seeds)).build();
   }
+
+  public PlagCase toPlagCase() {
+    sortSeedsBySideIndex(0);
+    int firstStart = getStartSideIndex(0);
+    int firstEnd = getEndSideIndex(0);
+
+    sortSeedsBySideIndex(1);
+    int secondStart = getStartSideIndex(1);
+    int secondEnd = getEndSideIndex(1);
+    return PlagCase.builder()
+      .firstStart(firstStart)
+      .firstEnd(firstEnd)
+      .secondStart(secondStart)
+      .secondEnd(secondEnd)
+      .firstLen(firstEnd - firstStart)
+      .secondLen(secondEnd - secondStart)
+      .build();
+  }
 }
