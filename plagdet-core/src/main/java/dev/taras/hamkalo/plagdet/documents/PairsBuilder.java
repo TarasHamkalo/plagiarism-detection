@@ -19,13 +19,11 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PairsBuilder {
 
-  public static final int SIMILAR_DOCUMENTS_LIMIT = 10;
+  public static final int SIMILAR_DOCUMENTS_LIMIT = 1;
 
   ContentReader contentReader;
 
   MetaReader metadataReader;
-
-  SubmissionsParser submissionsParser;
 
   DocumentAnnotator annotator;
 
@@ -37,17 +35,15 @@ public class PairsBuilder {
                       LuceneIndex luceneIndex) {
     this.contentReader = new ContentReaders(contentReaders);
     this.metadataReader = new MetaReaders(metaReaders);
-    this.submissionsParser = new SubmissionsParser(contentReaders, metaReaders);
     this.annotator = annotator;
     this.luceneIndex = luceneIndex;
   }
 
-  public List<DocumentPair> build(String inputPath) {
-    List<Submission> submissions = this.submissionsParser.parseSubmissions(inputPath);
+  public List<DocumentPair> build(List<Submission> submissions) {
     annotator.annotateSubmissions(submissions);
     // for each document find by meta and lucene
     var pairs = generatePairs(submissions);
-//    pairs.addAll(generatePairsByLuceneSimilarity(submissions));
+    pairs.addAll(generatePairsByLuceneSimilarity(submissions));
     pairs.addAll(generatePairsByMetadataSimilarity(submissions));
     return pairs;
   }

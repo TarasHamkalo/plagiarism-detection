@@ -52,4 +52,6 @@ dependencies {
 
   implementation 'org.nd4j:nd4j-native-platform:1.0.0-M2.1'
 
+  implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+
 }

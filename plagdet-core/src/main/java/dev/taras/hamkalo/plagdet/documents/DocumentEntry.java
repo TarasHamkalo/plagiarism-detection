@@ -24,8 +24,8 @@ public class DocumentEntry {
   @EqualsAndHashCode.Exclude
   CoreDocument coreDocument;
 
-  public String getId() {
-    return this.fileData.getSubmitter() + this.fileData.getPath();
+  public int getId() {
+    return 31 * this.fileData.getContent().hashCode() + this.fileData.getPath().hashCode();
   }
 
   // тут могло б бути декілька файлів як для одної директорії

@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ShingleComparator implements DocumentComparator {
 
-  Map<String, Set<Shingle>> documentToShingle;
+  Map<Integer, Set<Shingle>> documentToShingle;
 
   int size;
 
