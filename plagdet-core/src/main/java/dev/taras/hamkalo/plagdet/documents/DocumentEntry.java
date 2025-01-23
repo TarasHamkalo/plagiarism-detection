@@ -7,6 +7,9 @@ import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -23,6 +26,10 @@ public class DocumentEntry {
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
   CoreDocument coreDocument;
+
+  @NotNull
+  @Builder.Default
+  List<DocumentPair> documentPairs = new ArrayList<>();
 
   public int getId() {
     return 31 * this.fileData.getContent().hashCode() + this.fileData.getPath().hashCode();
