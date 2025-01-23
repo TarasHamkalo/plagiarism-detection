@@ -38,7 +38,7 @@ public class SubmissionsParser {
 
   public static final String DEFAULT_ARCHIVE_EXT = "zip";
 
-  public static final Set<String> SUPPORTED_FILE_FORMATS = Set.of("docx", "doc");
+  public static final Set<String> SUPPORTED_FILE_FORMATS = Set.of("docx", "doc", "txt");
 
   ContentReader contentReader;
 
