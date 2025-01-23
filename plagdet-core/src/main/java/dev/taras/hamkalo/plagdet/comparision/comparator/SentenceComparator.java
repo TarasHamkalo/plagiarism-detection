@@ -1,10 +1,10 @@
 package dev.taras.hamkalo.plagdet.comparision.comparator;
 
-import dev.taras.hamkalo.plagdet.comparision.Fragment;
-import dev.taras.hamkalo.plagdet.comparision.Seed;
+import dev.taras.hamkalo.plagdet.comparision.*;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
+import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.util.CoreMap;
 import lombok.AccessLevel;
@@ -20,6 +20,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -31,11 +32,11 @@ public class SentenceComparator implements DocumentComparator {
 
   public static final int MAX_GAP = 2;
 
-  public static final int MIN_CLUSTER_SIZE = 3;
+  public static final int MIN_CLUSTER_SIZE = 2;
 
   public static final double MIN_FRAGMENT_SIDE_SIM = 0.8;
 
-  public static final int MIN_FRAGMENT_CHAR_LENGTH = 150;
+  public static final int MIN_FRAGMENT_CHAR_LENGTH = 100;
 
   public static final Map<String, Double> posWeights = Map.ofEntries(
     Map.entry("Nn", 0.5),
@@ -66,22 +67,30 @@ public class SentenceComparator implements DocumentComparator {
   }
 
   public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {
-    log.warn("Comparing {} - {}", documentPair.getFirst().getFileData(), documentPair.getSecond().getFileData());
+    log.info("Comparing {} - {}", documentPair.getFirst().getFileData(), documentPair.getSecond().getFileData());
+
     var seeds = seed(documentPair);
     var fragments = extension(seeds, MAX_GAP);
-    var filtered = filtering(fragments);
-//    if (!filtered.isEmpty()) {
-//      documentPair.setPlagCases(
-//        filtered.stream().map(Fragment::toPlagCase).collect(Collectors.toList())
-//      );
-//    }
+    var filtered = fragments;//filtering(fragments);
+    if (!filtered.isEmpty()) {
+      documentPair.setPlagCases(
+        filtered.stream().map(Fragment::toPlagCase).collect(Collectors.toList())
+      );
+
+      documentPair.getPlagScores().add(
+        PlagScore.builder()
+          .score(PlagUtil.plagScore(documentPair))
+          .direction(Direction.UNCERTAIN)
+          .comments(List.of())
+          .build()
+      );
+    }
     return ComparisonResult.CONTINUE;
   }
 
   private List<Fragment> filtering(List<Fragment> fragments) {
-    var filteredFragments = removeOverlapping(fragments);
-    filteredFragments = removeShort(filteredFragments);
-
+//    var filteredFragments = removeOverlapping(fragments);
+    var filteredFragments = removeShort(fragments);
     return filteredFragments;
   }
 
@@ -90,11 +99,14 @@ public class SentenceComparator implements DocumentComparator {
     for (var fragment : fragments) {
       fragment.sortSeedsBySideIndex(0);
       var firstSideLength =
-        fragment.lastSeed().getSideOffset(0) - fragment.firstSeed().getSideOffset(0);
+        fragment.lastSeed().getFirstSent().coreMap().get(CoreAnnotations.CharacterOffsetEndAnnotation.class) -
+        fragment.firstSeed().getFirstSent().coreMap().get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
 
       fragment.sortSeedsBySideIndex(1);
+
       var secondSideLength =
-        fragment.lastSeed().getSideOffset(1) - fragment.firstSeed().getSideOffset(1);
+        fragment.lastSeed().getSecondSent().coreMap().get(CoreAnnotations.CharacterOffsetEndAnnotation.class) -
+        fragment.firstSeed().getSecondSent().coreMap().get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
 
       if (firstSideLength > MIN_FRAGMENT_CHAR_LENGTH &&
           secondSideLength > MIN_FRAGMENT_CHAR_LENGTH) {
@@ -171,6 +183,7 @@ public class SentenceComparator implements DocumentComparator {
 
   /**
    * Computes fragment quality considering overlapped part "fitness" and complement "fitness"
+   *
    * @implNote Fragment will be sorted by second document
    */
   private double fragmentQuality(Fragment fragment,
@@ -221,6 +234,7 @@ public class SentenceComparator implements DocumentComparator {
   /**
    * Cluster seeds are expected to be sorted by the first document position
    * Also clusters should be sorted, e.g. target's first document start pos > source start post
+   *
    * @return True if source and target clusters overlap on side of first document in document pair
    */
   private boolean overlaps(Fragment source, Fragment target) {
@@ -235,6 +249,7 @@ public class SentenceComparator implements DocumentComparator {
 
   /**
    * Split fragment each time it sides have low similarity score
+   *
    * @return List of fragment with having similarity score at least MIN_CLUSTER_SIDE_SIM
    */
   private @NotNull List<Fragment> validation(@NotNull List<Fragment> fragments, int sentMaxGap) {
@@ -280,6 +295,7 @@ public class SentenceComparator implements DocumentComparator {
 
   /**
    * Merges seeds into continuous fragments, considering only one side of document pair
+   *
    * @return list of merged seeds
    */
   private @NotNull List<Fragment> clusterOneSide(@NotNull List<Seed> seeds, int sentMaxGap, int side) {

@@ -47,7 +47,7 @@ public class PairsBuilder {
     annotator.annotateSubmissions(submissions);
     // for each document find by meta and lucene
     var pairs = generatePairs(submissions);
-    pairs.addAll(generatePairsByLuceneSimilarity(submissions));
+//    pairs.addAll(generatePairsByLuceneSimilarity(submissions));
     pairs.addAll(generatePairsByMetadataSimilarity(submissions));
     return pairs;
   }

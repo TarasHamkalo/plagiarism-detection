@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.comparision;
 
+import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -118,12 +119,15 @@ public class Fragment {
 
   public PlagCase toPlagCase() {
     sortSeedsBySideIndex(0);
-    int firstStart = getStartSideIndex(0);
-    int firstEnd = getEndSideIndex(0);
+    int firstStart = firstSeed().firstOffset();
+    int firstEnd = firstSeed().getFirstSent().coreMap()
+      .get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
 
     sortSeedsBySideIndex(1);
-    int secondStart = getStartSideIndex(1);
-    int secondEnd = getEndSideIndex(1);
+    int secondStart = firstSeed().secondOffset();
+    int secondEnd = firstSeed().getSecondSent().coreMap()
+      .get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+
     return PlagCase.builder()
       .firstStart(firstStart)
       .firstEnd(firstEnd)
