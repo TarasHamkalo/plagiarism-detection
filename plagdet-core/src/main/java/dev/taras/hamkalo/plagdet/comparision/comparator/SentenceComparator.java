@@ -99,14 +99,18 @@ public class SentenceComparator implements DocumentComparator {
     for (var fragment : fragments) {
       fragment.sortSeedsBySideIndex(0);
       var firstSideLength =
-        fragment.lastSeed().getFirstSent().coreMap().get(CoreAnnotations.CharacterOffsetEndAnnotation.class) -
-        fragment.firstSeed().getFirstSent().coreMap().get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+        fragment.lastSeed().getFirstSent().coreMap()
+          .get(CoreAnnotations.CharacterOffsetEndAnnotation.class) -
+        fragment.firstSeed().getFirstSent().coreMap()
+          .get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
 
       fragment.sortSeedsBySideIndex(1);
 
       var secondSideLength =
-        fragment.lastSeed().getSecondSent().coreMap().get(CoreAnnotations.CharacterOffsetEndAnnotation.class) -
-        fragment.firstSeed().getSecondSent().coreMap().get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+        fragment.lastSeed().getSecondSent().coreMap()
+          .get(CoreAnnotations.CharacterOffsetEndAnnotation.class) -
+        fragment.firstSeed().getSecondSent().coreMap()
+          .get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
 
       if (firstSideLength > MIN_FRAGMENT_CHAR_LENGTH &&
           secondSideLength > MIN_FRAGMENT_CHAR_LENGTH) {
