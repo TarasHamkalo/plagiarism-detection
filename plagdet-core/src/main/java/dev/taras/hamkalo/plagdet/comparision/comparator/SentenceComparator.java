@@ -20,7 +20,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -67,6 +66,7 @@ public class SentenceComparator implements DocumentComparator {
   }
 
   public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {
+    log.warn("Comparing {} - {}", documentPair.getFirst().getFileData(), documentPair.getSecond().getFileData());
     var seeds = seed(documentPair);
     var fragments = extension(seeds, MAX_GAP);
     var filtered = filtering(fragments);
@@ -130,7 +130,7 @@ public class SentenceComparator implements DocumentComparator {
         filteredFragments.add(source);
         i++;
       } else {
-        int best = pickBestCluster(fragments.subList(i, j));
+        int best = pickBestFragment(fragments.subList(i, j));
         filteredFragments.add(fragments.get(i + best));
         i = j;
       }
@@ -139,7 +139,7 @@ public class SentenceComparator implements DocumentComparator {
     return filteredFragments;
   }
 
-  private int pickBestCluster(List<Fragment> overlapping) {
+  private int pickBestFragment(List<Fragment> overlapping) {
     var pivot = overlapping.get(0);
     int maxi = 0;
     double maxSim = Double.MIN_VALUE;
@@ -210,7 +210,7 @@ public class SentenceComparator implements DocumentComparator {
         }
       }
 
-      if (Double.isNaN(maxSim)) {
+      if (!Double.isNaN(maxSim)) {
         bestMatchSum += maxSim;
       }
     }

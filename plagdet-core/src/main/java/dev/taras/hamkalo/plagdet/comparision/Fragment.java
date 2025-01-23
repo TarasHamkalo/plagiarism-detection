@@ -100,7 +100,11 @@ public class Fragment {
     int commonStart = Math.max(firstStart, secondStart);
     int commonEnd = Math.min(firstEnd, secondEnd);
 
-    var complement = coreDocument.sentences().subList(firstStart, commonStart + 1);
+
+    var complement = new ArrayList<CoreSentence>();
+    if (commonStart > firstStart) {
+      complement.addAll(coreDocument.sentences().subList(firstStart, commonStart));
+    }
     if (commonEnd < firstEnd) {
       complement.addAll(coreDocument.sentences().subList(commonEnd + 1, firstEnd + 1));
     }
