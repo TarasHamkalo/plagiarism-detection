@@ -38,7 +38,7 @@ public class LuceneIndex {
     );
   }
 
-  public void addToIndex(DocumentEntry document) {
+  public void addToIndex(@NotNull DocumentEntry document) {
     var conf = new IndexWriterConfig(new DocumentAnalyzer(document, true));
     try (IndexWriter writer = new IndexWriter(this.indexDirectory, conf)) {
       Document doc = new Document();
@@ -94,7 +94,7 @@ public class LuceneIndex {
     return DateTools.dateToString(date, DateTools.Resolution.SECOND);
   }
 
-  public List<LuceneResult> retrieveSimilar(DocumentEntry document, int limit) {
+  public @NotNull List<LuceneResult> retrieveSimilar(@NotNull DocumentEntry document, int limit) {
     try (IndexReader reader = DirectoryReader.open(indexDirectory)) {
       MoreLikeThis mlt = new MoreLikeThis(reader);
       mlt.setFieldNames(new String[]{LuceneConstants.SEARCH_CONTENT});
@@ -107,7 +107,7 @@ public class LuceneIndex {
     }
   }
 
-  public List<FileData> retrieveByCreator(String creator, int limit) {
+  public @NotNull List<FileData> retrieveByCreator(@NotNull String creator, int limit) {
     List<FileData> results = new ArrayList<>();
     try (DirectoryReader reader = DirectoryReader.open(this.indexDirectory)) {
       IndexSearcher searcher = new IndexSearcher(reader);

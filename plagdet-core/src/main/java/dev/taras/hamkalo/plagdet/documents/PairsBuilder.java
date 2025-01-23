@@ -58,6 +58,10 @@ public class PairsBuilder {
       for (var document : submission.getDocuments()) {
         try {
           var creator = document.getFileData().getMetadata().getCreator();
+          if (creator == null) {
+            continue;
+          }
+
           var similarDocuments = luceneIndex.retrieveByCreator(creator, SIMILAR_DOCUMENTS_LIMIT);
           for (var similar : similarDocuments) {
             var similarDocument = new DocumentEntry(true, false, similar, null);
