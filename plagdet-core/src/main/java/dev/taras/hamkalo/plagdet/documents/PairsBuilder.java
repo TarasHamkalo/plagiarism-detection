@@ -8,6 +8,7 @@ import dev.taras.hamkalo.plagdet.io.reader.ContentReaders;
 import dev.taras.hamkalo.plagdet.io.reader.MetaReader;
 import dev.taras.hamkalo.plagdet.io.reader.MetaReaders;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
+@Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PairsBuilder {
 
@@ -28,6 +30,8 @@ public class PairsBuilder {
 
   LuceneIndex luceneIndex;
 
+  List<DocumentEntry> retrievedIndexedDocuments;
+
   public PairsBuilder(List<ContentReader> contentReaders,
                       List<MetaReader> metaReaders,
                       DocumentAnnotator annotator,
@@ -36,12 +40,14 @@ public class PairsBuilder {
     this.metadataReader = new MetaReaders(metaReaders);
     this.annotator = annotator;
     this.luceneIndex = luceneIndex;
+    this.retrievedIndexedDocuments = new ArrayList<>();
   }
 
   public List<DocumentPair> build(List<Submission> submissions) {
     annotator.annotateSubmissions(submissions);
     // for each document find by meta and lucene
     var pairs = generatePairs(submissions);
+
     pairs.addAll(generatePairsByLuceneSimilarity(submissions));
     pairs.addAll(generatePairsByMetadataSimilarity(submissions));
     return pairs;
@@ -77,7 +83,7 @@ public class PairsBuilder {
       .indexed(true)
       .fileData(similarFileData)
       .build();
-
+    this.retrievedIndexedDocuments.add(similarDocument);
     annotator.annotateDocument(similarDocument);
     var pair = DocumentPair.builder()
       .first(document)

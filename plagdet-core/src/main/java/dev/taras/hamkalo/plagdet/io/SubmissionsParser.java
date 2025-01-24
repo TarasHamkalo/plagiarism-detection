@@ -16,6 +16,7 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
+import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -88,13 +89,18 @@ public class SubmissionsParser {
           submission.setDocuments(files.stream()
             .map(this::readFileData)
             .peek(f -> f.setSubmitter(submitterName))
-            .map(f -> new DocumentEntry(false, false, f, null))
+            .map(f -> DocumentEntry.builder().indexed(false).template(false).fileData(f).build())
             .toList()
           );
         } else {
           var fileData = readFileData(submissionFile);
           fileData.setSubmitter(submitterName);
-          submission.setDocuments(List.of(new DocumentEntry(false, false, fileData, null)));
+          var document = DocumentEntry.builder()
+            .indexed(false)
+            .template(false)
+            .fileData(fileData)
+            .build();
+          submission.setDocuments(List.of(document));
         }
 
         submissions.add(submission);
@@ -168,7 +174,7 @@ public class SubmissionsParser {
       return matcher.group(1);
     }
 
-    return path.toString();
+    return FileNameUtils.getBaseName(path);
   }
 
   private static boolean isSupportedArchive(File file) {
