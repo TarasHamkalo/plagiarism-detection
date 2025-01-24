@@ -20,7 +20,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PairsBuilder {
 
-  public static final int SIMILAR_DOCUMENTS_LIMIT = 1;
+  public static final int SIMILAR_DOCUMENTS_LIMIT = 10;
 
   ContentReader contentReader;
 
@@ -48,8 +48,8 @@ public class PairsBuilder {
     // for each document find by meta and lucene
     var pairs = generatePairs(submissions);
 
-//    pairs.addAll(generatePairsByLuceneSimilarity(submissions));
-//    pairs.addAll(generatePairsByMetadataSimilarity(submissions));
+    pairs.addAll(generatePairsByLuceneSimilarity(submissions));
+    pairs.addAll(generatePairsByMetadataSimilarity(submissions));
     return pairs;
   }
 
