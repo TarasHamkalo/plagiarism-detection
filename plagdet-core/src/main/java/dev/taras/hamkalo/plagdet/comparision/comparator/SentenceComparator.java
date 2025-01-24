@@ -390,14 +390,14 @@ public class SentenceComparator implements DocumentComparator {
 
     for (int i = 0; i < firstSents.size(); i++) {
       var firstSent = firstSents.get(i);
-      if (firstSent.coreMap().get(PlagdetAnnotations.CodeSegmentAnnotation.class)) {
+      if (!isSentenceValid(firstSent)) {
         continue;
       }
 
       var firstSentAccVector = getAccVector(firstSent);
       for (int j = 0; j < secondSents.size(); j++) {
         var secondSent = secondSents.get(j);
-        if (secondSent.coreMap().get(PlagdetAnnotations.CodeSegmentAnnotation.class)) {
+        if (!isSentenceValid(secondSent)) {
           continue;
         }
 
@@ -416,6 +416,16 @@ public class SentenceComparator implements DocumentComparator {
     }
 
     return seeds;
+  }
+
+  private static boolean isSentenceValid(CoreSentence coreSentence) {
+    if (coreSentence.coreMap().get(PlagdetAnnotations.CodeSegmentAnnotation.class)) {
+      return false;
+    }
+
+    var templateAnnotation = coreSentence.coreMap()
+      .get(PlagdetAnnotations.TemplateAnnotation.class);
+    return templateAnnotation == null || !templateAnnotation;
   }
 
   private @NotNull INDArray getAccVector(@NotNull CoreSentence sentence) {
