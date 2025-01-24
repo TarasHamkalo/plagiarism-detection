@@ -6,7 +6,7 @@ import java.util.Properties;
 
 public abstract class Pipeline {
 
-  public static final String annotators = "tokenize, word, ssplit, morpho, stopword, code";
+  public static final String annotators = "tokenize, ssplit, dynamicssplit, word, morpho, stopword, code";
 
   private static StanfordCoreNLP pipeline;
 
@@ -14,6 +14,10 @@ public abstract class Pipeline {
     if (pipeline == null) {
       var props = new Properties();
       props.put("annotators", annotators);
+      props.put(
+        "customAnnotatorClass.word",
+        "dev.taras.hamkalo.plagdet.preprocessing.annotators.WordAnnotator"
+      );
 
       props.put(
         "customAnnotatorClass.morpho",
@@ -21,23 +25,21 @@ public abstract class Pipeline {
       );
 
       props.put(
-        "customAnnotatorClass.word",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.WordAnnotator"
-      );
-
-      props.put(
         "customAnnotatorClass.stopword",
         "dev.taras.hamkalo.plagdet.preprocessing.annotators.StopWordAnnotator"
       );
 
-      props.put(
-        "ssplit.newlineIsSentenceBreak",
-        "two"
-      );
+      props.put("ssplit.eolonly", "false");
+      props.put("ssplit.newlineIsSentenceBreak", "two");
 
       props.put(
         "customAnnotatorClass.code",
         "dev.taras.hamkalo.plagdet.preprocessing.annotators.CodeSegmentAnnotator"
+      );
+
+      props.put(
+        "customAnnotatorClass.dynamicssplit",
+        "dev.taras.hamkalo.plagdet.preprocessing.annotators.DynamicSentenceSplitter"
       );
 
       pipeline = new StanfordCoreNLP(props);

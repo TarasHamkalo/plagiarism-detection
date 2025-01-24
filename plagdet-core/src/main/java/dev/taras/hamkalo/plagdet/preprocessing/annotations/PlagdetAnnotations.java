@@ -59,6 +59,15 @@ public class PlagdetAnnotations {
     public Class<Boolean> getType() {
       return Boolean.class;
     }
+
   }
 
+  public class ValidatedSentenceAnnotation implements CoreAnnotation<Boolean> {
+
+    @Override
+    public Class<Boolean> getType() {
+      return Boolean.class;
+    }
+
+  }
 }

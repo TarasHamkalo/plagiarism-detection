@@ -7,6 +7,7 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.WordlistLoader;
 
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Set;
 
+@Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class StopWordAnnotator implements Annotator {
 
@@ -37,6 +39,7 @@ public class StopWordAnnotator implements Annotator {
 
   @Override
   public void annotate(Annotation annotation) {
+    log.debug("Stopword tagger started");
     for (var coreLabel : annotation.get(CoreAnnotations.TokensAnnotation.class)) {
       var isStopword = false;
       if (coreLabel.get(PlagdetAnnotations.WordAnnotation.class) != null) {
@@ -59,7 +62,8 @@ public class StopWordAnnotator implements Annotator {
     return Set.of(
       CoreAnnotations.TokensAnnotation.class,
       PlagdetAnnotations.WordAnnotation.class,
-      PlagdetAnnotations.WordsAnnotation.class
+      PlagdetAnnotations.WordsAnnotation.class,
+      PlagdetAnnotations.ValidatedSentenceAnnotation.class
     );
   }
 }

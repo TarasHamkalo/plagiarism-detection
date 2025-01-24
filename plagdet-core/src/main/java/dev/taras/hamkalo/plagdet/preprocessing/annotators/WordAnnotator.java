@@ -18,6 +18,7 @@ public class WordAnnotator implements Annotator {
 
   @Override
   public void annotate(Annotation annotation) {
+    log.debug("Word annotator started");
     annotation.set(PlagdetAnnotations.WordsAnnotation.class, new ArrayList<>());
 
     for (CoreMap sentence : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
@@ -54,7 +55,8 @@ public class WordAnnotator implements Annotator {
   public Set<Class<? extends CoreAnnotation>> requires() {
     return Set.of(
       CoreAnnotations.TokensAnnotation.class,
-      CoreAnnotations.SentencesAnnotation.class
+      CoreAnnotations.SentencesAnnotation.class,
+      PlagdetAnnotations.ValidatedSentenceAnnotation.class
     );
   }
 

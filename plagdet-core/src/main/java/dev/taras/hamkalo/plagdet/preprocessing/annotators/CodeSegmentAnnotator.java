@@ -44,7 +44,8 @@ public class CodeSegmentAnnotator implements Annotator {
   @Override
   public Set<Class<? extends CoreAnnotation>> requires() {
     return Set.of(
-      CoreAnnotations.SentencesAnnotation.class
+      CoreAnnotations.SentencesAnnotation.class,
+      PlagdetAnnotations.ValidatedSentenceAnnotation.class
     );
   }
 }
