@@ -72,20 +72,23 @@ public class SentenceComparator implements DocumentComparator {
 
   public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {
     var fragments = doCompare(documentPair);
+    double score = 0;
     if (!fragments.isEmpty()) {
       documentPair.setPlagCases(
         fragments.stream().map(f -> f.toMarkingWithType(SpecialMarkingType.PLAG))
           .collect(Collectors.toList())
       );
 
-      documentPair.getPlagScores().add(
-        PlagScore.builder()
-          .score(PlagUtil.plagScore(documentPair))
-          .direction(Direction.UNCERTAIN)
-          .comments(List.of())
-          .build()
-      );
+      score = PlagUtil.plagScore(documentPair);
     }
+
+    documentPair.getPlagScores().add(
+      PlagScore.builder()
+        .score(score)
+        .direction(Direction.UNCERTAIN)
+        .comments(List.of())
+        .build()
+    );
     return ComparisonResult.CONTINUE;
   }
 

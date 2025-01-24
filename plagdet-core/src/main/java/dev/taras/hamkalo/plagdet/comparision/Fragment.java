@@ -147,13 +147,6 @@ public class Fragment {
       .first(firstOffsets)
       .second(secondOffsets)
       .build();
-//    return PlagCase.builder()
-//      .firstStart(firstStart)
-//      .firstEnd(firstEnd)
-//      .secondStart(secondStart)
-//      .secondEnd(secondEnd)
-//      .firstLen(firstEnd - firstStart)
-//      .secondLen(secondEnd - secondStart)
-//      .build();
+
   }
 }
