@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.documents;
 
+import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
 import dev.taras.hamkalo.plagdet.io.FileData;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import lombok.*;
@@ -32,6 +33,14 @@ public class DocumentEntry {
   @ToString.Exclude
   @Builder.Default
   List<DocumentPair> documentPairs = new ArrayList<>();
+
+  @NotNull
+  @Builder.Default
+  List<SpecialMarking> templateMarking = new ArrayList<>();
+
+//  @NotNull
+//  @Builder.Default
+//  List<SpecialMarking> codeMarking = new ArrayList<>();
 
   public int getId() {
     return 31 * this.fileData.getContent().hashCode() + this.fileData.getPath().hashCode();

@@ -9,6 +9,8 @@ import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -117,7 +119,7 @@ public class Fragment {
     return Fragment.builder().seeds(new ArrayList<>(seeds)).build();
   }
 
-  public SpecialMarking toPlagCase() {
+  public SpecialMarking toMarkingWithType(SpecialMarkingType type) {
     sortSeedsBySideIndex(0);
     int firstStart = firstSeed().firstOffset();
     int firstEnd = lastSeed().getFirstSent().coreMap()
@@ -141,7 +143,7 @@ public class Fragment {
       .build();
 
     return SpecialMarking.builder()
-      .type(SpecialMarking.SpecialMarkingType.PLAG)
+      .type(type)
       .first(firstOffsets)
       .second(secondOffsets)
       .build();

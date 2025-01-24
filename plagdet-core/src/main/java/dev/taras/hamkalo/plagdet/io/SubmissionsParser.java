@@ -52,6 +52,21 @@ public class SubmissionsParser {
     this.metadataReader = new MetaReaders(metaReaders);
   }
 
+  public DocumentEntry readTemplate(String inputPath) throws ParsingException {
+    var path = Path.of(inputPath);
+    if (!Files.exists(path) ||  Files.isDirectory(path)) {
+      throw new ParsingException("Path does not exist");
+    }
+
+    var fileData = readFileData(path.toFile());
+    fileData.setSubmitter(extractSubmitter(path));
+    return DocumentEntry.builder()
+      .indexed(false)
+      .template(true)
+      .fileData(fileData)
+      .build();
+  }
+
   public List<Submission> parseSubmissions(String inputPath) throws ParsingException {
     var path = Path.of(inputPath);
     var file = path.toFile();

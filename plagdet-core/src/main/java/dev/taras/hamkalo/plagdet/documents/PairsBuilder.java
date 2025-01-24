@@ -48,8 +48,8 @@ public class PairsBuilder {
     // for each document find by meta and lucene
     var pairs = generatePairs(submissions);
 
-    pairs.addAll(generatePairsByLuceneSimilarity(submissions));
-    pairs.addAll(generatePairsByMetadataSimilarity(submissions));
+//    pairs.addAll(generatePairsByLuceneSimilarity(submissions));
+//    pairs.addAll(generatePairsByMetadataSimilarity(submissions));
     return pairs;
   }
 

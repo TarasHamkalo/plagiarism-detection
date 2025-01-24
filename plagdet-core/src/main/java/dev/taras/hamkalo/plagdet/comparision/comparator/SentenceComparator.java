@@ -1,6 +1,8 @@
 package dev.taras.hamkalo.plagdet.comparision.comparator;
 
 import dev.taras.hamkalo.plagdet.comparision.*;
+import dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
+import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
@@ -69,18 +71,11 @@ public class SentenceComparator implements DocumentComparator {
   }
 
   public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {
-    getWordVector(""); // TODO: remove, debug purpose
-    log.info("Comparing {} - {}", documentPair.getFirst().getFileData(), documentPair.getSecond().getFileData());
-
-    var seeds = seed(documentPair);
-    log.debug("Seeds count: {}", seeds.size());
-
-    var fragments = extension(seeds, MAX_GAP);
-    log.debug("Fragments count: {}", fragments.size());
-    var filtered = fragments;//filtering(fragments);
-    if (!filtered.isEmpty()) {
+    var fragments = doCompare(documentPair);
+    if (!fragments.isEmpty()) {
       documentPair.setPlagCases(
-        filtered.stream().map(Fragment::toPlagCase).collect(Collectors.toList())
+        fragments.stream().map(f -> f.toMarkingWithType(SpecialMarkingType.PLAG))
+          .collect(Collectors.toList())
       );
 
       documentPair.getPlagScores().add(
@@ -92,6 +87,38 @@ public class SentenceComparator implements DocumentComparator {
       );
     }
     return ComparisonResult.CONTINUE;
+  }
+
+  public @NotNull ComparisonResult compareWithTemplate(@NotNull DocumentEntry target,
+                                                       @NotNull DocumentEntry template) {
+    final var targetToTemplate = DocumentPair.builder().first(target).second(template).build();
+    var fragments = this.doCompare(targetToTemplate);
+    log.warn("Template framgnets size {}", fragments.size());
+
+    fragments.stream().flatMap(f -> f.getSeeds().stream())
+      .forEach(seed -> {
+        seed.getFirstSent().coreMap().set(PlagdetAnnotations.TemplateAnnotation.class, true);
+      });
+//    specialMarking -> specialMarking.withType(SpecialMarkingType.TEMPLATE)
+    var markings = fragments.stream()
+      .map(f -> f.toMarkingWithType(SpecialMarkingType.TEMPLATE))
+      .toList();
+
+    target.setTemplateMarking(markings);
+
+    return ComparisonResult.CONTINUE;
+  }
+
+  private @NotNull List<Fragment> doCompare(@NotNull DocumentPair documentPair) {
+    getWordVector(""); // TODO: remove, debug purpose
+    log.info("Comparing {} - {}", documentPair.getFirst().getFileData(), documentPair.getSecond().getFileData());
+
+    var seeds = seed(documentPair);
+    log.debug("Seeds count: {}", seeds.size());
+    var fragments = extension(seeds, MAX_GAP);
+    log.debug("Fragments count: {}", fragments.size());
+    var filtered = fragments; //filtering(fragments);
+    return filtered;
   }
 
   private List<Fragment> filtering(List<Fragment> fragments) {

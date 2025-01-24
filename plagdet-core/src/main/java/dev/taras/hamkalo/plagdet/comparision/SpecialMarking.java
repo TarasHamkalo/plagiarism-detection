@@ -2,10 +2,12 @@ package dev.taras.hamkalo.plagdet.comparision;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.With;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 @Value
+@With
 @Builder
 public class SpecialMarking {
 
