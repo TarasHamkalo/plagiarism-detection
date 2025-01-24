@@ -194,7 +194,10 @@ public class ZipAnalysisReportWriter {
     result.put("submitter", fileData.getSubmitter());
     result.put("pairIds", pairIds);
     result.put("maxSimilarity", maxSimilarity);
-    result.put("markings", documentEntry.getTemplateMarking());
+
+    var markings = new ArrayList<>(documentEntry.getTemplateMarking());
+    markings.addAll(documentEntry.getCodeMarking());
+    result.put("markings", markings);
 
     ObjectMapper mapper = new ObjectMapper();
     try {

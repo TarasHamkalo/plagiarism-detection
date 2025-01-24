@@ -62,6 +62,15 @@ public class PlagdetAnnotations {
 
   }
 
+  public class CodeSentencesAnnotation implements CoreAnnotation<List<Integer>> {
+
+    @Override
+    public Class<List<Integer>> getType() {
+      return ErasureUtils.uncheckedCast(List.class);
+    }
+
+  }
+
   public class ValidatedSentenceAnnotation implements CoreAnnotation<Boolean> {
 
     @Override

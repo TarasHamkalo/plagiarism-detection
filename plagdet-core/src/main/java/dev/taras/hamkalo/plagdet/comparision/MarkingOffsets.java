@@ -1,5 +1,7 @@
 package dev.taras.hamkalo.plagdet.comparision;
 
+import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.util.CoreMap;
 import lombok.Builder;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
@@ -13,6 +15,12 @@ public class MarkingOffsets implements Comparable<MarkingOffsets> {
   int end;
 
   int length;
+
+  public static MarkingOffsets from(@NotNull CoreMap sentence) {
+    int start = sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+    int end = sentence.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+    return new MarkingOffsets(start, end, end - start);
+  }
 
   public boolean overlaps(MarkingOffsets other) {
     return (other.start >= this.start && other.start <= this.end) ||

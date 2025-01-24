@@ -1,6 +1,8 @@
 package dev.taras.hamkalo.plagdet.comparision;
 
+import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
+import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.writable.Text;
 import org.jetbrains.annotations.NotNull;
@@ -32,12 +34,26 @@ public abstract class PlagUtil {
       1
     );
 
-    if (templateIgnored == total) {
+    int codeIgnored = sumOfNonOverlappingMarkings(
+      documentPair.getPlagCases(),
+      documentPair.getFirst().getCodeMarking(),
+      0
+    );
+
+    codeIgnored += sumOfNonOverlappingMarkings(
+      documentPair.getPlagCases(),
+      documentPair.getSecond().getCodeMarking(),
+      1
+    );
+
+    int totalIgnored = codeIgnored + templateIgnored;
+    if (totalIgnored >= total) {
       return 0;
     }
 
-    return (double) totalCoverage / (total - templateIgnored);
+    return (double) totalCoverage / (total - totalIgnored);
   }
+
 
   private static int sumOfNonOverlappingMarkings(@NotNull List<SpecialMarking> plagCases,
                                                  @NotNull List<SpecialMarking> ignoredCases,
@@ -85,9 +101,8 @@ public abstract class PlagUtil {
           break;
         }
       }
-      i = j + 1;
-
       coverage += plagEnd - plagStart;
+      i = j;
     }
 
     return coverage;

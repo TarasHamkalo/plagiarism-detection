@@ -8,6 +8,8 @@ import edu.stanford.nlp.pipeline.Annotator;
 import edu.stanford.nlp.util.CoreMap;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,10 +23,19 @@ public class CodeSegmentAnnotator implements Annotator {
 
   @Override
   public void annotate(Annotation annotation) {
-    for (var sentence : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
+    var sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
+    List<Integer> codeSentencesIndexes = new ArrayList<>();
+    for (int i = 0; i < sentences.size(); i++) {
+      var sentence = sentences.get(i);
       Matcher matcher = CODE_PATTERN.matcher(sentence.get(CoreAnnotations.TextAnnotation.class));
-      mark(sentence, matcher.matches());
+      var isCode = matcher.matches();
+      if (isCode) {
+        codeSentencesIndexes.add(i);
+      }
+
+      mark(sentence, isCode);
     }
+    annotation.set(PlagdetAnnotations.CodeSentencesAnnotation.class, codeSentencesIndexes);
   }
 
   private void mark(CoreMap sentence, boolean isCode) {
@@ -37,7 +48,8 @@ public class CodeSegmentAnnotator implements Annotator {
   @Override
   public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
     return Set.of(
-      PlagdetAnnotations.CodeSegmentAnnotation.class
+      PlagdetAnnotations.CodeSegmentAnnotation.class,
+      PlagdetAnnotations.CodeSentencesAnnotation.class
     );
   }
 

@@ -93,7 +93,7 @@ public class SentenceComparator implements DocumentComparator {
                                   @NotNull DocumentEntry template) {
     final var targetToTemplate = DocumentPair.builder().first(target).second(template).build();
     var fragments = this.doCompare(targetToTemplate);
-    log.warn("Template framgnets size {}", fragments.size());
+    log.warn("Template fragments size {}", fragments.size());
 
     fragments.stream().flatMap(f -> f.getSeeds().stream())
       .forEach(seed -> {
