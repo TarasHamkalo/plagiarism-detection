@@ -22,6 +22,7 @@ public class DocumentEntry {
 
   @NotNull FileData fileData;
 
+
   @Nullable
   @ToString.Exclude
   @EqualsAndHashCode.Exclude

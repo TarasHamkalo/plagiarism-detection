@@ -16,20 +16,28 @@ public abstract class PlagUtil {
     return (double)  totalCoverage / total;
   }
 
-  public static int coverageFirst(List<PlagCase> plagCases) {
-    plagCases.sort(
-      Comparator.comparingInt(PlagCase::getFirstStart).thenComparingInt(PlagCase::getFirstEnd)
+  public static int coverageFirst(List<SpecialMarking> specialMarkings) {
+    specialMarkings.sort(
+      Comparator.comparingInt((SpecialMarking m) -> m.getFirst().getStart())
+        .thenComparingInt(m -> m.getFirst().getEnd())
     );
+
+//    plagCases.sort(
+//      Comparator.comparingInt(PlagCase::getFirstStart).thenComparingInt(PlagCase::getFirstEnd)
+//    );
     int coverage = 0;
     int i = 0;
-    while (i < plagCases.size()) {
-      int plagStart = plagCases.get(i).getFirstStart();
-      int plagEnd = plagCases.get(i).getFirstEnd();
+    while (i < specialMarkings.size()) {
+//      int plagStart = plagCases.get(i).getFirstStart();
+//      int plagEnd = plagCases.get(i).getFirstEnd();
+      int plagStart = specialMarkings.get(i).getFirst().getStart();
+      int plagEnd = specialMarkings.get(i).getFirst().getEnd();;
 
       int j = i + 1;
-      while (j < plagCases.size()) {
-        if (plagCases.get(j).getFirstStart() < plagEnd) {
-          plagEnd = Math.max(plagEnd, plagCases.get(j).getFirstEnd());
+      while (j < specialMarkings.size()) {
+        if (specialMarkings.get(j).getFirst().getStart() < plagEnd) {
+//        if (plagCases.get(j).getFirstStart() < plagEnd) {
+          plagEnd = Math.max(plagEnd, specialMarkings.get(j).getFirst().getEnd());
           j++;
         } else {
           break;
@@ -43,20 +51,27 @@ public abstract class PlagUtil {
     return coverage;
   }
 
-  public static int coverageSecond(List<PlagCase> plagCases) {
-    plagCases.sort(
-      Comparator.comparingInt(PlagCase::getSecondStart).thenComparingInt(PlagCase::getSecondEnd)
+  public static int coverageSecond(List<SpecialMarking> specialMarkings) {
+    specialMarkings.sort(
+      Comparator.comparingInt((SpecialMarking m) -> m.getSecond().getStart())
+        .thenComparingInt(m -> m.getSecond().getEnd())
     );
+
+//    plagCases.sort(
+//      Comparator.comparingInt(PlagCase::getSecondStart).thenComparingInt(PlagCase::getSecondEnd)
+//    );
     int coverage = 0;
     int i = 0;
-    while (i < plagCases.size()) {
-      int plagStart = plagCases.get(i).getSecondStart();
-      int plagEnd = plagCases.get(i).getSecondEnd();
+    while (i < specialMarkings.size()) {
+//      int plagStart = plagCases.get(i).getSecondStart();
+//      int plagEnd = plagCases.get(i).getSecondEnd();
+      int plagStart = specialMarkings.get(i).getSecond().getStart();
+      int plagEnd = specialMarkings.get(i).getSecond().getEnd();
 
       int j = i + 1;
-      while (j < plagCases.size()) {
-        if (plagCases.get(j).getSecondStart() < plagEnd) {
-          plagEnd = Math.max(plagEnd, plagCases.get(j).getSecondEnd());
+      while (j < specialMarkings.size()) {
+        if (specialMarkings.get(j).getSecond().getStart() < plagEnd) {
+          plagEnd = Math.max(plagEnd, specialMarkings.get(j).getSecond().getEnd());
           j++;
         } else {
           break;

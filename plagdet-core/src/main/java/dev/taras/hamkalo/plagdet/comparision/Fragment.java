@@ -117,7 +117,7 @@ public class Fragment {
     return Fragment.builder().seeds(new ArrayList<>(seeds)).build();
   }
 
-  public PlagCase toPlagCase() {
+  public SpecialMarking toPlagCase() {
     sortSeedsBySideIndex(0);
     int firstStart = firstSeed().firstOffset();
     int firstEnd = lastSeed().getFirstSent().coreMap()
@@ -128,13 +128,30 @@ public class Fragment {
     int secondEnd = lastSeed().getSecondSent().coreMap()
       .get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
 
-    return PlagCase.builder()
-      .firstStart(firstStart)
-      .firstEnd(firstEnd)
-      .secondStart(secondStart)
-      .secondEnd(secondEnd)
-      .firstLen(firstEnd - firstStart)
-      .secondLen(secondEnd - secondStart)
+    var firstOffsets = MarkingOffsets.builder()
+      .start(firstStart)
+      .end(firstEnd)
+      .length(firstEnd - firstStart)
       .build();
+
+    var secondOffsets = MarkingOffsets.builder()
+      .start(secondStart)
+      .end(secondEnd)
+      .length(secondEnd - secondStart)
+      .build();
+
+    return SpecialMarking.builder()
+      .type(SpecialMarking.SpecialMarkingType.PLAG)
+      .first(firstOffsets)
+      .second(secondOffsets)
+      .build();
+//    return PlagCase.builder()
+//      .firstStart(firstStart)
+//      .firstEnd(firstEnd)
+//      .secondStart(secondStart)
+//      .secondEnd(secondEnd)
+//      .firstLen(firstEnd - firstStart)
+//      .secondLen(secondEnd - secondStart)
+//      .build();
   }
 }

@@ -1,8 +1,8 @@
 package dev.taras.hamkalo.plagdet.documents;
 
 
-import dev.taras.hamkalo.plagdet.comparision.PlagCase;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
+import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
@@ -26,7 +26,7 @@ public class DocumentPair {
 
   @NotNull
   @Builder.Default
-  List<PlagCase> plagCases = new ArrayList<>();
+  List<SpecialMarking> plagCases = new ArrayList<>();
 
   @NotNull
   @Builder.Default
