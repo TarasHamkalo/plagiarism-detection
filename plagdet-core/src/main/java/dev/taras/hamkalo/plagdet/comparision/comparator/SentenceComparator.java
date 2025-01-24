@@ -57,7 +57,7 @@ public class SentenceComparator implements DocumentComparator {
   );
 
   @Nullable
-  Word2Vec word2Vec;
+  private static Word2Vec word2Vec;
 
   @NotNull
   final LuceneIndex luceneIndex;
@@ -89,8 +89,8 @@ public class SentenceComparator implements DocumentComparator {
     return ComparisonResult.CONTINUE;
   }
 
-  public @NotNull ComparisonResult compareWithTemplate(@NotNull DocumentEntry target,
-                                                       @NotNull DocumentEntry template) {
+  public void compareWithTemplate(@NotNull DocumentEntry target,
+                                  @NotNull DocumentEntry template) {
     final var targetToTemplate = DocumentPair.builder().first(target).second(template).build();
     var fragments = this.doCompare(targetToTemplate);
     log.warn("Template framgnets size {}", fragments.size());
@@ -105,8 +105,6 @@ public class SentenceComparator implements DocumentComparator {
       .toList();
 
     target.setTemplateMarking(markings);
-
-    return ComparisonResult.CONTINUE;
   }
 
   private @NotNull List<Fragment> doCompare(@NotNull DocumentPair documentPair) {

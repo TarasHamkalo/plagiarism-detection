@@ -2,10 +2,11 @@ package dev.taras.hamkalo.plagdet.comparision;
 
 import lombok.Builder;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 
 @Value
 @Builder
-public class MarkingOffsets {
+public class MarkingOffsets implements Comparable<MarkingOffsets> {
 
   int start;
 
@@ -13,4 +14,17 @@ public class MarkingOffsets {
 
   int length;
 
+  public boolean overlaps(MarkingOffsets other) {
+    return (other.start >= this.start && other.start <= this.end) ||
+           (this.start >= other.start && this.start <= other.end);
+  }
+
+  @Override
+  public int compareTo(@NotNull MarkingOffsets o) {
+    if (this.start - o.start != 0) {
+      return this.start - o.start;
+    }
+
+    return this.end - o.end;
+  }
 }

@@ -21,7 +21,8 @@ public class SpecialMarking {
 
   @Nullable MarkingOffsets second;
 
-  public MarkingOffsets getSideOffsets(int side) {
+  public MarkingOffsets getSideMarking(int side) {
     return (side % 2 == 0) ? first : second;
   }
+
 }
