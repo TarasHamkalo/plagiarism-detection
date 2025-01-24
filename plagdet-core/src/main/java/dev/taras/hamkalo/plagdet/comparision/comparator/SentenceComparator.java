@@ -32,24 +32,26 @@ public class SentenceComparator implements DocumentComparator {
 
   public static final int MAX_GAP = 2;
 
-  public static final int MIN_CLUSTER_SIZE = 2;
+  public static final int MIN_CLUSTER_SIZE = 3;
 
-  public static final double MIN_FRAGMENT_SIDE_SIM = 0.8;
+  public static final int MIN_FRAGMENT_CHAR_LENGTH = 10;
 
-  public static final int MIN_FRAGMENT_CHAR_LENGTH = 100;
+  public static final double MIN_FRAGMENT_SIDE_SIM = 0.5;
+
+  private static final double SENTENCE_VECTOR_SIM_TH = 0.8;
 
   public static final Map<String, Double> posWeights = Map.ofEntries(
-    Map.entry("Nn", 0.5),
-    Map.entry("Aj", 0.3),
-    Map.entry("Vb", 0.4),
-    Map.entry("Pn", 0.2),
-    Map.entry("Nm", 0.0),
-    Map.entry("Av", 0.3),
-    Map.entry("Pp", 0.0),
-    Map.entry("Cj", 0.0),
-    Map.entry("Pt", 0.0),
-    Map.entry("Ab", 0.4),
-    Map.entry("Sy", 0.0)
+    Map.entry("Nn", 1.0),
+    Map.entry("Aj", 1.0),
+    Map.entry("Vb", 1.0),
+    Map.entry("Pn", 1.0),
+    Map.entry("Nm", 1.0),
+    Map.entry("Av", 1.0),
+    Map.entry("Pp", 1.0),
+    Map.entry("Cj", 1.0),
+    Map.entry("Pt", 1.0),
+    Map.entry("Ab", 1.0),
+    Map.entry("Sy", 1.0)
   );
 
   @Nullable
@@ -67,10 +69,14 @@ public class SentenceComparator implements DocumentComparator {
   }
 
   public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {
+    getWordVector(""); // TODO: remove, debug purpose
     log.info("Comparing {} - {}", documentPair.getFirst().getFileData(), documentPair.getSecond().getFileData());
 
     var seeds = seed(documentPair);
+    log.debug("Seeds count: {}", seeds.size());
+
     var fragments = extension(seeds, MAX_GAP);
+    log.debug("Fragments count: {}", fragments.size());
     var filtered = fragments;//filtering(fragments);
     if (!filtered.isEmpty()) {
       documentPair.setPlagCases(
@@ -351,6 +357,9 @@ public class SentenceComparator implements DocumentComparator {
 
     var firstSents = documentPair.getFirst().getCoreDocument().sentences();
     var secondSents = documentPair.getSecond().getCoreDocument().sentences();
+    log.debug("First document contains {} sentences", firstSents.size());
+    log.debug("Second document contains {} sentences", secondSents.size());
+    log.debug("Possible seeds count {}", firstSents.size() * secondSents.size());
 
     for (int i = 0; i < firstSents.size(); i++) {
       var firstSent = firstSents.get(i);
@@ -367,7 +376,7 @@ public class SentenceComparator implements DocumentComparator {
 
         var secondSentAccVector = getAccVector(secondSent);
         var similarity = Transforms.cosineSim(firstSentAccVector, secondSentAccVector);
-        if (!Double.isNaN(similarity) && similarity > 0.85) {
+        if (!Double.isNaN(similarity) && similarity > SENTENCE_VECTOR_SIM_TH) {
           seeds.add(Seed.builder()
             .firstSentIndex(i)
             .secondSentIndex(j)
@@ -396,9 +405,9 @@ public class SentenceComparator implements DocumentComparator {
 
       INDArray other = getWordVector(wordToken.tag() + wordToken.lemma());
       if (other != null) {
-        log.debug("Word vector is of shape {}", other.shapeInfoToString());
+        log.trace("Word vector is of shape {}", other.shapeInfoToString());
         other.muli(posWeights.getOrDefault(wordToken.tag(), 0.0));
-        log.debug(
+        log.trace(
           "Word {}, has idf {}", wordToken.lemma(),
           luceneIndex.inverseTermFrequency(wordToken.lemma())
         );

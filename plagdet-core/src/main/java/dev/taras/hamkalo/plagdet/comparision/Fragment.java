@@ -120,12 +120,12 @@ public class Fragment {
   public PlagCase toPlagCase() {
     sortSeedsBySideIndex(0);
     int firstStart = firstSeed().firstOffset();
-    int firstEnd = firstSeed().getFirstSent().coreMap()
+    int firstEnd = lastSeed().getFirstSent().coreMap()
       .get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
 
     sortSeedsBySideIndex(1);
     int secondStart = firstSeed().secondOffset();
-    int secondEnd = firstSeed().getSecondSent().coreMap()
+    int secondEnd = lastSeed().getSecondSent().coreMap()
       .get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
 
     return PlagCase.builder()
