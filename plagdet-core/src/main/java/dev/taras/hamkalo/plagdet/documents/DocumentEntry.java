@@ -28,6 +28,7 @@ public class DocumentEntry {
   CoreDocument coreDocument;
 
   @NotNull
+  @ToString.Exclude
   @Builder.Default
   List<DocumentPair> documentPairs = new ArrayList<>();
 
