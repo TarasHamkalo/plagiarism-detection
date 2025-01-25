@@ -280,7 +280,7 @@ public class SentenceComparator implements DocumentComparator {
   }
 
   private List<Fragment> extension(List<Seed> seeds, int sentMaxGap) {
-    var fragments = clustering(seeds, sentMaxGap, 0);
+    var fragments = clustering(seeds, sentMaxGap, 0, true);
     fragments = validation(fragments, sentMaxGap);
     return fragments;
   }
@@ -366,15 +366,15 @@ public class SentenceComparator implements DocumentComparator {
     return clusters;
   }
 
-  private List<Fragment> clustering(List<Seed> seeds, int sentMaxGap, int side) {
+  private List<Fragment> clustering(List<Seed> seeds, int sentMaxGap, int side, boolean firstIter) {
     var clusters = clusterOneSide(seeds, sentMaxGap, side);
-    if (clusters.size() == 1) {
+    if (clusters.size() <= 1 && !firstIter) {
       return clusters;
     }
 
     List<Fragment> newClusters = new ArrayList<>();
     for (var cluster : clusters) {
-      newClusters.addAll(clustering(cluster.getSeeds(), sentMaxGap, side + 1));
+      newClusters.addAll(clustering(cluster.getSeeds(), sentMaxGap, side + 1, false));
     }
 
     return newClusters;
