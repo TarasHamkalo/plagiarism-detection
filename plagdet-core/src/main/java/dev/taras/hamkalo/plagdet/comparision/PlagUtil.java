@@ -14,7 +14,7 @@ import java.util.List;
 public abstract class PlagUtil {
 
   public static double plagScore(DocumentPair documentPair) {
-    // Coverage already excludes template sentences, as they won't appear inside of plags
+    // Coverage already excludes template sentences, as they won't appear inside plags
     // (only in infrequent cases)
     int totalCoverage = sideCoverage(documentPair.getPlagCases(), 0) +
                         sideCoverage(documentPair.getPlagCases(), 1);
@@ -58,8 +58,14 @@ public abstract class PlagUtil {
   private static int sumOfNonOverlappingMarkings(@NotNull List<SpecialMarking> plagCases,
                                                  @NotNull List<SpecialMarking> ignoredCases,
                                                  int side) {
-    var sortedPlagMarkings = plagCases.stream().map(c -> c.getSideMarking(side)).sorted().toList();
-    var sortedIgnoredMarkings = ignoredCases.stream().map(SpecialMarking::getFirst).sorted().toList();
+    var sortedPlagMarkings = plagCases.stream()
+      .map(c -> c.getSideMarking(side))
+      .sorted()
+      .toList();
+    var sortedIgnoredMarkings = ignoredCases.stream()
+      .map(SpecialMarking::getFirst)
+      .sorted()
+      .toList();
     int sum = 0;
     int i = 0;
     int j = 0;

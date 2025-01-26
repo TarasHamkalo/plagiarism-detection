@@ -4,12 +4,17 @@ import dev.taras.hamkalo.plagdet.comparision.Direction;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.io.Metadata;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+@AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class MetadataComparator implements DocumentComparator {
 
   private static final double CREATION_DATE_WEIGHT = 2.0;
@@ -21,6 +26,8 @@ public class MetadataComparator implements DocumentComparator {
   private static final double TOTAL_EDIT_TIME_WEIGHT = 1.0;
 
   private static final double REVISIONS_NUMBER_WEIGHT = 1.0;
+
+  boolean bypassFiltering;
 
   public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {
     var first = documentPair.getFirst().getFileData().getMetadata();
@@ -51,10 +58,15 @@ public class MetadataComparator implements DocumentComparator {
     documentPair.getPlagScores().add(
       PlagScore.builder()
         .score(score)
-        .direction(direction)
+        .type(PlagScore.PlagScoreType.META)
         .comments(comments)
         .build()
     );
+
+    documentPair.setDirection(direction);
+    if (this.bypassFiltering) {
+      return ComparisonResult.CONTINUE;
+    }
 
     return score == 1 ? ComparisonResult.PLAGIARIZED : ComparisonResult.CONTINUE;
   }

@@ -22,13 +22,24 @@ public class Fragment {
 
   @NotNull List<Seed> seeds;
 
+
+  /**
+   * Fragment seeds are expected to be sorted by the first document position
+   * Also clusters should be sorted, e.g. target's first document start pos > source start post
+   *
+   * @return True if source and target clusters overlap on side of first document in document pair
+   */
+  public static boolean overlaps(Fragment source, Fragment target) {
+    return source.getEndSideIndex(0) - target.getStartSideIndex(0) > 0;
+  }
+
   public void sortSeedsBySideIndex(int side) {
     seeds.sort(Comparator.comparingInt(s -> s.getSideIndex(side)));
   }
 
   /**
-   * @implNote Should be sorted before calling
    * @return index of first sentence in document specified by side param
+   * @implNote Should be sorted before calling
    */
   public @Nullable Integer getStartSideIndex(int side) {
     if (firstSeed() != null) {
@@ -39,8 +50,8 @@ public class Fragment {
   }
 
   /**
-   * @implNote Should be sorted before calling
    * @return index of last sentence in document specified by side param
+   * @implNote Should be sorted before calling
    */
   public @Nullable Integer getEndSideIndex(int side) {
     if (lastSeed() != null) {
@@ -68,10 +79,11 @@ public class Fragment {
 
   /**
    * Intersection on side of first document
-   * @implNote Other.start should be greater than this.start
+   *
    * @param other Cluster for same document pair
    * @return Insersect of all sentences covered by interval this.firstSeed.start - this.lastSeed.end
-   *   and other...
+   * and other...
+   * @implNote Other.start should be greater than this.start
    */
   public @Nullable List<CoreSentence> intersect(Fragment other) {
     var coreDocument = firstSeed().getFirstSent().document();
@@ -89,9 +101,10 @@ public class Fragment {
 
   /**
    * Should return the complement of intersection of this and other, so non overlapping parts
-   * @implNote Other.start should be greater than this.start
+   *
    * @param other Cluster for same document pair
    * @return Complement of overlapping parts of this and other
+   * @implNote Other.start should be greater than this.start
    */
   public @Nullable List<CoreSentence> complement(Fragment other) {
     var coreDocument = firstSeed().getFirstSent().document();

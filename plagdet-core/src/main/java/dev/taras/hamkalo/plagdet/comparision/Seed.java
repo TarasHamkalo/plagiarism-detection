@@ -29,10 +29,6 @@ public class Seed {
     return (side % 2) == 0 ? firstSent : secondSent;
   }
 
-  public int getSideOffset(int side) {
-    return (side % 2) == 0 ? firstOffset() : secondOffset();
-  }
-
   public int getSideIndex(int side) {
     return (side % 2) == 0 ? firstSentIndex : secondSentIndex;
   }

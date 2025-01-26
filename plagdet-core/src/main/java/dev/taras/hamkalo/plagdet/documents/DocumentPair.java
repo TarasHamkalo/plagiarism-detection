@@ -1,6 +1,7 @@
 package dev.taras.hamkalo.plagdet.documents;
 
 
+import dev.taras.hamkalo.plagdet.comparision.Direction;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
 import lombok.AccessLevel;
@@ -26,10 +27,13 @@ public class DocumentPair {
 
   @NotNull
   @Builder.Default
+  Direction direction = Direction.UNCERTAIN;
+
+  @NotNull
+  @Builder.Default
   List<SpecialMarking> plagCases = new ArrayList<>();
 
   @NotNull
   @Builder.Default
-  Set<PlagScore> plagScores = new HashSet<>();
-
+  List<PlagScore> plagScores = new ArrayList<>();
 }

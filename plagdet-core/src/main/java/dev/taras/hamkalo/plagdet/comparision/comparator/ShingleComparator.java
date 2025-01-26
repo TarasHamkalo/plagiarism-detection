@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ShingleComparator implements DocumentComparator {
 
-  Map<Integer, Set<Shingle>> documentToShingle;
-
   int size;
 
   int overlap;
@@ -31,7 +29,15 @@ public class ShingleComparator implements DocumentComparator {
 
   double discardLevel;
 
-  public ShingleComparator(double plagiarizedLevel, double discardLevel, int size, int overlap) {
+  boolean bypassFiltering;
+
+  Map<Integer, Set<Shingle>> documentToShingle;
+
+  public ShingleComparator(double plagiarizedLevel,
+                           double discardLevel,
+                           int size,
+                           int overlap,
+                           boolean bypassFiltering) {
     if (overlap > size - 1) {
       throw new IllegalArgumentException("Overlap should be less than size");
     }
@@ -41,6 +47,7 @@ public class ShingleComparator implements DocumentComparator {
     this.plagiarizedLevel = plagiarizedLevel;
     this.discardLevel = discardLevel;
     this.documentToShingle = new HashMap<>();
+    this.bypassFiltering = bypassFiltering;
   }
 
   public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {
@@ -50,21 +57,28 @@ public class ShingleComparator implements DocumentComparator {
 
     var firstShingles = getDocumentShingles(documentPair.getFirst());
     var secondShingles = getDocumentShingles(documentPair.getSecond());
-    var plagScore = PlagScore.builder()
-      .score(jaccardSimilarity(firstShingles, secondShingles))
-      .direction(Direction.UNCERTAIN)
-      .comments(List.of("Jaccard coefficient"))
-      .build();
-
-    documentPair.getPlagScores().add(plagScore);
-
-    if(plagScore.getScore() > plagiarizedLevel) {
-      return ComparisonResult.PLAGIARIZED;
-    } else if (plagScore.getScore() < discardLevel) {
-      return ComparisonResult.DISCARD;
+    double score = jaccardSimilarity(firstShingles, secondShingles);
+    ComparisonResult result = ComparisonResult.CONTINUE;
+    List<String> comments = new ArrayList<>();
+    if(score > plagiarizedLevel) {
+      result = ComparisonResult.PLAGIARIZED;
+      comments.add(
+        "[PLAGIARIZED] Jaccard similarity %s greater than %s".formatted(score, plagiarizedLevel)
+      );
+    } else if (score < discardLevel) {
+      result = ComparisonResult.DISCARD;
+      comments.add("[DISCARD] Jaccard similarity: %s lass than %s".formatted(score, discardLevel));
     }
 
-    return ComparisonResult.CONTINUE;
+    documentPair.getPlagScores().add(
+      PlagScore.builder()
+        .score(score)
+        .type(PlagScore.PlagScoreType.JACCARD)
+        .comments(comments)
+        .build()
+    );
+
+    return bypassFiltering ? ComparisonResult.CONTINUE : result;
   }
 
   private Set<Shingle> getDocumentShingles(@NotNull DocumentEntry documentEntry) {
