@@ -1,0 +1,27 @@
+plugins {
+  id 'application'
+}
+
+repositories {
+  mavenCentral()
+
+  flatDir {
+    dirs '../libs'
+  }
+}
+
+application {
+  mainClass = 'dev.taras.hamkalo.plagdet.Main'
+}
+
+tasks.withType(JavaExec).configureEach {
+  systemProperty 'java.library.path', '../libs'
+}
+
+dependencies {
+
+  implementation 'commons-cli:commons-cli:1.9.0'
+
+  implementation project(':plagdet-core')
+
+}
