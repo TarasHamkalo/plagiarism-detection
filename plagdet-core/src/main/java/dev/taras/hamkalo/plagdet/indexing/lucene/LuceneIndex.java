@@ -58,22 +58,18 @@ public class LuceneIndex {
     }
   }
 
-  public @NotNull List<FileData> retrieveByCreator(@NotNull String creator, int limit) {
-    List<FileData> results = new ArrayList<>();
+  public @NotNull List<LuceneResult> retrieveByField(
+    @NotNull String field,
+    @NotNull String value,
+    int limit
+  ) throws IndexingException {
     try (DirectoryReader reader = DirectoryReader.open(this.indexDirectory)) {
-      IndexSearcher searcher = new IndexSearcher(reader);
-      Query query = new TermQuery(new Term(LuceneConstants.CREATOR, creator));
+      Query query = new TermQuery(new Term(field, value));
 
-      TopDocs topDocs = searcher.search(query, limit);
-      for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-        results.add(FileDataMapper.parseFileData(searcher.doc(scoreDoc.doc)));
-      }
-
+      return executeSearch(query, limit, reader);
     } catch (IOException e) {
       throw new IndexingException("Failed to search index", e);
     }
-
-    return results;
   }
 
   private List<LuceneResult> executeSearch(Query query, int limit, IndexReader reader) throws IOException {
@@ -93,7 +89,7 @@ public class LuceneIndex {
       double totalDocs = reader.numDocs() * 1.0;
       int docFreq = reader.docFreq(new Term(LuceneConstants.SEARCH_CONTENT, term));
       if (docFreq == 0) {
-          return Math.log(totalDocs + 1);
+        return Math.log(totalDocs + 1);
       }
 
       return Math.log((totalDocs) / (docFreq + 1));
