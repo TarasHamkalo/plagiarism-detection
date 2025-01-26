@@ -5,6 +5,7 @@ import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -14,18 +15,18 @@ public class DocumentAnnotator {
 
   StanfordCoreNLP pipeline;
 
-  public void annotateSubmissions(List<Submission> submissions) {
+  public void annotateSubmissions(@NotNull List<Submission> submissions) {
     for (Submission submission : submissions) {
-      for (var document : submission.getDocuments()) {
-        annotateDocument(document);
-      }
+      annotateDocuments(submission.getDocuments());
     }
   }
 
-  public void annotateDocument(DocumentEntry document) {
-    CoreDocument coreDocument = new CoreDocument(document.getFileData().getContent());
-    pipeline.annotate(coreDocument);
-    document.setCoreDocument(coreDocument);
+  public void annotateDocuments(@NotNull List<DocumentEntry> documents) {
+    for (DocumentEntry document : documents) {
+      CoreDocument coreDocument = new CoreDocument(document.getFileData().getContent());
+      pipeline.annotate(coreDocument);
+      document.setCoreDocument(coreDocument);
+    }
   }
 
 }

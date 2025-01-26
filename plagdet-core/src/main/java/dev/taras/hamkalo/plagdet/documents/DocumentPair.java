@@ -1,7 +1,7 @@
 package dev.taras.hamkalo.plagdet.documents;
 
 
-import dev.taras.hamkalo.plagdet.comparision.Direction;
+import dev.taras.hamkalo.plagdet.comparision.PlagDirection;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
 import lombok.AccessLevel;
@@ -11,15 +11,13 @@ import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 
 @Data
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class DocumentPair {
+public class DocumentPair implements Comparable<DocumentPair> {
 
   @NotNull DocumentEntry first;
 
@@ -27,7 +25,7 @@ public class DocumentPair {
 
   @NotNull
   @Builder.Default
-  Direction direction = Direction.UNCERTAIN;
+  PlagDirection direction = PlagDirection.UNCERTAIN;
 
   @NotNull
   @Builder.Default
@@ -36,4 +34,17 @@ public class DocumentPair {
   @NotNull
   @Builder.Default
   List<PlagScore> plagScores = new ArrayList<>();
+
+  @Override
+  public int compareTo(@NotNull DocumentPair other) {
+    double thisMaxScore = this.plagScores.stream().map(PlagScore::getScore)
+      .max(Double::compare)
+      .orElse(0.0);
+
+    double otherMaxScore = other.plagScores.stream().map(PlagScore::getScore)
+      .max(Double::compare)
+      .orElse(0.0);
+
+    return Double.compare(thisMaxScore, otherMaxScore);
+  }
 }
