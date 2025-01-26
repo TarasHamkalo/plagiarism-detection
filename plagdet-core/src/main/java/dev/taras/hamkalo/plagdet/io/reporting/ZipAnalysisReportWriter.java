@@ -192,6 +192,7 @@ public class ZipAnalysisReportWriter {
     result.put("metadata", fileData.getMetadata());
     result.put("filepath", fileData.getPath());
     result.put("submitter", fileData.getSubmitter());
+    result.put("indexed", documentEntry.isIndexed());
     result.put("pairIds", pairIds);
     result.put("maxSimilarity", maxSimilarity);
 
