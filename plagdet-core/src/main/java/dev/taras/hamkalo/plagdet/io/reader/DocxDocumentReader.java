@@ -12,7 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public class DocxDocumentReader implements ContentReader, MetaReader{
+public class DocxDocumentReader implements ContentReader, MetadataReader {
 
   @Override
   public String getContent(Path path) throws ContentReadException {

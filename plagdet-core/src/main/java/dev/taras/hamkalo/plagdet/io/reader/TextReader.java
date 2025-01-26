@@ -11,7 +11,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Date;
 import java.util.Set;
 
-public class TextReader implements ContentReader, MetaReader {
+public class TextReader implements ContentReader, MetadataReader {
 
   @Override
   public String getContent(Path path) throws ContentReadException {

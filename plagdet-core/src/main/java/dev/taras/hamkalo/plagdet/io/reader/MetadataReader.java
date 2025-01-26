@@ -5,7 +5,7 @@ import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
 
 import java.nio.file.Path;
 
-public interface MetaReader {
+public interface MetadataReader {
 
   Metadata getMetadata(Path path) throws MetadataReadException;
 

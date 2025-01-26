@@ -40,7 +40,7 @@ public class SimilarDocumentSource {
     Map.entry(LuceneConstants.MODIFIER, Metadata::getModifier)
   );
 
-  private static final List<DocumentEntry> retrievedIndexedDocuments = new ArrayList<>();
+  @Getter private static final List<DocumentEntry> retrievedIndexedDocuments = new ArrayList<>();
 
   @NotNull SimilarDocumentSourceParameters parameters;
 

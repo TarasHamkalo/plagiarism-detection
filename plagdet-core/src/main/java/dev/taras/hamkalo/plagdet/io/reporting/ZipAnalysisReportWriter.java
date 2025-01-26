@@ -2,6 +2,7 @@ package dev.taras.hamkalo.plagdet.io.reporting;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.taras.hamkalo.plagdet.Report;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
@@ -36,18 +37,16 @@ public class ZipAnalysisReportWriter {
    * /files -> txt files of compared files content
    * a.b.json comparison results
    */
-  public void writeReport(List<Submission> submissions,
-                          List<DocumentPair> documentPairs,
-                          List<DocumentEntry> retrievedIndexedDocuments) {
+  public void writeReport(@NotNull Report report) {
     Path tempDir = null;
     try {
 
       tempDir = Files.createTempDirectory("zip_report");
       log.debug("Created temp directory: {}", tempDir);
-      writeOverview(submissions, documentPairs, tempDir);
-      writeSubmittedDocuments(submissions, tempDir);
-      writeIndexedDocuments(retrievedIndexedDocuments, tempDir);
-      writeDocumentPairs(documentPairs, tempDir);
+      writeOverview(report.getSubmissions(), report.getPairs(), tempDir);
+      writeSubmittedDocuments(report.getSubmissions(), tempDir);
+      writeIndexedDocuments(report.getDocumentsRetrievedFromIndex(), tempDir);
+      writeDocumentPairs(report.getPairs(), tempDir);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

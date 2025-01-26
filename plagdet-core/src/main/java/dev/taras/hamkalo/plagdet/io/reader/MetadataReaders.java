@@ -13,10 +13,10 @@ import java.util.List;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
-public class MetaReaders implements MetaReader {
+public class MetadataReaders implements MetadataReader {
 
   @NonNull
-  List<MetaReader> readers;
+  List<MetadataReader> readers;
 
   @Override
   public Metadata getMetadata(Path path) throws MetadataReadException {

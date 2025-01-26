@@ -7,8 +7,8 @@ import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
 import dev.taras.hamkalo.plagdet.io.exception.ParsingException;
 import dev.taras.hamkalo.plagdet.io.reader.ContentReader;
 import dev.taras.hamkalo.plagdet.io.reader.ContentReaders;
-import dev.taras.hamkalo.plagdet.io.reader.MetaReader;
-import dev.taras.hamkalo.plagdet.io.reader.MetaReaders;
+import dev.taras.hamkalo.plagdet.io.reader.MetadataReader;
+import dev.taras.hamkalo.plagdet.io.reader.MetadataReaders;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +19,8 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -43,16 +45,20 @@ public class SubmissionsParser {
 
   ContentReader contentReader;
 
-  MetaReader metadataReader;
+  MetadataReader metadataReader;
 
   public SubmissionsParser(List<ContentReader> contentReaders,
-                           List<MetaReader> metaReaders) {
+                           List<MetadataReader> metaReaders) {
 
     this.contentReader = new ContentReaders(contentReaders);
-    this.metadataReader = new MetaReaders(metaReaders);
+    this.metadataReader = new MetadataReaders(metaReaders);
   }
 
-  public DocumentEntry readTemplate(String inputPath) throws ParsingException {
+  public @Nullable DocumentEntry readTemplate(@Nullable String inputPath) throws ParsingException {
+    if (inputPath == null) {
+      return null;
+    }
+
     var path = Path.of(inputPath);
     if (!Files.exists(path) ||  Files.isDirectory(path)) {
       throw new ParsingException("Path does not exist");
