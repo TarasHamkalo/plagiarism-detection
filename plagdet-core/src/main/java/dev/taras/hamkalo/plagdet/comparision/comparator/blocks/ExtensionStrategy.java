@@ -35,11 +35,11 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ExtensionStrategy {
 
-  public static final int MIN_CLUSTER_SIZE = 3;
-
-  public static final double MIN_FRAGMENT_SIDE_SIM = 0.5;
-
   Embeddings embeddings;
+
+  double minFragmentSideSim;
+
+  int minClusterSize;
 
   public List<Fragment> extend(List<Seed> seeds, int sentMaxGap) {
     var fragments = clustering(seeds, sentMaxGap, 0, true);
@@ -56,7 +56,7 @@ public class ExtensionStrategy {
     List<Fragment> newFragments = new ArrayList<>();
     for (var fragment : fragments) {
       var sideSim = sideSimilarity(fragment);
-      if (sideSim < MIN_FRAGMENT_SIDE_SIM) {
+      if (sideSim < minFragmentSideSim) {
         log.warn("Sim is {}, so splitting fragment with {} seeds", sideSim, fragment.getSeeds().size());
         if (sentMaxGap > 0) {
           newFragments.addAll(extend(fragment.getSeeds(), sentMaxGap - 1));
@@ -96,7 +96,7 @@ public class ExtensionStrategy {
       if (lastSeed.isAdjacent(seed, side, sentMaxGap)) {
         cluster.add(seed);
       } else {
-        if (cluster.size() >= MIN_CLUSTER_SIZE) {
+        if (cluster.size() >= minClusterSize) {
           clusters.add(Fragment.builder().seeds(new ArrayList<>(cluster)).build());
         }
         cluster.clear();
@@ -104,7 +104,7 @@ public class ExtensionStrategy {
       }
     }
 
-    if (cluster.size() >= MIN_CLUSTER_SIZE) {
+    if (cluster.size() >= minClusterSize) {
       clusters.add(Fragment.builder().seeds(new ArrayList<>(cluster)).build());
     }
 

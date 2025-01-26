@@ -1,11 +1,13 @@
 package dev.taras.hamkalo.plagdet.comparision.comparator;
 
-import dev.taras.hamkalo.plagdet.comparision.Direction;
+import dev.taras.hamkalo.plagdet.comparision.PlagDirection;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.io.Metadata;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,7 +29,18 @@ public class MetadataComparator implements DocumentComparator {
 
   private static final double REVISIONS_NUMBER_WEIGHT = 1.0;
 
-  boolean bypassFiltering;
+  @Value
+  @Builder
+  @AllArgsConstructor
+  public static class MetadataComparatorParameters {
+
+    public static final boolean DEFAULT_BYPASS_FILTERING = false;
+
+    boolean bypassFiltering = DEFAULT_BYPASS_FILTERING;
+
+  }
+
+  MetadataComparatorParameters parameters;
 
   public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {
     var first = documentPair.getFirst().getFileData().getMetadata();
@@ -45,14 +58,14 @@ public class MetadataComparator implements DocumentComparator {
       score = 1;
     }
 
-    Direction direction;
+    PlagDirection direction;
     if (!documentPair.getFirst().isIndexed() && !documentPair.getSecond().isIndexed()) {
       double plagDirectionScore = compareAndComment(first, second, comments);
       direction = inferPlagiarismDirection(plagDirectionScore);
     } else if (documentPair.getFirst().isIndexed()) {
-      direction = Direction.SECOND;
+      direction = PlagDirection.SECOND;
     } else {
-      direction = Direction.FIRST;
+      direction = PlagDirection.FIRST;
     }
 
     documentPair.getPlagScores().add(
@@ -64,7 +77,7 @@ public class MetadataComparator implements DocumentComparator {
     );
 
     documentPair.setDirection(direction);
-    if (this.bypassFiltering) {
+    if (parameters.bypassFiltering) {
       return ComparisonResult.CONTINUE;
     }
 
@@ -79,14 +92,14 @@ public class MetadataComparator implements DocumentComparator {
     return s1.equals(s2);
   }
 
-  public Direction inferPlagiarismDirection(double comparisonScore) {
+  public PlagDirection inferPlagiarismDirection(double comparisonScore) {
     if (comparisonScore < 0) {
-      return Direction.FIRST;
+      return PlagDirection.FIRST;
     } else if (comparisonScore > 0) {
-      return Direction.SECOND;
+      return PlagDirection.SECOND;
     }
 
-    return Direction.UNCERTAIN;
+    return PlagDirection.UNCERTAIN;
   }
 
   /**

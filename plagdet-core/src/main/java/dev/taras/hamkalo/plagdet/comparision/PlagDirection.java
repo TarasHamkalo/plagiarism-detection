@@ -1,6 +1,6 @@
 package dev.taras.hamkalo.plagdet.comparision;
 
-public enum Direction {
+public enum PlagDirection {
   FIRST,
   SECOND,
   UNCERTAIN

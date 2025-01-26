@@ -4,6 +4,7 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import lombok.Builder;
 import lombok.Value;
+import org.jetbrains.annotations.NotNull;
 
 @Value
 @Builder
@@ -13,9 +14,9 @@ public class Seed {
 
   int secondSentIndex;
 
-  CoreSentence firstSent;
+  @NotNull CoreSentence firstSent;
 
-  CoreSentence secondSent;
+  @NotNull CoreSentence secondSent;
 
   public int firstOffset() {
     return firstSent.coreMap().get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);

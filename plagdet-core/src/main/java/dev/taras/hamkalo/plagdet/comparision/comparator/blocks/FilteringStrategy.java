@@ -35,9 +35,9 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class FilteringStrategy {
 
-  public static final int MIN_FRAGMENT_CHAR_LENGTH = 10;
-
   Embeddings embeddings;
+
+  int minFragmentCharLength;
 
   public List<Fragment> filter(List<Fragment> fragments) {
 //    var filteredFragments = removeOverlapping(fragments);
@@ -63,8 +63,8 @@ public class FilteringStrategy {
         fragment.firstSeed().getSecondSent().coreMap()
           .get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
 
-      if (firstSideLength > MIN_FRAGMENT_CHAR_LENGTH &&
-          secondSideLength > MIN_FRAGMENT_CHAR_LENGTH) {
+      if (firstSideLength > minFragmentCharLength &&
+          secondSideLength > minFragmentCharLength) {
         filteredFragments.add(fragment);
       }
     }

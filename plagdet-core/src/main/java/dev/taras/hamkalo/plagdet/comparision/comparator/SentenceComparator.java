@@ -14,6 +14,8 @@ import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -26,17 +28,64 @@ import java.util.stream.Collectors;
 @Slf4j
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class SentenceComparator implements DocumentComparator {
+public class SentenceComparator implements DocumentComparator, TemplateComparator {
 
-  public static final int MAX_GAP = 2;
+  @Value
+  @Builder
+  @AllArgsConstructor
+  public static class SentenceComparatorParameters {
 
-  private static final double SENTENCE_VECTOR_SIM_TH = 0.8;
+    public static final int DEFAULT_MAX_GAP = 2;
+
+    public static final double DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD = 0.8;
+
+    public static final int DEFAULT_MIN_CLUSTER_SIZE = 3;
+
+    public static final double DEFAULT_MIN_FRAGMENT_SIDE_SIM = 0.5;
+
+    public static final int DEFAULT_MIN_FRAGMENT_CHAR_LENGTH = 150;
+
+    @Builder.Default
+    int maxGap = DEFAULT_MAX_GAP;
+
+    @Builder.Default
+    double sentenceVectorSimilarityThreshold = DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD;
+
+    @Builder.Default
+    int minClusterSize = DEFAULT_MIN_CLUSTER_SIZE;
+
+    @Builder.Default
+    double minFragmentSideSim = DEFAULT_MIN_FRAGMENT_SIDE_SIM;
+
+    @Builder.Default
+    int minFragmentCharLength = DEFAULT_MIN_FRAGMENT_CHAR_LENGTH;
+//    public SentenceComparatorParameters() {
+//      this(
+//        DEFAULT_MAX_GAP,
+//        DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD,
+//        DEFAULT_MIN_CLUSTER_SIZE,
+//        DEFAULT_MIN_FRAGMENT_SIDE_SIM,
+//        DEFAULT_MIN_FRAGMENT_CHAR_LENGTH
+//      );
+//    }
+  }
+
+  SentenceComparatorParameters parameters;
 
   Embeddings embeddings;
 
   ExtensionStrategy extensionStrategy;
 
   FilteringStrategy filteringStrategy;
+
+  public SentenceComparator(SentenceComparatorParameters parameters, Embeddings embeddings) {
+    this.parameters = parameters;
+    this.embeddings = embeddings;
+    this.extensionStrategy = new ExtensionStrategy(
+      embeddings, parameters.minFragmentSideSim, parameters.minClusterSize
+    );
+    this.filteringStrategy = new FilteringStrategy(embeddings, parameters.minFragmentCharLength);
+  }
 
   public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {
     var fragments = doCompare(documentPair);
@@ -59,6 +108,7 @@ public class SentenceComparator implements DocumentComparator {
     return ComparisonResult.CONTINUE;
   }
 
+  @Override
   public void compareWithTemplate(@NotNull DocumentEntry target,
                                   @NotNull DocumentEntry template) {
     final var targetToTemplate = DocumentPair.builder().first(target).second(template).build();
@@ -87,7 +137,7 @@ public class SentenceComparator implements DocumentComparator {
 
     var seeds = seed(documentPair);
     log.debug("Seeds count: {}", seeds.size());
-    var fragments = extensionStrategy.extend(seeds, MAX_GAP);
+    var fragments = extensionStrategy.extend(seeds, this.parameters.getMaxGap());
     log.debug("Fragments count: {}", fragments.size());
 
     var filtered = fragments; //filteringStrategy.filter(fragments);
@@ -118,7 +168,7 @@ public class SentenceComparator implements DocumentComparator {
 
         var secondSentAccVector = embeddings.getAccVector(secondSent);
         var similarity = Transforms.cosineSim(firstSentAccVector, secondSentAccVector);
-        if (!Double.isNaN(similarity) && similarity > SENTENCE_VECTOR_SIM_TH) {
+        if (!Double.isNaN(similarity) && similarity > parameters.getSentenceVectorSimilarityThreshold()) {
           seeds.add(Seed.builder()
             .firstSentIndex(i)
             .secondSentIndex(j)
