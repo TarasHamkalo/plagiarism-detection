@@ -1,0 +1,31 @@
+package dev.taras.hamkalo.plagdet.indexing.lucene;
+
+import dev.taras.hamkalo.plagdet.io.FileData;
+import org.apache.lucene.document.Document;
+
+import static org.apache.lucene.document.Field.Store;
+
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+
+import java.nio.file.Path;
+
+public class FileDataMapper {
+
+  public static void addFileData(FileData fileData, Document doc) {
+    doc.add(new StringField(LuceneConstants.PATH, fileData.getPath().toString(), Store.YES));
+    doc.add(new TextField(LuceneConstants.CONTENT, fileData.getContent(), Store.YES));
+    doc.add(new TextField(LuceneConstants.SEARCH_CONTENT, "", Store.NO));
+    doc.add(new StringField(LuceneConstants.SUBMITTER, fileData.getSubmitter(), Store.YES));
+  }
+
+  public static FileData parseFileData(Document doc) {
+    return FileData.builder()
+      .submitter(doc.get(LuceneConstants.SUBMITTER))
+      .path(Path.of(doc.get(LuceneConstants.PATH)))
+      .content(doc.get(LuceneConstants.CONTENT))
+      .metadata(MetadataMapper.parseMetadata(doc))
+      .build();
+  }
+
+}
