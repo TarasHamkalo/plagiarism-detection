@@ -1,6 +1,7 @@
 package dev.taras.hamkalo.plagdet.comparision.comparator.blocks;
 
 import dev.taras.hamkalo.plagdet.comparision.Fragment;
+import dev.taras.hamkalo.plagdet.indexing.exception.IndexingException;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.pipeline.CoreSentence;
@@ -103,11 +104,14 @@ public class Embeddings {
       if (other != null) {
         log.trace("Word vector is of shape {}", other.shapeInfoToString());
         other.muli(posWeights.getOrDefault(wordToken.tag(), 0.0));
-        log.trace(
-          "Word {}, has idf {}", wordToken.lemma(),
-          luceneIndex.inverseTermFrequency(wordToken.lemma())
-        );
-        other.muli(luceneIndex.inverseTermFrequency(wordToken.lemma()));
+        double idf = 1;
+        try {
+          idf = luceneIndex.inverseTermFrequency(wordToken.lemma());
+        } catch (IndexingException ignoreEmptyIndex) {}
+
+        log.trace("Word {}, has idf {}", wordToken.lemma(), idf);
+        log.debug("Using idf {}", idf);
+        other.muli(idf);
         accVector.addi(other);
       }
     }

@@ -36,6 +36,7 @@ public class MetadataComparator implements DocumentComparator {
 
     public static final boolean DEFAULT_BYPASS_FILTERING = false;
 
+    @Builder.Default
     boolean bypassFiltering = DEFAULT_BYPASS_FILTERING;
 
   }

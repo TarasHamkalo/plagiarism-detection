@@ -1,6 +1,6 @@
 plugins {
-  id 'application'
-//  id 'java-library'
+//  id 'application'
+  id 'java-library'
 }
 
 repositories {
@@ -10,11 +10,11 @@ repositories {
     dirs '../libs'
   }
 }
-
-application {
-  mainClass = 'dev.taras.hamkalo.plagdet.Main'
-}
-
+//
+//application {
+//  mainClass = 'dev.taras.hamkalo.plagdet.Main'
+//}
+//
 
 tasks.withType(JavaExec).configureEach {
   systemProperty 'java.library.path', '../libs'
@@ -44,8 +44,6 @@ dependencies {
 
   implementation 'edu.stanford.nlp:stanford-corenlp:4.5.7'
 //  api 'edu.stanford.nlp:stanford-corenlp:4.5.7'
-
-  implementation 'org.jetbrains:annotations:26.0.1'
 
   implementation 'org.deeplearning4j:deeplearning4j-nlp:1.0.0-M2.1'
 

@@ -12,6 +12,7 @@ import dev.taras.hamkalo.plagdet.io.SubmissionsParser;
 import dev.taras.hamkalo.plagdet.io.reader.*;
 import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +29,9 @@ public class Plagdet {
 
   @NotNull Embeddings embeddings;
 
-  @NotNull LuceneIndex luceneIndex;
+  @NotNull
+  @Getter
+  LuceneIndex luceneIndex;
 
   @NotNull DocumentAnnotator documentAnnotator;
 

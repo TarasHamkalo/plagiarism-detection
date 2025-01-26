@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+// TODO: caching of retrieved
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SimilarDocumentSource {
@@ -31,6 +32,7 @@ public class SimilarDocumentSource {
 
     public static final int DEFAULT_SIMILAR_DOCUMENTS_LIMIT = 10;
 
+    @Builder.Default
     int similarDocumentsLimit = DEFAULT_SIMILAR_DOCUMENTS_LIMIT;
 
   }

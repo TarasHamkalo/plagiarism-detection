@@ -4,6 +4,7 @@ import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.indexing.exception.IndexingException;
 import dev.taras.hamkalo.plagdet.io.FileData;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.document.Document;
@@ -24,9 +25,13 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class LuceneIndex {
 
-  Directory indexDirectory;
+  @NotNull Directory indexDirectory;
+
+  @Getter
+  Path indexDirectoryPath;
 
   public LuceneIndex(@NotNull Path indexDirectoryPath) throws IOException {
+    this.indexDirectoryPath = indexDirectoryPath;
     this.indexDirectory = MMapDirectory.open(indexDirectoryPath);
   }
 
@@ -53,6 +58,9 @@ public class LuceneIndex {
 
       Query query = mlt.like(LuceneConstants.SEARCH_CONTENT, new StringReader(""));
       return executeSearch(query, limit, reader);
+    } catch (IndexNotFoundException error) {
+      log.error("Index is empty");
+      return new ArrayList<>();
     } catch (IOException e) {
       throw new IndexingException("Failed to retrieve similar documents", e);
     }
@@ -67,6 +75,9 @@ public class LuceneIndex {
       Query query = new TermQuery(new Term(field, value));
 
       return executeSearch(query, limit, reader);
+    } catch (IndexNotFoundException error) {
+      log.error("Index is empty");
+      return new ArrayList<>();
     } catch (IOException e) {
       throw new IndexingException("Failed to search index", e);
     }
@@ -82,6 +93,7 @@ public class LuceneIndex {
       results.add(new LuceneResult(FileDataMapper.parseFileData(doc), scoreDoc.score));
     }
     return results;
+
   }
 
   public double inverseTermFrequency(@NotNull String term) {
@@ -94,7 +106,7 @@ public class LuceneIndex {
 
       return Math.log((totalDocs) / (docFreq + 1));
     } catch (IOException e) {
-      throw new IndexingException("Failed to retrieve similar documents", e);
+      throw new IndexingException("Failed to retrieve term frequency", e);
     }
   }
 
