@@ -20,7 +20,7 @@ public class ShingleComparator implements DocumentComparator {
   @Value
   @Builder
   @AllArgsConstructor
-  public class ShingleComparatorParameters {
+  public static class ShingleComparatorParameters {
 
     public static final int DEFAULT_SIZE = 2;
 

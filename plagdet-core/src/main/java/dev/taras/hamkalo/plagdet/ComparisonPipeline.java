@@ -42,10 +42,9 @@ public class ComparisonPipeline {
     @NotNull DocumentAnnotator documentAnnotator,
     @NotNull SimilarDocumentSource similarDocumentSource,
     @NotNull TemplateComparator templateComparator,
-    @NotNull DocumentEntry template,
+    @Nullable DocumentEntry template,
     @NotNull DocumentComparator... documentComparators
   ) {
-
     this(
       new ArrayList<>(Arrays.asList(documentComparators)),
       documentAnnotator,
@@ -61,28 +60,39 @@ public class ComparisonPipeline {
    */
   public @NotNull List<DocumentPair> compareSubmissions(@NotNull List<Submission> submissions) {
     documentAnnotator.annotateSubmissions(submissions);
-    compareWithTemplate(submissions);
+    compareSubmissionsWithTemplate(submissions);
     prepareComparisonTasks(submissions);
     doCompare();
     return new ArrayList<>(this.comparisonResults);
   }
 
-  private void compareWithTemplate(@NotNull List<Submission> submissions) {
+  public void compareSubmissionsWithTemplate(@NotNull List<Submission> submissions) {
+    for (Submission submission : submissions) {
+      compareWithTemplate(submission.getDocuments());
+    }
+  }
+
+  public void compareWithTemplate(@NotNull List<DocumentEntry> documentEntries) {
     if (template == null) {
       log.info("Template document was not provided, skipping");
       return;
     }
 
-    for (var submission : submissions) {
-      for (var document : submission.getDocuments()) {
-        templateComparator.compareWithTemplate(document, template);
-      }
+    if (template.getCoreDocument() == null) {
+      documentAnnotator.annotateDocuments(List.of(template));
+    }
+
+    for (var document : documentEntries) {
+      templateComparator.compareWithTemplate(document, template);
     }
 
   }
 
   private void doCompare() {
-    for (int i = 0; i < comparisonTasks.size(); i++) {
+
+    log.info("Comparisons count is {}", comparisonTasks.size());
+
+    while (!comparisonTasks.isEmpty()) {
       var comparisonTask = this.comparisonTasks.poll();
       for (DocumentComparator comparator : comparators) {
         ComparisonResult result = comparator.compare(comparisonTask);
@@ -90,6 +100,12 @@ public class ComparisonPipeline {
           break;
         }
       }
+      log.info(
+        "\nPair score {}\nFirst doc {}\nSecond doc {}",
+        comparisonTask.getPlagScores(),
+        comparisonTask.getFirst().getFileData(),
+        comparisonTask.getSecond().getFileData()
+      );
       this.comparisonResults.add(comparisonTask);
     }
   }
@@ -100,6 +116,7 @@ public class ComparisonPipeline {
       for (var firstDocument : first.getDocuments()) {
         var similarDocuments = similarDocumentSource.retrieveSimilar(firstDocument);
         documentAnnotator.annotateDocuments(similarDocuments);
+        compareWithTemplate(similarDocuments);
         firstDocument.getDocumentPairs().addAll(
           addComparisonTasks(firstDocument, similarDocuments)
         );
@@ -108,7 +125,6 @@ public class ComparisonPipeline {
           Submission second = submissions.get(j);
           var submissionToSubmissionTasks = addComparisonTasks(firstDocument, second.getDocuments());
           firstDocument.getDocumentPairs().addAll(submissionToSubmissionTasks);
-
           for (int k = 0; k < second.getDocuments().size(); k++) {
             second.getDocuments().get(k).getDocumentPairs().add(submissionToSubmissionTasks.get(k));
           }

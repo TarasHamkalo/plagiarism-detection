@@ -1,55 +1,94 @@
 package dev.taras.hamkalo.plagdet;
 
-import dev.taras.hamkalo.plagdet.comparision.comparator.MetadataComparator;
-import dev.taras.hamkalo.plagdet.comparision.comparator.SentenceComparator;
-import dev.taras.hamkalo.plagdet.comparision.comparator.ShingleComparator;
+import dev.taras.hamkalo.plagdet.comparision.comparator.*;
 import dev.taras.hamkalo.plagdet.comparision.comparator.blocks.Embeddings;
 import dev.taras.hamkalo.plagdet.documents.DocumentAnnotator;
+import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
+import dev.taras.hamkalo.plagdet.documents.Submission;
 import dev.taras.hamkalo.plagdet.exception.PlagdetException;
+import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.io.SubmissionsParser;
+import dev.taras.hamkalo.plagdet.io.reader.*;
 import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class Plagdet {
 
-  Embeddings embeddings;
+  @NotNull Embeddings embeddings;
 
-  SubmissionsParser submissionsParser;
+  @NotNull LuceneIndex luceneIndex;
 
-  LuceneIndex luceneIndex;
+  @NotNull DocumentAnnotator documentAnnotator;
 
-  ComparisonPipeline comparisonPipeline;
+  @NotNull SimilarDocumentSource similarDocumentSource;
 
-  Pipeline pipeline;
+  @NotNull SubmissionsParser submissionsParser;
 
-  DocumentAnnotator documentAnnotator;
+  @Nullable DocumentEntry template;
 
-  public Plagdet(@NotNull PlagdetParameters plagdetParameters) {
-    this.luceneIndex = this.initLucene(plagdetParameters.getLuceneIndexDirectoryPath());
+  @NotNull ComparisonPipeline comparisonPipeline;
+
+  public Plagdet(@NotNull PlagdetParameters parameters) {
+    this.luceneIndex = this.initLucene(parameters.getLuceneIndexDirectoryPath());
+    this.documentAnnotator = new DocumentAnnotator(Pipeline.getPipeline());
+
+    this.similarDocumentSource = new SimilarDocumentSource(
+      parameters.getSimilarDocumentSourceParameters(), this.luceneIndex
+    );
+
+    this.submissionsParser = this.initSubmissionsParser();
+    this.template = submissionsParser.readTemplate(parameters.getTemplateDocumentPath());
     this.embeddings = new Embeddings(luceneIndex);
-    this.comparisonPipeline = this.initComparisonPipeline(plagdetParameters, embeddings);
-    this.submissionsParser = new SubmissionsParser();
+    this.comparisonPipeline = this.initComparisonPipeline(
+      parameters, embeddings, documentAnnotator, similarDocumentSource, template
+    );
+
+  }
+
+  private SubmissionsParser initSubmissionsParser() {
+    List<ContentReader> contentReaders = List.of(
+      new DocxDocumentReader(), new DocDocumentReader(), new TextReader()
+    );
+    List<MetadataReader> metadataReaders = List.of(
+      new DocxDocumentReader(), new DocDocumentReader(), new TextReader()
+    );
+
+    return new SubmissionsParser(contentReaders, metadataReaders);
   }
 
   private @NotNull ComparisonPipeline initComparisonPipeline(
-    @NotNull PlagdetParameters plagdetParameters,
-    @NotNull Embeddings embeddings
+    @NotNull PlagdetParameters parameters,
+    @NotNull Embeddings embeddings,
+    @NotNull DocumentAnnotator documentAnnotator,
+    @NotNull SimilarDocumentSource similarDocumentSource,
+    @Nullable DocumentEntry template
   ) {
-//    return new ComparisonPipeline(
-//
-//      new MetadataComparator(plagdetParameters.getMetadataComparatorParameters()),
-//      new ShingleComparator(plagdetParameters.getShingleComparatorParameters()),
-//      new SentenceComparator(plagdetParameters.getSentenceComparatorParameters(), embeddings)
-//    );
+
+    DocumentComparator sentenceComparator = new SentenceComparator(
+      parameters.getSentenceComparatorParameters(), embeddings
+    );
+
+    return new ComparisonPipeline(
+      documentAnnotator,
+      similarDocumentSource,
+      (TemplateComparator) sentenceComparator,
+      template,
+      new MetadataComparator(parameters.getMetadataComparatorParameters()),
+      new ShingleComparator(parameters.getShingleComparatorParameters()),
+      sentenceComparator
+    );
   }
 
   private @NotNull LuceneIndex initLucene(@Nullable String luceneIndexDirectoryPath) {
@@ -66,4 +105,30 @@ public class Plagdet {
       );
     }
   }
+
+  public Report compare(@NotNull String path) {
+    var submissions = submissionsParser.parseSubmissions(path);
+    var comparisonResults = comparisonPipeline.compareSubmissions(submissions);
+    return Report.builder()
+      .submissions(submissions)
+      .pairs(comparisonResults)
+      .documentsRetrievedFromIndex(SimilarDocumentSource.getRetrievedIndexedDocuments())
+      .build();
+  }
+
+  public void index(@NotNull List<Submission> submissions) {
+    for (var submission : submissions) {
+      for (var document : submission.getDocuments()) {
+        log.debug("Adding document to index: {}", document.getFileData());
+        luceneIndex.addToIndex(document);
+      }
+    }
+  }
+
+  public void index(@NotNull String path) {
+    var submissions = submissionsParser.parseSubmissions(path);
+    documentAnnotator.annotateSubmissions(submissions);
+    index(submissions);
+  }
+
 }
