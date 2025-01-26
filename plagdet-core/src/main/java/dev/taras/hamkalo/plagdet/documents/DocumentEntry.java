@@ -41,6 +41,8 @@ public class DocumentEntry {
   @Builder.Default
   List<SpecialMarking> templateMarking = new ArrayList<>();
 
+  @Nullable
+  @ToString.Exclude
   @Builder.Default
   List<SpecialMarking> codeMarking = null;
 
