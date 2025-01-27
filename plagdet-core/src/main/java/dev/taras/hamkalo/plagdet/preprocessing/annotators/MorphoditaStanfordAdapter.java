@@ -12,6 +12,7 @@ import edu.stanford.nlp.pipeline.Annotator;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -19,8 +20,8 @@ import java.util.regex.Pattern;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class MorphoditaStanfordAdapter implements Annotator {
 
-  public static final String SK_MORPHODITA_TAGGER_PATH =
-    "/home/taras-hamkalo/other/models/morphology/slovak-morfflex-pdt-170914/slovak-morfflex-pdt-170914-pos_only.tagger";
+  public static final String SK_MORPHODITA_TAGGER_RESOURCE =
+    "models/slovak-morfflex-pdt-170914-pos_only.tagger";
 
   public static final Map<Pattern, String> posMapping = Map.ofEntries(
     Map.entry(Pattern.compile("NN"), "Nn"),
@@ -41,8 +42,19 @@ public class MorphoditaStanfordAdapter implements Annotator {
   Morpho morpho;
 
   public MorphoditaStanfordAdapter() {
-    this.tagger = Tagger.load(MorphoditaStanfordAdapter.SK_MORPHODITA_TAGGER_PATH);
+    this.tagger = this.loadTagger();
     this.morpho = tagger.getMorpho();
+  }
+
+  private Tagger loadTagger() {
+    if (tagger != null) {
+      return tagger;
+    }
+
+    var taggerPath = ClassLoader.getSystemClassLoader()
+      .getResource(SK_MORPHODITA_TAGGER_RESOURCE).getPath();
+    System.out.println(taggerPath);
+    return Tagger.load(taggerPath);
   }
 
   @Override

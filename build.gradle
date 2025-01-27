@@ -1,8 +1,8 @@
 //file:noinspection GroovyAssignabilityCheck
-plugins {
-  id 'org.springframework.boot' version "${springBootVersion}"
-  id 'io.spring.dependency-management' version "$springDependencyManagementPluginVersion"
-}
+//plugins {
+//  id 'org.springframework.boot' version "${springBootVersion}"
+//  id 'io.spring.dependency-management' version "$springDependencyManagementPluginVersion"
+//}
 
 repositories {
   mavenCentral()
@@ -11,8 +11,8 @@ repositories {
 allprojects {
   apply plugin: 'idea'
   apply plugin: 'java'
-  apply plugin: 'org.springframework.boot'
-  apply plugin: 'io.spring.dependency-management'
+//  apply plugin: 'org.springframework.boot'
+//  apply plugin: 'io.spring.dependency-management'
 
   group = "dev.taras.hamkalo"
   version = "0.0.1"
@@ -40,8 +40,8 @@ allprojects {
 
 subprojects {
   dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'org.springframework.boot:spring-boot-devtools'
+//    implementation 'org.springframework.boot:spring-boot-starter'
+//    implementation 'org.springframework.boot:spring-boot-devtools'
 
     implementation 'org.jetbrains:annotations:26.0.1'
 
@@ -57,7 +57,7 @@ subprojects {
     testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
     testCompileOnly "org.projectlombok:lombok:$lombokVersion"
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+//    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
     testImplementation platform("org.junit:junit-bom:$junitBomVersion")
     testImplementation 'org.junit.jupiter:junit-jupiter'

@@ -1,7 +1,23 @@
 plugins {
 //  id 'application'
   id 'java-library'
+  id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
+
+shadowJar {
+  archiveBaseName.set('plagdet-core-fat')
+  archiveClassifier.set('')
+  archiveVersion.set('2.0')
+  zip64 true
+  minimize()
+  exclude('org/bytedeco/**/windows-x86_64/**')
+  exclude('org/bytedeco/**/macosx-x86_64/**')
+  exclude('org/bytedeco/**/android-arm/**')
+  exclude('org/bytedeco/**/android-arm64/**')
+  exclude('org/bytedeco/**/linux-arm/**')
+  exclude('org/bytedeco/**/linux-arm64/**')
+}
+
 
 repositories {
   mavenCentral()
@@ -9,17 +25,24 @@ repositories {
   flatDir {
     dirs '../libs'
   }
+
 }
+
+ext {
+  javacppPlatform = 'linux-x86_64'
+}
+
+
 //
 //application {
-//  mainClass = 'dev.taras.hamkalo.plagdet.Main'
+//  mainClass = 'dev.taras.hamkalo.plagdet.Plagdet'
 //}
 //
-
-tasks.withType(JavaExec).configureEach {
-  systemProperty 'java.library.path', '../libs'
-}
-
+//
+//tasks.withType(JavaExec).configureEach {
+//  systemProperty 'java.library.path', '../libs'
+//}
+//
 dependencies {
 
   implementation 'org.apache.lucene:lucene-core:8.10.1'
@@ -45,11 +68,32 @@ dependencies {
   implementation 'edu.stanford.nlp:stanford-corenlp:4.5.7'
 //  api 'edu.stanford.nlp:stanford-corenlp:4.5.7'
 
-  implementation 'org.deeplearning4j:deeplearning4j-nlp:1.0.0-M2.1'
+//  implementation('org.deeplearning4j:deeplearning4j-nlp:1.0.0-M2.1') {
+//    exclude group: 'org.bytedeco', module: 'openblas'
+//    exclude group: 'org.bytedeco', module: 'opencv'
+//    exclude group: 'org.bytedeco', module: 'hdf5'
+//    exclude group: 'org.bytedeco', module: 'leptonica'
+//  }
+//
+//  implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.13-1.5.5', classifier: "linux-x86_64"
+  implementation('org.deeplearning4j:deeplearning4j-nlp:1.0.0-M2.1') {
+    exclude group: 'org.bytedeco', module: 'openblas'
+    exclude group: 'org.bytedeco', module: 'opencv'
+    exclude group: 'org.bytedeco', module: 'hdf5'
+    exclude group: 'org.bytedeco', module: 'leptonica'
+    exclude group: 'org.bytedeco', module: 'ffmpeg'
+  }
 
-  implementation 'org.nd4j:nd4j-native-platform:1.0.0-M2.1'
+  implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.13-1.5.7', classifier: "linux-x86_64"
+
+  // Use nd4j-native for Linux (compatible with Deeplearning4j and JavaCPP platform)
+  implementation "org.nd4j:nd4j-native:1.0.0-M2.1"
+  implementation "org.nd4j:nd4j-native:1.0.0-M2.1:linux-x86_64"
+
+  // Explicitly include JavaCPP to align all versions
+  implementation 'org.bytedeco:javacpp:1.5.7'
+
+//  implementation 'org.nd4j:nd4j-native-platform:1.0.0-M2.1'
 
   implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
-
-  implementation 'commons-cli:commons-cli:1.9.0'
 }
