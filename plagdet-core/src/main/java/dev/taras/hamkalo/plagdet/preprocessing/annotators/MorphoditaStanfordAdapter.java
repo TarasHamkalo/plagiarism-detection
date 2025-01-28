@@ -4,6 +4,7 @@ import cz.cuni.mff.ufal.morphodita.Forms;
 import cz.cuni.mff.ufal.morphodita.Morpho;
 import cz.cuni.mff.ufal.morphodita.TaggedLemmas;
 import cz.cuni.mff.ufal.morphodita.Tagger;
+import dev.taras.hamkalo.plagdet.io.IoUtils;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -12,7 +13,6 @@ import edu.stanford.nlp.pipeline.Annotator;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -20,8 +20,9 @@ import java.util.regex.Pattern;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class MorphoditaStanfordAdapter implements Annotator {
 
-  public static final String SK_MORPHODITA_TAGGER_RESOURCE =
-    "models/slovak-morfflex-pdt-170914-pos_only.tagger";
+  public static final String TAGGER_RESOURCE_PREFIX = "models/";
+
+  public static final String SK_TAGGER = "slovak-morfflex-pdt-170914-pos_only.tagger";
 
   public static final Map<Pattern, String> posMapping = Map.ofEntries(
     Map.entry(Pattern.compile("NN"), "Nn"),
@@ -51,10 +52,9 @@ public class MorphoditaStanfordAdapter implements Annotator {
       return tagger;
     }
 
-    var taggerPath = ClassLoader.getSystemClassLoader()
-      .getResource(SK_MORPHODITA_TAGGER_RESOURCE).getPath();
-    System.out.println(taggerPath);
-    return Tagger.load(taggerPath);
+    var taggerPath = IoUtils.resourceFromTemp(TAGGER_RESOURCE_PREFIX + SK_TAGGER, SK_TAGGER);
+    System.out.println("Tagger path is " + taggerPath);
+    return Tagger.load(taggerPath.toString());
   }
 
   @Override

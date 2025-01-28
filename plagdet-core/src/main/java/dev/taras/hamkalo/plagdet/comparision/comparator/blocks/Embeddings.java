@@ -3,6 +3,7 @@ package dev.taras.hamkalo.plagdet.comparision.comparator.blocks;
 import dev.taras.hamkalo.plagdet.comparision.Fragment;
 import dev.taras.hamkalo.plagdet.indexing.exception.IndexingException;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
+import dev.taras.hamkalo.plagdet.io.IoUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.util.CoreMap;
@@ -16,7 +17,6 @@ import org.jetbrains.annotations.Nullable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,8 +25,10 @@ import java.util.Map;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class Embeddings {
 
-  public static final String POS_LEMMA_MODEL_RESOURCE =
-    "models/sk.poslemma.prim-10.0-public-saneword2vec.bin";
+  public static final String MODEL_RESOURCE_PREFIX = "models/";
+
+  public static final String POS_LEMMA_MODEL =
+    "sk.poslemma.prim-10.0-public-saneword2vec.bin";
 
   public static final int WORD_VECTOR_SIZE = 200;
 
@@ -120,10 +122,14 @@ public class Embeddings {
   }
 
   private static @Nullable Word2Vec loadWordVectors() {
-    var modelPath = Path.of(
-      ClassLoader.getSystemClassLoader().getResource(POS_LEMMA_MODEL_RESOURCE).getPath()
-    );
-    log.warn("Loading Word2Vec model from {}", modelPath);
+//    var modelPath = Path.of(
+//      ClassLoader.getSystemClassLoader().getResource(POS_LEMMA_MODEL_RESOURCE).getPath()
+//    );
+//    var modelInputStream = ClassLoader.getSystemClassLoader()
+//      .getResourceAsStream(POS_LEMMA_MODEL_RESOURCE);
+//    var word2vec = WordVectorSerializer.readAsBinaryNoLineBreaks(modelInputStream);
+    var modelPath = IoUtils.resourceFromTemp(MODEL_RESOURCE_PREFIX + POS_LEMMA_MODEL, POS_LEMMA_MODEL);
+    log.warn("Loading Word2Vec model from {}", MODEL_RESOURCE_PREFIX + POS_LEMMA_MODEL);
     var word2vec = WordVectorSerializer.readWord2VecModel(modelPath.toFile());
     log.warn("Loading Word2Vec model done");
     return word2vec;

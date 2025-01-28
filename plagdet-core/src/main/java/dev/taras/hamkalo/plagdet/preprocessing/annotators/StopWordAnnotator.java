@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.preprocessing.annotators;
 
+import dev.taras.hamkalo.plagdet.io.IoUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
@@ -13,7 +14,6 @@ import org.apache.lucene.analysis.WordlistLoader;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Set;
 
 @Slf4j
@@ -29,12 +29,10 @@ public class StopWordAnnotator implements Annotator {
   }
 
   private static CharArraySet loadStopwordSet() throws IOException {
-    var stopWordsPath = Path.of(
-      ClassLoader.getSystemClassLoader().getResource(STOP_WORD_RESOURCE).getPath()
-    );
-
+    var stopWordsPath = IoUtils.resourceFromTemp(STOP_WORD_RESOURCE, STOP_WORD_RESOURCE);
     var stopwords = new FileReader(stopWordsPath.toFile());
-    return WordlistLoader.getWordSet(stopwords);
+    var stopwordSet = WordlistLoader.getWordSet(stopwords);
+    return stopwordSet;
   }
 
   @Override

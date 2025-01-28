@@ -1,5 +1,7 @@
 package dev.taras.hamkalo.plagdet.io;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -23,4 +25,21 @@ public abstract class IoUtils {
     return resultPaths;
   }
 
+  public static Path resourceFromTemp(@NotNull String resource, @NotNull String filename) {
+    var resourceAsStream = ClassLoader.getSystemClassLoader()
+      .getResourceAsStream(resource);
+
+    try {
+      Path tempDir = Files.createTempDirectory("dir");
+      Path tempFilePath = tempDir.resolve(filename);
+      Files.copy(resourceAsStream, tempFilePath);
+      tempDir.toFile().deleteOnExit();
+      tempFilePath.toFile().deleteOnExit();
+      return tempFilePath;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+
+  }
 }
