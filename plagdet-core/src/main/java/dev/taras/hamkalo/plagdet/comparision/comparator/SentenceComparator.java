@@ -129,12 +129,6 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
   private @NotNull List<Fragment> doCompare(@NotNull DocumentPair documentPair) {
     embeddings.getWordVector(""); // TODO: remove, debug purpose
-    log.info(
-      "Comparing {} - {}",
-      documentPair.getFirst().getFileData(),
-      documentPair.getSecond().getFileData()
-    );
-
     var seeds = seed(documentPair);
     log.debug("Seeds count: {}", seeds.size());
     var fragments = extensionStrategy.extend(seeds, this.parameters.getMaxGap());

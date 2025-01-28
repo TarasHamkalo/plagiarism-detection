@@ -7,11 +7,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Filter results for each document by some threshold, leaving only meaningfull
  */
+@Slf4j
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ResultsFilter {
@@ -59,9 +61,6 @@ public class ResultsFilter {
     @NotNull DocumentEntry documentEntry,
     @NotNull DocumentPair documentPair
   ) {
-//    if (documentEntry.isIndexed() || documentEntry.isTemplate()) {
-//      return;
-//    }
     documentEntry.getDocumentPairs().offer(documentPair);
     final int documentPairsSize = documentEntry.getDocumentPairs().size();
 

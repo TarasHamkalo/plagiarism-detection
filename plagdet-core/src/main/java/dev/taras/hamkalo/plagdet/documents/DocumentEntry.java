@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.documents;
 
+import com.google.protobuf.AbstractMessage;
 import dev.taras.hamkalo.plagdet.comparision.MarkingOffsets;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
@@ -34,7 +35,7 @@ public class DocumentEntry {
   @NotNull
   @ToString.Exclude
   @Builder.Default
-  Queue<DocumentPair> documentPairs = new PriorityQueue<>(Comparator.reverseOrder());
+  Queue<DocumentPair> documentPairs = new PriorityQueue<>();
 
   @NotNull
   @Builder.Default
@@ -50,7 +51,7 @@ public class DocumentEntry {
   }
 
   public static int getId(@NotNull FileData fileData) {
-    return 31 * fileData.getContent().hashCode() + fileData.getPath().hashCode();
+    return 31 * fileData.getContent().hashCode() + fileData.getPersistentPath().hashCode();
   }
 
   public boolean isComparedWithTemplate() {

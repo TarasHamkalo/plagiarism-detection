@@ -4,6 +4,7 @@ import dev.taras.hamkalo.plagdet.comparision.comparator.*;
 import dev.taras.hamkalo.plagdet.comparision.comparator.blocks.Embeddings;
 import dev.taras.hamkalo.plagdet.documents.DocumentAnnotator;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
+import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.documents.Submission;
 import dev.taras.hamkalo.plagdet.exception.PlagdetException;
 import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource;
@@ -21,7 +22,9 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -112,17 +115,21 @@ public class Plagdet {
 
   public Report compare(@NotNull String path) {
     var submissions = submissionsParser.parseSubmissions(path);
-    var comparisonResults = comparisonPipeline.compareSubmissions(submissions);
-    var filteredRetrievedDocuments =
-      SimilarDocumentSource.getRetrievedIndexedDocuments().values().stream()
-      .filter(d -> !d.getDocumentPairs().isEmpty())
-      .toList();
+    var ignore = comparisonPipeline.compareSubmissions(submissions);
+    var deduplicatedComparisonResults = submissions.stream()
+      .flatMap(s -> s.getDocuments().stream())
+      .flatMap(d -> d.getDocumentPairs().stream())
+      .collect(Collectors.toMap((p) -> p.getId(), p -> p, (p1, p2) -> p1));
 
     SimilarDocumentSource.getRetrievedIndexedDocuments().clear();
+    var filteredRetrievedDocuments = deduplicatedComparisonResults.values().stream()
+      .map(DocumentPair::getSecond)
+      .filter(DocumentEntry::isIndexed)
+      .toList();
 
     return Report.builder()
       .submissions(submissions)
-      .pairs(comparisonResults)
+      .pairs(new ArrayList<>(deduplicatedComparisonResults.values()))
       .documentsRetrievedFromIndex(filteredRetrievedDocuments)
       .build();
   }

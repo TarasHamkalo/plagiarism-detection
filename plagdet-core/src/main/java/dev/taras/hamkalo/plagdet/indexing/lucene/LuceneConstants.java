@@ -1,6 +1,7 @@
 package dev.taras.hamkalo.plagdet.indexing.lucene;
 
 public class LuceneConstants {
+  public static final String ID = "id";
   public static final String PATH = "path";
   public static final String CONTENT = "content";
   public static final String SEARCH_CONTENT = "search_content";

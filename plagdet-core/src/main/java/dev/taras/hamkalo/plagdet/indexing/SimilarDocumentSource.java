@@ -70,14 +70,14 @@ public class SimilarDocumentSource {
       }
     }
 
-    var similarDocumentEntries = new ArrayList<DocumentEntry>();
+    var similarDocumentEntries = new HashMap<Integer, DocumentEntry>();
     for (var similarDoc : similarDocs) {
       var documentId = DocumentEntry.getId(similarDoc.fileData());
       var cached = getCachedDocumentEntry(similarDoc, documentId);
-      similarDocumentEntries.add(cached);
+      similarDocumentEntries.put(documentId, cached);
     }
 
-    return similarDocumentEntries;
+    return new ArrayList<>(similarDocumentEntries.values());
   }
 
   private static DocumentEntry getCachedDocumentEntry(LuceneResult similarDoc, int documentId) {

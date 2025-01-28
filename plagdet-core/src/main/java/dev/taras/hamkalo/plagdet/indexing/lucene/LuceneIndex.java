@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.*;
@@ -21,6 +22,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+// TODO: deduplication, check for id
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class LuceneIndex {
@@ -39,9 +41,18 @@ public class LuceneIndex {
     var conf = new IndexWriterConfig(new DocumentAnalyzer(document, true));
     try (IndexWriter writer = new IndexWriter(this.indexDirectory, conf)) {
       Document doc = new Document();
+      log.info("Indexing document with path {}", document.getFileData().getPersistentPath());
+      final var duplicateDocuments = retrieveByField(
+        LuceneConstants.ID, String.valueOf(document.getId()), 1
+      );
+      log.debug("Duplicate list {}" , duplicateDocuments);
+      if (!duplicateDocuments.isEmpty()) {
+        log.info("Indexing for document with id {} aborted, already indexed", document.getId());
+        return;
+      }
 
       var fileData = document.getFileData();
-
+      FileDataMapper.addId(document.getId(), doc);
       FileDataMapper.addFileData(fileData, doc);
       MetadataMapper.addMetadata(fileData.getMetadata(), doc);
       writer.addDocument(doc);

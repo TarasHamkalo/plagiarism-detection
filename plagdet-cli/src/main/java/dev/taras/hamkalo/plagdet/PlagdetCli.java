@@ -11,6 +11,9 @@ import org.apache.commons.cli.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 @Slf4j
 public class PlagdetCli {
 
@@ -33,6 +36,21 @@ public class PlagdetCli {
       String newPath = cmd.getOptionValue("n");
       String templatePath = cmd.getOptionValue("t");
       String lucenePath = cmd.getOptionValue("l");
+      if (oldPath != null && !Files.exists(Path.of(oldPath))) {
+        log.error("Old submissions path does exist, {}", oldPath);
+        return;
+      }
+
+      if (newPath != null && !Files.exists(Path.of(newPath))) {
+        log.error("New submissions path does exist, {}", newPath);
+        return;
+      }
+
+      if (templatePath != null && !Files.exists(Path.of(templatePath))) {
+        log.error("Template path does exist, {}", templatePath);
+        return;
+      }
+
       boolean indexOnly = cmd.hasOption("i");
 
       SentenceComparatorParameters sentenceParams = buildSentenceComparatorParams(cmd);

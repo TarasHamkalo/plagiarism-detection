@@ -25,11 +25,11 @@ import org.jetbrains.annotations.Nullable;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static org.nd4j.shade.guava.io.MoreFiles.listFiles;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -60,11 +60,11 @@ public class SubmissionsParser {
     }
 
     var path = Path.of(inputPath);
-    if (!Files.exists(path) ||  Files.isDirectory(path)) {
+    if (!Files.exists(path) || Files.isDirectory(path)) {
       throw new ParsingException("Path does not exist");
     }
 
-    var fileData = readFileData(path.toFile());
+    var fileData = buildFileData(path.toFile(), "template", "template");
     fileData.setSubmitter(extractSubmitter(path));
     return DocumentEntry.builder()
       .indexed(false)
@@ -80,83 +80,111 @@ public class SubmissionsParser {
       throw new ParsingException("Path does not exist");
     }
 
+    final String persistentPrefix = FilenameUtils.getBaseName(file.getName());
     List<File> submissionFiles = new ArrayList<>();
     if (isSupportedArchive(file)) {
-      submissionFiles.addAll(extractArchiveSingleLevel(file, Set.of(DEFAULT_ARCHIVE_EXT)));
+      final var extractedEntries = extractArchiveSingleLevel(file, Set.of(DEFAULT_ARCHIVE_EXT));
+      return parseSubmissions(extractedEntries, persistentPrefix);
     }
 
     if (file.isDirectory()) {
       // add all paths inside of it, for a file we create a submission directly for it
       // and for a zip we extract all of them
+      Map<String, File> fileMap = new HashMap<>();
       File[] childs = file.listFiles();
       if (childs != null) {
-        submissionFiles.addAll(Arrays.asList(childs));
+        for (var child : childs) {
+          fileMap.put(FilenameUtils.getBaseName(child.getName()), child);
+        }
+
+        return parseSubmissions(fileMap, persistentPrefix);
       }
+
     }
 
+    throw new ParsingException("Path does not represent directory or archive");
+  }
+
+  private List<Submission> parseSubmissions(
+    @NotNull Map<String, File> submissionFiles,
+    @NotNull String persistentPrefix
+  ) {
+
     var submissions = new ArrayList<Submission>();
-    for (var submissionFile : submissionFiles) {
-      log.debug(submissionFile.getAbsolutePath());
+    for (var submissionSource: submissionFiles.entrySet()) {
       var submission = new Submission();
+      var submissionFile = submissionSource.getValue();
+      var submitterName = extractSubmitter(submissionFile.toPath());
       submission.setPath(submissionFile.toPath());
 
-      var submitterName = extractSubmitter(submissionFile.toPath());
+      log.info("Parsing {}", submissionFile.getAbsolutePath());
+
+
       try {
         if (isSupportedArchive(submissionFile)) {
-          var files = extractArchiveSingleLevel(
+          var fileMap = extractArchiveSingleLevel(
             submissionFile, SubmissionsParser.SUPPORTED_FILE_FORMATS
           );
 
-          submission.setDocuments(files.stream()
-            .map(this::readFileData)
-            .peek(f -> f.setSubmitter(submitterName))
-            .map(f -> DocumentEntry.builder().indexed(false).template(false).fileData(f).build())
-            .toList()
-          );
+          var extendedPrefix =
+            persistentPrefix + File.separator + FilenameUtils.getBaseName(submissionSource.getKey());
+          var documents = fileMap.entrySet().stream()
+            .map((e) ->
+              buildFileData(e.getValue(), submitterName, extendedPrefix + File.separator + e.getKey())
+            )
+            .map(f -> DocumentEntry.builder().fileData(f).build())
+            .toList();
+
+          submission.setDocuments(documents);
         } else {
-          var fileData = readFileData(submissionFile);
-          fileData.setSubmitter(submitterName);
-          var document = DocumentEntry.builder()
-            .indexed(false)
-            .template(false)
-            .fileData(fileData)
-            .build();
-          submission.setDocuments(List.of(document));
+          final var persistentPath = persistentPrefix + File.separator + submissionSource.getKey();
+          var fileData = buildFileData(submissionFile, submitterName, persistentPath);
+          submission.setDocuments(List.of(DocumentEntry.builder().fileData(fileData).build()));
         }
 
         submissions.add(submission);
-      } catch(ContentReadException | MetadataReadException e){
+      } catch (ContentReadException | MetadataReadException e) {
         log.error("Submission {} was discarded, reason {}", submissionFile, e.getMessage());
       }
+
     }
 
     return submissions;
   }
 
-  private FileData readFileData(File file) {
-    return (FileData.builder()
-      .path(file.toPath())
+  private FileData buildFileData(
+    @NotNull File file,
+    @NotNull String submitterName,
+    @NotNull String persistentPath
+  ) {
+    return FileData.builder()
+      .submitter(submitterName)
+      .persistentPath(persistentPath)
+      .temporaryPath(file.toPath())
       .content(contentReader.getContent(file.toPath()))
       .metadata(metadataReader.getMetadata(file.toPath()))
-      .build()
-    );
+      .build();
   }
 
   /**
    * @param file             denote archive to be expanded
    * @param preservedFormats formats which will be preserved, other dropped
-   * @return File
+   * @return archive entry name -> file map
    */
-  private List<File> extractArchiveSingleLevel(File file, Set<String> preservedFormats)
+  private Map<String, File> extractArchiveSingleLevel(File file, Set<String> preservedFormats)
     throws ParsingException {
 
-    var result = new ArrayList<File>();
+    var result = new HashMap<String, File>();
 
     try (InputStream fis = new FileInputStream(file);
          BufferedInputStream bis = new BufferedInputStream(fis);
          ArchiveInputStream<ZipArchiveEntry> ais = new ZipArchiveInputStream(bis)) {
 
       Path tempDir = Files.createTempDirectory("extracted_");
+      tempDir.toFile().deleteOnExit();
+
+      Path extractDest = tempDir.resolve(FilenameUtils.getBaseName(file.getName()));
+
       ArchiveEntry entry;
       while ((entry = ais.getNextEntry()) != null) {
         String baseName = FilenameUtils.getBaseName(entry.getName());
@@ -174,14 +202,15 @@ public class SubmissionsParser {
             !preservedFormats.contains(FilenameUtils.getExtension(entry.getName()))) {
           continue;
         }
-        File newFile = new File(tempDir.toFile(), entry.getName());
+        File newFile = new File(extractDest.toFile(), entry.getName());
         newFile.getParentFile().mkdirs();
         try (var fos = new FileOutputStream(newFile)) {
           IOUtils.copy(ais, fos);
         }
 
-        result.add(newFile);
+        result.put(entry.getName(), newFile);
       }
+
     } catch (IOException e) {
       throw new ParsingException(e);
     }
@@ -201,7 +230,6 @@ public class SubmissionsParser {
   private static boolean isSupportedArchive(File file) {
     return file.isFile() && file.toPath().toString().endsWith(DEFAULT_ARCHIVE_EXT);
   }
-
 
 
 }

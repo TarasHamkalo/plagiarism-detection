@@ -15,7 +15,6 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 
-import javax.swing.text.Document;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -118,16 +117,12 @@ public class ZipAnalysisReportWriter {
     Files.createDirectories(pairsDir);
     for (DocumentPair documentPair : documentPairs) {
       Path resultJson = pairsDir.resolve(
-        documentPairId(documentPair) + ".json"
+        documentPair.getId() + ".json"
       );
       String documentPairJson = mapDocumentPairToJson(documentPair);
       log.debug("Writing document pair to: {}", resultJson);
       Files.writeString(resultJson, documentPairJson);
     }
-  }
-
-  private @NotNull String documentPairId(DocumentPair documentPair) {
-    return documentPair.getFirst().getId() + "_" + documentPair.getSecond().getId();
   }
 
   private void writeSubmittedDocuments(List<Submission> submissions, Path tempDir) throws IOException {
@@ -160,7 +155,7 @@ public class ZipAnalysisReportWriter {
 
   private String mapDocumentPairToJson(DocumentPair documentPair) {
     Map<String, Object> result = new HashMap<>();
-    result.put("id", documentPairId(documentPair));
+    result.put("id", documentPair.getId());
     result.put("firstId", documentPair.getFirst().getId());
     result.put("secondId", documentPair.getSecond().getId());
     result.put("direction", documentPair.getDirection());
@@ -179,7 +174,7 @@ public class ZipAnalysisReportWriter {
     Map<String, Object> result = new HashMap<>();
     FileData fileData = documentEntry.getFileData();
     List<String> pairIds = documentEntry.getDocumentPairs().stream()
-      .map(this::documentPairId)
+      .map(p -> p.getId())
       .toList();
 
     final double maxSimilarity = documentEntry.getDocumentPairs().stream()
@@ -190,9 +185,12 @@ public class ZipAnalysisReportWriter {
 
     result.put("id", documentEntry.getId());
 
-    result.put("filename", FilenameUtils.getBaseName(fileData.getPath().toString()));
+    var filePath = documentEntry.isIndexed() ?
+      fileData.getPersistentPath() : fileData.getTemporaryPath().toString();
+
+    result.put("filename", FilenameUtils.getBaseName(fileData.getPersistentPath()));
     result.put("metadata", fileData.getMetadata());
-    result.put("filepath", fileData.getPath());
+    result.put("filepath", filePath);
     result.put("submitter", fileData.getSubmitter());
     result.put("indexed", documentEntry.isIndexed());
     result.put("pairIds", pairIds);

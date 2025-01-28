@@ -16,10 +16,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-// TODO: removal of zero plag detection
-// TODO: leave the only plag case for each
+
 @Slf4j
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -102,19 +100,18 @@ public class ComparisonPipeline {
 
     while (!comparisonTasks.isEmpty()) {
       var comparisonTask = comparisonTasks.poll();
-      log.info("Comparing pair {}", comparisonTask);
+      log.info("Comparing pair:\n\tFirst document {}\n\tSecond document {}",
+        comparisonTask.getFirst().getFileData().getPersistentPath(),
+        comparisonTask.getSecond().getFileData().getPersistentPath()
+      );
+
       for (DocumentComparator comparator : comparators) {
         ComparisonResult result = comparator.compare(comparisonTask);
         if (!ComparisonResult.CONTINUE.equals(result)) {
           break;
         }
       }
-      log.info(
-        "\nPair score {}\nFirst doc {}\nSecond doc {}",
-        comparisonTask.getPlagScores(),
-        comparisonTask.getFirst().getFileData(),
-        comparisonTask.getSecond().getFileData()
-      );
+      log.info("Pair scores {}\n", comparisonTask.getPlagScores());
 
       addComparisonResults(comparisonTask);
     }
@@ -136,39 +133,28 @@ public class ComparisonPipeline {
         documentAnnotator.annotateDocuments(similarDocuments);
         compareWithTemplate(similarDocuments);
         addComparisonTasks(firstDocument, similarDocuments);
-//        firstDocument.getDocumentPairs().addAll(
-//        );
-
         for (int j = i + 1; j < submissions.size(); j++) {
           Submission second = submissions.get(j);
           addComparisonTasks(firstDocument, second.getDocuments());
-//          var submissionToSubmissionTasks = addComparisonTasks(firstDocument, second.getDocuments());
-//          firstDocument.getDocumentPairs().addAll(submissionToSubmissionTasks);
-//          for (int k = 0; k < second.getDocuments().size(); k++) {
-//            second.getDocuments().get(k).getDocumentPairs().add(submissionToSubmissionTasks.get(k));
-//          }
         }
 
       }
     }
   }
 
-  private @NotNull List<DocumentPair> addComparisonTasks(
+  private void addComparisonTasks(
     @NotNull DocumentEntry suspicious,
     @NotNull List<DocumentEntry> sources
   ) {
 
-    var newComparisonTask = sources.stream()
+    sources.stream()
       .map(source ->
         DocumentPair.builder()
           .first(suspicious)
           .second(source)
           .build()
       )
-      .collect(Collectors.toList());
-
-    this.comparisonTasks.addAll(newComparisonTask);
-    return newComparisonTask;
+      .forEach(comparisonTasks::add);
   }
 
   public ComparisonPipeline addComparator(DocumentComparator comparator) {

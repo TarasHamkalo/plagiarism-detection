@@ -50,4 +50,13 @@ public class DocumentPair implements Comparable<DocumentPair> {
       .max(Double::compare)
       .orElse(0.0);
   }
+
+  public @NotNull String getId() {
+    return getId(this);
+  }
+
+  public static @NotNull String getId(DocumentPair documentPair) {
+    return documentPair.getFirst().getId() + "_" + documentPair.getSecond().getId();
+  }
+
 }
