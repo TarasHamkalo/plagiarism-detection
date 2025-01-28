@@ -23,6 +23,10 @@ public class DocumentAnnotator {
 
   public void annotateDocuments(@NotNull List<DocumentEntry> documents) {
     for (DocumentEntry document : documents) {
+      if (document.isAnnotated()) {
+        return;
+      }
+
       CoreDocument coreDocument = new CoreDocument(document.getFileData().getContent());
       pipeline.annotate(coreDocument);
       document.setCoreDocument(coreDocument);

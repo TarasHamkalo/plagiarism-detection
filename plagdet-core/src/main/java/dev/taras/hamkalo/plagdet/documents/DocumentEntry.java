@@ -47,7 +47,19 @@ public class DocumentEntry {
   List<SpecialMarking> codeMarking = null;
 
   public int getId() {
-    return 31 * this.fileData.getContent().hashCode() + this.fileData.getPath().hashCode();
+    return getId(this.fileData);
+  }
+
+  public static int getId(@NotNull FileData fileData) {
+    return 31 * fileData.getContent().hashCode() + fileData.getPath().hashCode();
+  }
+
+  public boolean isComparedWithTemplate() {
+    return this.template || !this.templateMarking.isEmpty();
+  }
+
+  public boolean isAnnotated() {
+    return this.coreDocument != null && this.coreDocument.annotation().size() != 0;
   }
 
   public @NotNull List<SpecialMarking> getCodeMarking() {

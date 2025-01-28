@@ -79,12 +79,14 @@ public class ComparisonPipeline {
       return;
     }
 
-    if (template.getCoreDocument() == null) {
+    if (!template.isAnnotated()) {
       documentAnnotator.annotateDocuments(List.of(template));
     }
 
     for (var document : documentEntries) {
-      templateComparator.compareWithTemplate(document, template);
+      if (!document.isComparedWithTemplate()) {
+        templateComparator.compareWithTemplate(document, template);
+      }
     }
 
   }

@@ -42,6 +42,8 @@ public class ZipAnalysisReportWriter {
     try {
 
       tempDir = Files.createTempDirectory("zip_report");
+      tempDir.toFile().deleteOnExit();
+
       log.debug("Created temp directory: {}", tempDir);
       writeOverview(report.getSubmissions(), report.getPairs(), tempDir);
       writeSubmittedDocuments(report.getSubmissions(), tempDir);
