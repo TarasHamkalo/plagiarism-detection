@@ -35,6 +35,8 @@ public class ComparisonPipeline {
 
   @NotNull PriorityQueue<DocumentPair> comparisonResults = new PriorityQueue<>();
 
+  @NotNull ResultsFilter resultsFilter;
+
   @NotNull TemplateComparator templateComparator;
 
   @Nullable DocumentEntry template;
@@ -43,6 +45,7 @@ public class ComparisonPipeline {
     @NotNull DocumentAnnotator documentAnnotator,
     @NotNull SimilarDocumentSource similarDocumentSource,
     @NotNull TemplateComparator templateComparator,
+    @NotNull ResultsFilter resultsFilter,
     @Nullable DocumentEntry template,
     @NotNull DocumentComparator... documentComparators
   ) {
@@ -50,6 +53,7 @@ public class ComparisonPipeline {
       new ArrayList<>(Arrays.asList(documentComparators)),
       documentAnnotator,
       similarDocumentSource,
+      resultsFilter,
       templateComparator,
       template
     );
@@ -85,6 +89,7 @@ public class ComparisonPipeline {
 
     for (var document : documentEntries) {
       if (!document.isComparedWithTemplate()) {
+        // TODO: filter by template coverage
         templateComparator.compareWithTemplate(document, template);
       }
     }
@@ -96,7 +101,8 @@ public class ComparisonPipeline {
     log.info("Comparisons count is {}", comparisonTasks.size());
 
     while (!comparisonTasks.isEmpty()) {
-      var comparisonTask = this.comparisonTasks.poll();
+      var comparisonTask = comparisonTasks.poll();
+      log.info("Comparing pair {}", comparisonTask);
       for (DocumentComparator comparator : comparators) {
         ComparisonResult result = comparator.compare(comparisonTask);
         if (!ComparisonResult.CONTINUE.equals(result)) {
@@ -109,7 +115,16 @@ public class ComparisonPipeline {
         comparisonTask.getFirst().getFileData(),
         comparisonTask.getSecond().getFileData()
       );
-      this.comparisonResults.add(comparisonTask);
+
+      addComparisonResults(comparisonTask);
+    }
+  }
+
+  private void addComparisonResults(@NotNull DocumentPair comparisonTask) {
+    if (resultsFilter.filterDocumentPair(comparisonTask)) {
+      resultsFilter.safeAddDocumentPair(comparisonTask.getFirst(), comparisonTask);
+      resultsFilter.safeAddDocumentPair(comparisonTask.getSecond(), comparisonTask);
+      comparisonResults.add(comparisonTask);
     }
   }
 
@@ -120,17 +135,18 @@ public class ComparisonPipeline {
         var similarDocuments = similarDocumentSource.retrieveSimilar(firstDocument);
         documentAnnotator.annotateDocuments(similarDocuments);
         compareWithTemplate(similarDocuments);
-        firstDocument.getDocumentPairs().addAll(
-          addComparisonTasks(firstDocument, similarDocuments)
-        );
+        addComparisonTasks(firstDocument, similarDocuments);
+//        firstDocument.getDocumentPairs().addAll(
+//        );
 
         for (int j = i + 1; j < submissions.size(); j++) {
           Submission second = submissions.get(j);
-          var submissionToSubmissionTasks = addComparisonTasks(firstDocument, second.getDocuments());
-          firstDocument.getDocumentPairs().addAll(submissionToSubmissionTasks);
-          for (int k = 0; k < second.getDocuments().size(); k++) {
-            second.getDocuments().get(k).getDocumentPairs().add(submissionToSubmissionTasks.get(k));
-          }
+          addComparisonTasks(firstDocument, second.getDocuments());
+//          var submissionToSubmissionTasks = addComparisonTasks(firstDocument, second.getDocuments());
+//          firstDocument.getDocumentPairs().addAll(submissionToSubmissionTasks);
+//          for (int k = 0; k < second.getDocuments().size(); k++) {
+//            second.getDocuments().get(k).getDocumentPairs().add(submissionToSubmissionTasks.get(k));
+//          }
         }
 
       }

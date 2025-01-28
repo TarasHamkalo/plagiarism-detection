@@ -87,6 +87,7 @@ public class Plagdet {
       documentAnnotator,
       similarDocumentSource,
       (TemplateComparator) sentenceComparator,
+      new ResultsFilter(parameters.getResultsFilterParameters()),
       template,
       new MetadataComparator(parameters.getMetadataComparatorParameters()),
       new ShingleComparator(parameters.getShingleComparatorParameters()),
@@ -112,12 +113,20 @@ public class Plagdet {
   public Report compare(@NotNull String path) {
     var submissions = submissionsParser.parseSubmissions(path);
     var comparisonResults = comparisonPipeline.compareSubmissions(submissions);
+    var filteredRetrievedDocuments =
+      SimilarDocumentSource.getRetrievedIndexedDocuments().values().stream()
+      .filter(d -> !d.getDocumentPairs().isEmpty())
+      .toList();
+
+    SimilarDocumentSource.getRetrievedIndexedDocuments().clear();
+
     return Report.builder()
       .submissions(submissions)
       .pairs(comparisonResults)
-      .documentsRetrievedFromIndex(SimilarDocumentSource.getRetrievedIndexedDocuments())
+      .documentsRetrievedFromIndex(filteredRetrievedDocuments)
       .build();
   }
+
 
   public void index(@NotNull List<Submission> submissions) {
     for (var submission : submissions) {

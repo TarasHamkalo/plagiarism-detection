@@ -112,7 +112,7 @@ public class Embeddings {
         } catch (IndexingException ignoreEmptyIndex) {}
 
         log.trace("Word {}, has idf {}", wordToken.lemma(), idf);
-        log.debug("Using idf {}", idf);
+        log.trace("Using idf {}", idf);
         other.muli(idf);
         accVector.addi(other);
       }

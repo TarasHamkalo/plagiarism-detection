@@ -12,8 +12,7 @@ import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Data
 @Builder
@@ -35,7 +34,7 @@ public class DocumentEntry {
   @NotNull
   @ToString.Exclude
   @Builder.Default
-  List<DocumentPair> documentPairs = new ArrayList<>();
+  Queue<DocumentPair> documentPairs = new PriorityQueue<>(Comparator.reverseOrder());
 
   @NotNull
   @Builder.Default

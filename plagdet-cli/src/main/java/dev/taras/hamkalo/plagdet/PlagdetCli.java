@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet;
 
+import dev.taras.hamkalo.plagdet.ResultsFilter.ResultsFilterParameters;
 import dev.taras.hamkalo.plagdet.comparision.comparator.MetadataComparator.MetadataComparatorParameters;
 import dev.taras.hamkalo.plagdet.comparision.comparator.SentenceComparator.SentenceComparatorParameters;
 import dev.taras.hamkalo.plagdet.comparision.comparator.ShingleComparator.ShingleComparatorParameters;
@@ -14,30 +15,7 @@ import org.jetbrains.annotations.Nullable;
 public class PlagdetCli {
 
   public static void run(String[] args) {
-    Options options = new Options();
-
-    options.addRequiredOption("n", "new-path", true, "Path to the new submissions zip/directory");
-    options.addOption("l", "lucene-path", true, "Path to the lucene index directory, if empty, then temporary directory created");
-    options.addOption("o", "old-path", true, "Path to the old submissions directory (optional)");
-    options.addOption("t", "template-path", true, "Path to the template file (optional)");
-    options.addOption("i", "index-only", false, "Flag to index submissions without comparison");
-    options.addOption("h", "help", false, "Print help information");
-
-    options.addOption("bypass-metadata-filter", false, "Whether to stop comparison after matching authors/modifier");
-    options.addOption("bypass-shingle-filter", false, "Whether to stop comparison after shingle overlap threshold reached");
-
-    options.addOption("max-gap", true, "Maximum sentence gap for merging");
-    options.addOption("sentence-sim", true, "Sentence vector similarity threshold to be considered similar");
-    options.addOption("min-cluster-size", true, "Minimum number of sentence to be considered as plagiarism");
-    options.addOption("min-fragment-sim", true, "Min similarity for a group of sentence to be considered as similar");
-    options.addOption("min-fragment-length", true, "Minimum fragment character length");
-
-    options.addOption("shingle-size", true, "Shingle size");
-    options.addOption("shingle-overlap", true, "Shingle overlap");
-    options.addOption("plagiarized-level", true, "Threshold for Jaccard similarity, over which two are considered plagiarized");
-    options.addOption("discard-level", true, "Threshold for Jaccard similarity, document pairs below that threshold will be considered as plagiarism free");
-
-    options.addOption("similar-docs-limit", true, "Limit number of indexed documents retrieved for each submission document");
+    Options options = getOptions();
 
     CommandLineParser parser = new DefaultParser();
     HelpFormatter formatter = new HelpFormatter();
@@ -64,6 +42,7 @@ public class PlagdetCli {
         .build();
 
       SimilarDocumentSourceParameters similarDocParams = buildSimilarDocumentSourceParams(cmd);
+      ResultsFilterParameters resultsFilterParameters = buildResultsFilterParams(cmd);
 
       PlagdetParameters plagdetParameters = PlagdetParameters.builder()
         .luceneIndexDirectoryPath(lucenePath)
@@ -72,6 +51,7 @@ public class PlagdetCli {
         .shingleComparatorParameters(shingleParams)
         .metadataComparatorParameters(metadataParams)
         .similarDocumentSourceParameters(similarDocParams)
+        .resultsFilterParameters(resultsFilterParameters)
         .build();
 
       run(newPath, oldPath, plagdetParameters, indexOnly);
@@ -79,6 +59,46 @@ public class PlagdetCli {
       log.error("Error parsing command-line arguments: {}", e.getMessage());
       formatter.printHelp("java -jar plagdet.jar", options);
     }
+  }
+
+  private static ResultsFilterParameters buildResultsFilterParams(CommandLine cmd) {
+    return ResultsFilterParameters.builder()
+      .bypassResultsFiltering(cmd.hasOption("bypass-results-filter"))
+      .maxResultsPerDocument(getOptionInt(cmd, "max-results", ResultsFilterParameters.DEFAULT_MAX_RESULTS_PER_DOCUMENT) )
+      .minSimilarityToInclude(getOptionDouble(cmd, "min-similarity", ResultsFilterParameters.DEFAULT_MIN_SIMILARITY_TO_INCLUDE))
+      .build();
+  }
+
+  private static @NotNull Options getOptions() {
+    Options options = new Options();
+
+    options.addRequiredOption("n", "new-path", true, "Path to the new submissions zip/directory");
+    options.addOption("l", "lucene-path", true, "Path to the lucene index directory, if empty, then temporary directory created");
+    options.addOption("o", "old-path", true, "Path to the old submissions directory (optional)");
+    options.addOption("t", "template-path", true, "Path to the template file (optional)");
+    options.addOption("i", "index-only", false, "Flag to index submissions without comparison");
+    options.addOption("h", "help", false, "Print help information");
+
+    options.addOption("bypass-metadata-filter", false, "Whether to stop comparison after matching authors/modifier");
+    options.addOption("bypass-shingle-filter", false, "Whether to stop comparison after shingle overlap threshold reached");
+
+    options.addOption("max-gap", true, "Maximum sentence gap for merging");
+    options.addOption("sentence-sim", true, "Sentence vector similarity threshold to be considered similar");
+    options.addOption("min-cluster-size", true, "Minimum number of sentence to be considered as plagiarism");
+    options.addOption("min-fragment-sim", true, "Min similarity for a group of sentence to be considered as similar");
+    options.addOption("min-fragment-length", true, "Minimum fragment character length");
+
+    options.addOption("shingle-size", true, "Shingle size");
+    options.addOption("shingle-overlap", true, "Shingle overlap");
+    options.addOption("plagiarized-level", true, "Threshold for Jaccard similarity, over which two are considered plagiarized");
+    options.addOption("discard-level", true, "Threshold for Jaccard similarity, document pairs below that threshold will be considered as plagiarism free");
+
+    options.addOption("max-results", true, "Maximum number of pairs/comparisons per document to be stored in result");
+    options.addOption("min-similarity", true, "Minimum similarity for comparison to be included in result");
+    options.addOption("bypass-results-filter", "No limit for results count which would be equal to (files_count * (files_count - 1) / 2) + files_count * similar-docs-limit");
+
+    options.addOption("similar-docs-limit", true, "Limit number of indexed documents retrieved for each submission document");
+    return options;
   }
 
   private static void run(
@@ -112,7 +132,10 @@ public class PlagdetCli {
 
   }
 
-  private static void index(@NotNull String inputDir, Plagdet plagdet) {
+  private static void index(
+    @NotNull String inputDir,
+    @NotNull Plagdet plagdet
+  ) {
     System.out.printf("Indexing directory %s\n", inputDir);
     plagdet.index(inputDir);
     System.out.printf("Indexing done, index written to dir %s\n", plagdet.getLuceneIndex().getIndexDirectoryPath());

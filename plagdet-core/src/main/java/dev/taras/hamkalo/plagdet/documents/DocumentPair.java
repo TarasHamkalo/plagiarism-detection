@@ -37,14 +37,17 @@ public class DocumentPair implements Comparable<DocumentPair> {
 
   @Override
   public int compareTo(@NotNull DocumentPair other) {
-    double thisMaxScore = this.plagScores.stream().map(PlagScore::getScore)
+    return Double.compare(this.getMaxScore(), other.getMaxScore());
+  }
+
+  public double getMaxScore() {
+    return getMaxScore(this);
+  }
+
+  public static double getMaxScore(@NotNull DocumentPair pair) {
+    return pair.getPlagScores().stream()
+      .map(PlagScore::getScore)
       .max(Double::compare)
       .orElse(0.0);
-
-    double otherMaxScore = other.plagScores.stream().map(PlagScore::getScore)
-      .max(Double::compare)
-      .orElse(0.0);
-
-    return Double.compare(thisMaxScore, otherMaxScore);
   }
 }

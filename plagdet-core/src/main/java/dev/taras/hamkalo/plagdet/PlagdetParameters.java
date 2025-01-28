@@ -9,6 +9,8 @@ import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static dev.taras.hamkalo.plagdet.ResultsFilter.*;
+
 @Value
 @Builder
 public class PlagdetParameters {
@@ -24,5 +26,7 @@ public class PlagdetParameters {
   @NotNull MetadataComparatorParameters metadataComparatorParameters;
 
   @NotNull SimilarDocumentSourceParameters similarDocumentSourceParameters;
+
+  @NotNull ResultsFilterParameters resultsFilterParameters;
 
 }
