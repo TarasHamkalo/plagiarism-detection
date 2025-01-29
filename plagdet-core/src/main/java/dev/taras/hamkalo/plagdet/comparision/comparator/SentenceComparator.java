@@ -11,7 +11,9 @@ import dev.taras.hamkalo.plagdet.comparision.comparator.blocks.FilteringStrategy
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
+import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreSentence;
+import edu.stanford.nlp.util.Sets;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,7 +39,9 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     public static final int DEFAULT_MAX_GAP = 2;
 
-    public static final double DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD = 0.8;
+    public static final double DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD = 0.4;
+
+    public static final double DEFAULT_DICE_SIMILARITY_THRESHOLD = 0.3;
 
     public static final int DEFAULT_MIN_CLUSTER_SIZE = 3;
 
@@ -59,6 +63,9 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     @Builder.Default
     int minFragmentCharLength = DEFAULT_MIN_FRAGMENT_CHAR_LENGTH;
+
+    @Builder.Default
+    double diceSimilarityThreshold = DEFAULT_DICE_SIMILARITY_THRESHOLD;
 //    public SentenceComparatorParameters() {
 //      this(
 //        DEFAULT_MAX_GAP,
@@ -96,7 +103,8 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
           .collect(Collectors.toList())
       );
 
-      score = PlagUtil.plagScore(documentPair);
+//      score = PlagUtil.plagScoreAsCharacterCoverage(documentPair);
+      score = PlagUtil.plagScoreAsSentenceCoverage(documentPair, fragments);
     }
 
     documentPair.getPlagScores().add(
@@ -161,15 +169,14 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
         }
 
         var secondSentAccVector = embeddings.getAccVector(secondSent);
-        var similarity = Transforms.cosineSim(firstSentAccVector, secondSentAccVector);
-        if (!Double.isNaN(similarity) && similarity > parameters.getSentenceVectorSimilarityThreshold()) {
-          seeds.add(Seed.builder()
-            .firstSentIndex(i)
-            .secondSentIndex(j)
-            .firstSent(firstSent)
-            .secondSent(secondSent)
-            .build()
-          );
+        var cosineSim = Transforms.cosineSim(firstSentAccVector, secondSentAccVector);
+        var diceSim = diceCoefficient(firstSent, secondSent);
+        boolean passCosineSim =
+          !Double.isNaN(cosineSim) && cosineSim > parameters.getSentenceVectorSimilarityThreshold();
+        boolean passDice = diceSim > parameters.getDiceSimilarityThreshold();
+        log.trace("Seed:\n\tS1 {}\n\tS2 {}\n\tCosine {}\n\tDice {}\n\n", firstSent, secondSent, cosineSim, diceSim);
+        if (passCosineSim && passDice) {
+          addSeed(seeds, firstSent, secondSent, i, j);
         }
       }
     }
@@ -177,7 +184,25 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
     return seeds;
   }
 
-  private static boolean isSentenceValid(CoreSentence coreSentence) {
+  private static void addSeed(
+    @NotNull ArrayList<Seed> seeds,
+    @NotNull CoreSentence firstSent,
+    @NotNull CoreSentence secondSent,
+    int i,
+    int j
+    ) {
+    seeds.add(Seed.builder()
+      .firstSentIndex(i)
+      .secondSentIndex(j)
+      .firstSent(firstSent)
+      .secondSent(secondSent)
+      .build()
+    );
+  }
+
+  public static boolean isSentenceValid(
+    @NotNull CoreSentence coreSentence
+  ) {
     if (coreSentence.coreMap().get(PlagdetAnnotations.CodeSegmentAnnotation.class)) {
       return false;
     }
@@ -185,5 +210,20 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
     var templateAnnotation = coreSentence.coreMap()
       .get(PlagdetAnnotations.TemplateAnnotation.class);
     return templateAnnotation == null || !templateAnnotation;
+  }
+
+  public static double diceCoefficient(
+    @NotNull CoreSentence firstSentence,
+    @NotNull CoreSentence secondSentence
+  ) {
+    var firstLemmaSet = firstSentence.coreMap().get(PlagdetAnnotations.WordsAnnotation.class).stream()
+      .map(CoreLabel::lemma)
+      .collect(Collectors.toSet());
+    var secondLemmaSet = secondSentence.coreMap().get(PlagdetAnnotations.WordsAnnotation.class).stream()
+      .map(CoreLabel::lemma)
+      .collect(Collectors.toSet());
+
+    double intersectionSize = Sets.intersection(firstLemmaSet, secondLemmaSet).size() * 1.0;
+    return 2 * intersectionSize / (firstLemmaSet.size() + secondLemmaSet.size());
   }
 }

@@ -1,10 +1,10 @@
 package dev.taras.hamkalo.plagdet.comparision;
 
-import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
+import dev.taras.hamkalo.plagdet.comparision.comparator.SentenceComparator;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
-import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
+import edu.stanford.nlp.pipeline.CoreSentence;
+import edu.stanford.nlp.simple.Sentence;
 import lombok.extern.slf4j.Slf4j;
-import org.datavec.api.writable.Text;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Comparator;
@@ -13,7 +13,29 @@ import java.util.List;
 @Slf4j
 public abstract class PlagUtil {
 
-  public static double plagScore(DocumentPair documentPair) {
+  public static double plagScoreAsSentenceCoverage(
+    @NotNull DocumentPair documentPair,
+    @NotNull List<Fragment> plagiarizedFragments
+  ) {
+
+    long totalCoverage = sideSentenceCoverage(plagiarizedFragments, 0) +
+                        sideSentenceCoverage(plagiarizedFragments, 1);
+    List<CoreSentence> firstSentences = documentPair.getFirst().getCoreDocument().sentences();
+    List<CoreSentence> secondSentences = documentPair.getSecond().getCoreDocument().sentences();
+    long ignoredCount =
+      firstSentences.stream().filter(SentenceComparator::isSentenceValid).count() +
+      secondSentences.stream().filter(SentenceComparator::isSentenceValid).count();
+
+    long total = firstSentences.size() + secondSentences.size();
+
+    if (total == ignoredCount) {
+      return 0;
+    }
+
+    return (double) totalCoverage / (total - ignoredCount);
+  }
+
+  public static double plagScoreAsCharacterCoverage(@NotNull DocumentPair documentPair) {
     // Coverage already excludes template sentences, as they won't appear inside plags
     // (only in infrequent cases)
     int totalCoverage = sideCoverage(documentPair.getPlagCases(), 0) +
@@ -55,9 +77,11 @@ public abstract class PlagUtil {
   }
 
 
-  private static int sumOfNonOverlappingMarkings(@NotNull List<SpecialMarking> plagCases,
-                                                 @NotNull List<SpecialMarking> ignoredCases,
-                                                 int side) {
+  private static int sumOfNonOverlappingMarkings(
+    @NotNull List<SpecialMarking> plagCases,
+    @NotNull List<SpecialMarking> ignoredCases,
+    int side
+  ) {
     var sortedPlagMarkings = plagCases.stream()
       .map(c -> c.getSideMarking(side))
       .sorted()
@@ -84,6 +108,34 @@ public abstract class PlagUtil {
     }
 
     return sum;
+  }
+
+  public static int sideSentenceCoverage(List<Fragment> fragments, int side) {
+    fragments.forEach(f -> f.sortSeedsBySideIndex(side));
+    fragments.sort(
+      Comparator.comparingInt((Fragment f) -> f.getStartSideIndex(side))
+        .thenComparingInt((Fragment f) -> f.getEndSideIndex(side))
+    );
+
+    int coverage = 0;
+    int i = 0;
+    while (i < fragments.size()) {
+      int fragStart = fragments.get(i).getStartSideIndex(side);
+      int fragEnd = fragments.get(i).getEndSideIndex(side);
+      int j = i + 1;
+      while (j < fragments.size()) {
+        if (fragments.get(j).getStartSideIndex(side) < fragEnd) {
+          fragEnd = Math.max(fragments.get(j).getEndSideIndex(side), fragEnd);
+          j++;
+        } else {
+          break;
+        }
+      }
+      coverage += fragEnd - fragStart + 1;
+      i = j;
+    }
+
+    return coverage;
   }
 
   public static int sideCoverage(List<SpecialMarking> specialMarkings, int side) {

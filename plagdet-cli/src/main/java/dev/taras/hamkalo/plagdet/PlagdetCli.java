@@ -82,7 +82,7 @@ public class PlagdetCli {
   private static ResultsFilterParameters buildResultsFilterParams(CommandLine cmd) {
     return ResultsFilterParameters.builder()
       .bypassResultsFiltering(cmd.hasOption("bypass-results-filter"))
-      .maxResultsPerDocument(getOptionInt(cmd, "max-results", ResultsFilterParameters.DEFAULT_MAX_RESULTS_PER_DOCUMENT) )
+      .maxResultsPerDocument(getOptionInt(cmd, "max-results", ResultsFilterParameters.DEFAULT_MAX_RESULTS_PER_DOCUMENT))
       .minSimilarityToInclude(getOptionDouble(cmd, "min-similarity", ResultsFilterParameters.DEFAULT_MIN_SIMILARITY_TO_INCLUDE))
       .build();
   }
@@ -102,6 +102,7 @@ public class PlagdetCli {
 
     options.addOption("max-gap", true, "Maximum sentence gap for merging");
     options.addOption("sentence-sim", true, "Sentence vector similarity threshold to be considered similar");
+    options.addOption("dice-sim", true, "Dice similarity threshold for two sentenced to be considered similar");
     options.addOption("min-cluster-size", true, "Minimum number of sentence to be considered as plagiarism");
     options.addOption("min-fragment-sim", true, "Min similarity for a group of sentence to be considered as similar");
     options.addOption("min-fragment-length", true, "Minimum fragment character length");
@@ -125,28 +126,28 @@ public class PlagdetCli {
     @NotNull PlagdetParameters parameters,
     boolean indexOnly
   ) {
-      System.out.println("Indexing with the following parameters:");
-      System.out.println("New Submissions Directory: " + inputDir);
-      System.out.println("Old Submissions Directory: " + oldSubmissionsDir);
-      System.out.println("Template Document: " + parameters.getTemplateDocumentPath());
-      System.out.println("Sentence Parameters: " + parameters.getSentenceComparatorParameters());
-      System.out.println("Shingle Parameters: " + parameters.getShingleComparatorParameters());
-      System.out.println("Metadata Parameters: " + parameters.getMetadataComparatorParameters());
-      System.out.println("Similar Document Parameters: " + parameters.getSimilarDocumentSourceParameters());
+    System.out.println("Indexing with the following parameters:");
+    System.out.println("New Submissions Directory: " + inputDir);
+    System.out.println("Old Submissions Directory: " + oldSubmissionsDir);
+    System.out.println("Template Document: " + parameters.getTemplateDocumentPath());
+    System.out.println("Sentence Parameters: " + parameters.getSentenceComparatorParameters());
+    System.out.println("Shingle Parameters: " + parameters.getShingleComparatorParameters());
+    System.out.println("Metadata Parameters: " + parameters.getMetadataComparatorParameters());
+    System.out.println("Similar Document Parameters: " + parameters.getSimilarDocumentSourceParameters());
 
-      Plagdet plagdet = new Plagdet(parameters);
-      if (indexOnly) {
-        index(inputDir, plagdet);
-        return;
-      }
+    Plagdet plagdet = new Plagdet(parameters);
+    if (indexOnly) {
+      index(inputDir, plagdet);
+      return;
+    }
 
-      if (oldSubmissionsDir != null) {
-        plagdet.index(oldSubmissionsDir);
-      }
+    if (oldSubmissionsDir != null) {
+      plagdet.index(oldSubmissionsDir);
+    }
 
-      var report = plagdet.compare(inputDir);
-      ZipAnalysisReportWriter analysisReportWriter = new ZipAnalysisReportWriter();
-      analysisReportWriter.writeReport(report);
+    var report = plagdet.compare(inputDir);
+    ZipAnalysisReportWriter analysisReportWriter = new ZipAnalysisReportWriter();
+    analysisReportWriter.writeReport(report);
 
   }
 
@@ -165,6 +166,10 @@ public class PlagdetCli {
       .sentenceVectorSimilarityThreshold(
         getOptionDouble(
           cmd, "sentence-sim", SentenceComparatorParameters.DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD)
+      )
+      .diceSimilarityThreshold(
+        getOptionDouble(
+          cmd, "dice-sim", SentenceComparatorParameters.DEFAULT_DICE_SIMILARITY_THRESHOLD)
       )
       .minClusterSize(getOptionInt(cmd, "min-cluster-size", SentenceComparatorParameters.DEFAULT_MIN_CLUSTER_SIZE))
       .minFragmentSideSim(getOptionDouble(cmd, "min-fragment-sim", SentenceComparatorParameters.DEFAULT_MIN_FRAGMENT_SIDE_SIM))
