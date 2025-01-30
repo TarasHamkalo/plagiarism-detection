@@ -2,13 +2,14 @@ package dev.taras.hamkalo.plagdet.comparision;
 
 import dev.taras.hamkalo.plagdet.comparision.comparator.SentenceComparator;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
+import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.pipeline.CoreSentence;
-import edu.stanford.nlp.simple.Sentence;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Predicate;
 
 @Slf4j
 public abstract class PlagUtil {
@@ -23,8 +24,8 @@ public abstract class PlagUtil {
     List<CoreSentence> firstSentences = documentPair.getFirst().getCoreDocument().sentences();
     List<CoreSentence> secondSentences = documentPair.getSecond().getCoreDocument().sentences();
     long ignoredCount =
-      firstSentences.stream().filter(SentenceComparator::isSentenceValid).count() +
-      secondSentences.stream().filter(SentenceComparator::isSentenceValid).count();
+      firstSentences.stream().filter(Predicate.not(PlagUtil::isInformativeSentence)).count() +
+      secondSentences.stream().filter(Predicate.not(PlagUtil::isInformativeSentence)).count();
 
     long total = firstSentences.size() + secondSentences.size();
 
@@ -166,4 +167,14 @@ public abstract class PlagUtil {
     return coverage;
   }
 
+  public static boolean isInformativeSentence(@NotNull CoreSentence sentence) {
+    var codeSegmentAnnotation = sentence.coreMap()
+      .get(PlagdetAnnotations.CodeSegmentAnnotation.class);
+    var templateAnnotation = sentence.coreMap()
+      .get(PlagdetAnnotations.TemplateAnnotation.class);
+
+    boolean isCodeSegment = codeSegmentAnnotation != null && codeSegmentAnnotation;
+    boolean isTemplate = templateAnnotation != null && templateAnnotation;
+    return !isCodeSegment && !isTemplate;
+  }
 }

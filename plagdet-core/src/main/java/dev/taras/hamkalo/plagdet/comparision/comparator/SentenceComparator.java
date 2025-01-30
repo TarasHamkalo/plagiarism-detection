@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static dev.taras.hamkalo.plagdet.comparision.PlagUtil.isInformativeSentence;
+
 @Slf4j
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -157,14 +159,14 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     for (int i = 0; i < firstSents.size(); i++) {
       var firstSent = firstSents.get(i);
-      if (!isSentenceValid(firstSent)) {
+      if (!isInformativeSentence(firstSent)) {
         continue;
       }
 
       var firstSentAccVector = embeddings.getAccVector(firstSent);
       for (int j = 0; j < secondSents.size(); j++) {
         var secondSent = secondSents.get(j);
-        if (!isSentenceValid(secondSent)) {
+        if (!isInformativeSentence(secondSent)) {
           continue;
         }
 
@@ -200,17 +202,6 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
     );
   }
 
-  public static boolean isSentenceValid(
-    @NotNull CoreSentence coreSentence
-  ) {
-    if (coreSentence.coreMap().get(PlagdetAnnotations.CodeSegmentAnnotation.class)) {
-      return false;
-    }
-
-    var templateAnnotation = coreSentence.coreMap()
-      .get(PlagdetAnnotations.TemplateAnnotation.class);
-    return templateAnnotation == null || !templateAnnotation;
-  }
 
   public static double diceCoefficient(
     @NotNull CoreSentence firstSentence,
