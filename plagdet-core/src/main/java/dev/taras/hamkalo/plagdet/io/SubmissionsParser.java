@@ -142,7 +142,7 @@ public class SubmissionsParser {
         }
 
         submissions.add(submission);
-      } catch (ContentReadException | MetadataReadException e) {
+      } catch (ParsingException | ContentReadException e) {
         log.error("Submission {} was discarded, reason {}", submissionFile, e.getMessage());
       }
 
@@ -156,12 +156,19 @@ public class SubmissionsParser {
     @NotNull String submitterName,
     @NotNull String persistentPath
   ) {
+    Metadata metadata = Metadata.NONE;
+    try {
+      metadata = metadataReader.getMetadata(file.toPath());
+    } catch (MetadataReadException e) {
+      log.error("Can not extract metadata for submission {}, cause {}", file, e.getMessage());
+    }
+
     return FileData.builder()
       .submitter(submitterName)
       .persistentPath(persistentPath)
       .temporaryPath(file.toPath())
       .content(contentReader.getContent(file.toPath()))
-      .metadata(metadataReader.getMetadata(file.toPath()))
+      .metadata(metadata)
       .build();
   }
 

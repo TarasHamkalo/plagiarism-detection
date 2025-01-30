@@ -41,7 +41,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     public static final int DEFAULT_MAX_GAP = 2;
 
-    public static final double DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD = 0.4;
+    public static final double DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD = 0.7;
 
     public static final double DEFAULT_DICE_SIMILARITY_THRESHOLD = 0.3;
 
@@ -144,7 +144,8 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
     var fragments = extensionStrategy.extend(seeds, this.parameters.getMaxGap());
     log.debug("Fragments count: {}", fragments.size());
 
-    var filtered = fragments; //filteringStrategy.filter(fragments);
+    var filtered = fragments;
+//    var fragments = filteringStrategy.filter(fragments);
     return filtered;
   }
 

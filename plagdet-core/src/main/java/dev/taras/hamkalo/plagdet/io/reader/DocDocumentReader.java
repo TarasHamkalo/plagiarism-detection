@@ -14,6 +14,10 @@ import java.util.Optional;
 
 public class DocDocumentReader implements ContentReader, MetadataReader {
 
+  public static final int NANO_TIME_TO_SEC_PRECISION = 10_000_000;
+
+  public static final int NANO_TIME_TO_MIN_PRECISION = 60 * 10_000_000;
+
   @Override
   public String getContent(Path path) throws ContentReadException {
     try (HWPFDocument doc = new HWPFDocument(Files.newInputStream(path))) {
@@ -35,7 +39,7 @@ public class DocDocumentReader implements ContentReader, MetadataReader {
         .orElse(Metadata.NONE.getModifier());
       var creationDate = summaryInfo.getCreateDateTime();
       var modificationDate = summaryInfo.getLastSaveDateTime();
-      var totalEditTime = summaryInfo.getEditTime();
+      var totalEditTime = summaryInfo.getEditTime() / NANO_TIME_TO_MIN_PRECISION;
       var lastPrinted = summaryInfo.getLastPrinted();
       var revisionsNumber = summaryInfo.getRevNumber();
 

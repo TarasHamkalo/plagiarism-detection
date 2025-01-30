@@ -41,7 +41,7 @@ public class DocxDocumentReader implements ContentReader, MetadataReader {
         .orElse(Metadata.NONE.getModifier());
       var creationDate = coreProps.getCreated();
       var modificationDate = coreProps.getModified();
-      int totalEditTime = extProps.getTotalTime();
+      long totalEditTime = extProps.getTotalTime() >= 0 ? extProps.getTotalTime() : 0L;
       var lastPrinted = coreProps.getLastPrinted();
       String revisionsNumber = Optional.ofNullable(coreProps.getRevision())
         .orElse("0");
@@ -51,7 +51,7 @@ public class DocxDocumentReader implements ContentReader, MetadataReader {
         .modifier(modifier)
         .creationDate(creationDate)
         .modificationDate(modificationDate)
-        .totalEditTime((long) totalEditTime)
+        .totalEditTime(totalEditTime)
         .lastPrinted(lastPrinted)
         .revisionsNumber(Integer.parseInt(revisionsNumber))
         .build();

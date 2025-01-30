@@ -147,7 +147,7 @@ public class ZipAnalysisReportWriter {
 
   private void writeDocuments(List<DocumentEntry> documentEntries, Path outputDir) throws IOException {
     for (var documentEntry : documentEntries) {
-      log.debug("Writing document {}", documentEntry);
+      log.debug("Writing document {}", documentEntry.getFileData().getPersistentPath());
       Path contentFilePath = outputDir.resolve(documentEntry.getId() + "_content.txt");
       Files.writeString(contentFilePath, documentEntry.getFileData().getContent());
       contentFilePath.toFile().deleteOnExit();
