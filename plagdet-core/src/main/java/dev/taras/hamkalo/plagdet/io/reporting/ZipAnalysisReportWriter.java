@@ -33,8 +33,8 @@ public class ZipAnalysisReportWriter {
   /**
    * Generate zip report
    * report.zip
-   * /files -> txt files of compared files content
-   * a.b.json comparison results
+   * /files -> txt files of compared files content, and meta files in json
+   * /pairs -> a.b.json comparison results
    */
   public void writeReport(@NotNull Report report) {
     Path tempDir = null;
@@ -52,7 +52,7 @@ public class ZipAnalysisReportWriter {
       throw new RuntimeException(e);
     }
 
-    Path finalTempDir = tempDir;
+    final Path finalTempDir = tempDir;
     try (OutputStream fos = new FileOutputStream(REPORT_NAME);
          BufferedOutputStream bos = new BufferedOutputStream(fos);
          ArchiveOutputStream<ZipArchiveEntry> aos = new ZipArchiveOutputStream(bos)) {
@@ -82,6 +82,7 @@ public class ZipAnalysisReportWriter {
     String overviewJson = analysisOverviewJsonString(report);
     log.debug("Writing overview to {}", overviewPath);
     Files.writeString(overviewPath, overviewJson);
+    overviewPath.toFile().deleteOnExit();
   }
 
   private String analysisOverviewJsonString(@NotNull Report report) {
@@ -120,6 +121,7 @@ public class ZipAnalysisReportWriter {
   private void writeDocumentPairs(List<DocumentPair> documentPairs, Path tempDir) throws IOException {
     Path pairsDir = tempDir.resolve("pairs");
     Files.createDirectories(pairsDir);
+    pairsDir.toFile().deleteOnExit();
     for (DocumentPair documentPair : documentPairs) {
       Path resultJson = pairsDir.resolve(
         documentPair.getId() + ".json"
@@ -127,14 +129,17 @@ public class ZipAnalysisReportWriter {
       String documentPairJson = mapDocumentPairToJson(documentPair);
       log.debug("Writing document pair to: {}", resultJson);
       Files.writeString(resultJson, documentPairJson);
+      resultJson.toFile().deleteOnExit();
     }
   }
 
   private void writeSubmittedDocuments(List<Submission> submissions, Path tempDir) throws IOException {
     Path filesDir = tempDir.resolve("files");
     Files.createDirectories(filesDir);
+    filesDir.toFile().deleteOnExit();
     for (Submission submission : submissions) {
       Path submissionDir = filesDir.resolve(FilenameUtils.getBaseName(submission.getPath().toString()));
+      submissionDir.toFile().deleteOnExit();
       Files.createDirectories(submissionDir);
       writeDocuments(submission.getDocuments(), submissionDir);
     }
@@ -145,14 +150,17 @@ public class ZipAnalysisReportWriter {
       log.debug("Writing document {}", documentEntry);
       Path contentFilePath = outputDir.resolve(documentEntry.getId() + "_content.txt");
       Files.writeString(contentFilePath, documentEntry.getFileData().getContent());
+      contentFilePath.toFile().deleteOnExit();
       Path metadataFilePath = outputDir.resolve(documentEntry.getId() + "_meta.json");
       String metadataJson = mapDocumentEntryToJson(documentEntry);
       Files.writeString(metadataFilePath, metadataJson);
+      metadataFilePath.toFile().deleteOnExit();
     }
   }
 
   private void writeIndexedDocuments(List<DocumentEntry> documentEntries, Path tempDir) throws IOException {
     Path indexedPath = tempDir.resolve("files/indexed");
+    indexedPath.toFile().deleteOnExit();
     Files.createDirectories(indexedPath);
     writeDocuments(documentEntries, indexedPath);
   }
