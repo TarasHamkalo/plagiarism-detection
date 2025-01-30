@@ -205,7 +205,9 @@ public class SubmissionsParser {
           continue;
         }
         File newFile = new File(extractDest.toFile(), entry.getName());
-        newFile.getParentFile().mkdirs();
+        File parentFile = newFile.getParentFile();
+        parentFile.mkdirs();
+        parentFile.deleteOnExit();
         newFile.deleteOnExit();
 
         try (var fos = new FileOutputStream(newFile)) {
