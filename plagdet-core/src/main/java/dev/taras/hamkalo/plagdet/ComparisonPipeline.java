@@ -9,8 +9,10 @@ import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.documents.Submission;
 import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -38,6 +40,10 @@ public class ComparisonPipeline {
   @NotNull TemplateComparator templateComparator;
 
   @Nullable DocumentEntry template;
+
+  @Getter
+  @NonFinal
+  int comparisonsCount;
 
   public ComparisonPipeline(
     @NotNull DocumentAnnotator documentAnnotator,
@@ -140,6 +146,7 @@ public class ComparisonPipeline {
 
       }
     }
+    this.comparisonsCount = comparisonTasks.size();
   }
 
   private void addComparisonTasks(

@@ -116,6 +116,7 @@ public class Plagdet {
   public Report compare(@NotNull String path) {
     var submissions = submissionsParser.parseSubmissions(path);
     var ignore = comparisonPipeline.compareSubmissions(submissions);
+
     var deduplicatedComparisonResults = submissions.stream()
       .flatMap(s -> s.getDocuments().stream())
       .flatMap(d -> d.getDocumentPairs().stream())
@@ -129,6 +130,7 @@ public class Plagdet {
 
     return Report.builder()
       .submissions(submissions)
+      .comparisonsCount(comparisonPipeline.getComparisonsCount())
       .pairs(new ArrayList<>(deduplicatedComparisonResults.values()))
       .documentsRetrievedFromIndex(filteredRetrievedDocuments)
       .build();

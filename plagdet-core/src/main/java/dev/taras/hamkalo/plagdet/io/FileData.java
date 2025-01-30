@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
+import org.apache.commons.io.FilenameUtils;
 
 import java.nio.file.Path;
 
@@ -25,5 +26,9 @@ public class FileData {
 
   @ToString.Exclude
   String content;
+
+  public String getExtension() {
+    return FilenameUtils.getExtension(persistentPath);
+  }
 
 }

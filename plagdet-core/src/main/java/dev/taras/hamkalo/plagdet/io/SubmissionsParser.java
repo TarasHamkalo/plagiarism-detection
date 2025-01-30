@@ -9,6 +9,7 @@ import dev.taras.hamkalo.plagdet.io.reader.ContentReader;
 import dev.taras.hamkalo.plagdet.io.reader.ContentReaders;
 import dev.taras.hamkalo.plagdet.io.reader.MetadataReader;
 import dev.taras.hamkalo.plagdet.io.reader.MetadataReaders;
+import edu.stanford.nlp.util.Sets;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -27,9 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import static org.nd4j.shade.guava.io.MoreFiles.listFiles;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -39,7 +37,7 @@ public class SubmissionsParser {
     "\\d{4}_\\d{4}_([A-Z][a-z]+_[A-Z][a-z]+)_"
   );
 
-  public static final String DEFAULT_ARCHIVE_EXT = "zip";
+  public static final Set<String> SUPPORTED_ARCHIVE_EXT = Set.of("zip");
 
   public static final Set<String> SUPPORTED_FILE_FORMATS = Set.of("docx", "doc", "txt");
 
@@ -81,9 +79,10 @@ public class SubmissionsParser {
     }
 
     final String persistentPrefix = FilenameUtils.getBaseName(file.getName());
-    List<File> submissionFiles = new ArrayList<>();
     if (isSupportedArchive(file)) {
-      final var extractedEntries = extractArchiveSingleLevel(file, Set.of(DEFAULT_ARCHIVE_EXT));
+      final var extractedEntries = extractArchiveSingleLevel(
+        file, Sets.union(SUPPORTED_ARCHIVE_EXT, SUPPORTED_FILE_FORMATS)
+      );
       return parseSubmissions(extractedEntries, persistentPrefix);
     }
 
@@ -94,7 +93,7 @@ public class SubmissionsParser {
       File[] childs = file.listFiles();
       if (childs != null) {
         for (var child : childs) {
-          fileMap.put(FilenameUtils.getBaseName(child.getName()), child);
+          fileMap.put(child.getName(), child);
         }
 
         return parseSubmissions(fileMap, persistentPrefix);
@@ -171,8 +170,10 @@ public class SubmissionsParser {
    * @param preservedFormats formats which will be preserved, other dropped
    * @return archive entry name -> file map
    */
-  private Map<String, File> extractArchiveSingleLevel(File file, Set<String> preservedFormats)
-    throws ParsingException {
+  private Map<String, File> extractArchiveSingleLevel(
+    @NotNull File file,
+    @Nullable Set<String> preservedFormats
+  ) throws ParsingException {
 
     var result = new HashMap<String, File>();
 
@@ -228,7 +229,8 @@ public class SubmissionsParser {
   }
 
   private static boolean isSupportedArchive(File file) {
-    return file.isFile() && file.toPath().toString().endsWith(DEFAULT_ARCHIVE_EXT);
+    return file.isFile() &&
+           SUPPORTED_ARCHIVE_EXT.contains(FilenameUtils.getExtension(file.getName()));
   }
 
 

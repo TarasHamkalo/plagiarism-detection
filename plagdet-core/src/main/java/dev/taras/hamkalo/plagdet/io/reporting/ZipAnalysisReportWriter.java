@@ -3,7 +3,6 @@ package dev.taras.hamkalo.plagdet.io.reporting;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.taras.hamkalo.plagdet.Report;
-import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.documents.Submission;
@@ -23,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -44,7 +44,7 @@ public class ZipAnalysisReportWriter {
       tempDir.toFile().deleteOnExit();
 
       log.debug("Created temp directory: {}", tempDir);
-      writeOverview(report.getSubmissions(), report.getPairs(), tempDir);
+      writeOverview(report, tempDir);
       writeSubmittedDocuments(report.getSubmissions(), tempDir);
       writeIndexedDocuments(report.getDocumentsRetrievedFromIndex(), tempDir);
       writeDocumentPairs(report.getPairs(), tempDir);
@@ -74,32 +74,37 @@ public class ZipAnalysisReportWriter {
     }
   }
 
-  private void writeOverview(List<Submission> submissions,
-                             List<DocumentPair> documentPairs,
-                             Path tempDir) throws IOException {
+  private void writeOverview(
+    @NotNull Report report,
+    @NotNull Path tempDir
+  ) throws IOException {
     Path overviewPath = tempDir.resolve("overview.json");
-    String overviewJson = analysisOverviewJsonString(submissions, documentPairs);
+    String overviewJson = analysisOverviewJsonString(report);
     log.debug("Writing overview to {}", overviewPath);
     Files.writeString(overviewPath, overviewJson);
-    analysisOverviewJsonString(submissions, documentPairs);
   }
 
-  private String analysisOverviewJsonString(List<Submission> submissions, List<DocumentPair> documentPairs) {
+  private String analysisOverviewJsonString(@NotNull Report report) {
     final Map<String, Object> result = new HashMap<>();
     final String analysisName = FilenameUtils.getBaseName(
-      submissions.get(0).getPath().getParent().toString()
+      report.getSubmissions().get(0).getPath().getParent().toString()
     );
-    final long fileCount = submissions.stream()
-      .mapToLong(submission -> submission.getDocuments().size())
-      .sum();
+
+    List<DocumentEntry> documents = report.getSubmissions().stream()
+      .flatMap(submission -> submission.getDocuments().stream())
+      .collect(Collectors.toList());
+
+    Map<String, Integer> extensionToCount = documents.stream()
+      .collect(Collectors.toMap((d) -> d.getFileData().getExtension(), d -> 1, (p1, p2) -> p1 + 1));
+
     result.put("name", analysisName);
     result.put("analyzedFileName", analysisName);
     result.put("dateAnalyzed", Date.from(Instant.now()));
-    result.put("numberOfComparisons", documentPairs.size());
-    result.put("docxFiles", 0);
-    result.put("docFiles", 0);
-    result.put("pdfFiles", 0);
-    result.put("totalFilesCount", fileCount);
+    result.put("numberOfComparisons", report.getComparisonsCount());
+    result.put("docxFiles", extensionToCount.getOrDefault("docx", 0));
+    result.put("docFiles", extensionToCount.getOrDefault("doc", 0));
+    result.put("pdfFiles", extensionToCount.getOrDefault("pdf", 0));
+    result.put("totalFilesCount", documents.size());
     result.put("status", "success");
     result.put("configurationUsed", Collections.emptyList());
     ObjectMapper mapper = new ObjectMapper();
@@ -178,8 +183,7 @@ public class ZipAnalysisReportWriter {
       .toList();
 
     final double maxSimilarity = documentEntry.getDocumentPairs().stream()
-      .flatMap(p -> p.getPlagScores().stream())
-      .mapToDouble(PlagScore::getScore)
+      .mapToDouble(p -> p.getMaxScore())
       .max()
       .orElse(0);
 
