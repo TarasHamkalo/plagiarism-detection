@@ -101,7 +101,7 @@ public class Plagdet {
   private @NotNull LuceneIndex initLucene(@Nullable String luceneIndexDirectoryPath) {
     try {
       if (luceneIndexDirectoryPath == null) {
-        Path luceneTempDir = Files.createTempDirectory("temporary_lucene_index");
+        Path luceneTempDir = Files.createTempDirectory("temporary_lucene_index_");
         return new LuceneIndex(luceneTempDir);
       }
 
@@ -140,7 +140,6 @@ public class Plagdet {
   public void index(@NotNull List<Submission> submissions) {
     for (var submission : submissions) {
       for (var document : submission.getDocuments()) {
-        log.debug("Adding document to index: {}", document.getFileData());
         luceneIndex.addToIndex(document);
       }
     }
