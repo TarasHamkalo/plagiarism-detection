@@ -20,21 +20,17 @@ public class DynamicSentenceSplitter implements Annotator {
 
   private static final int MAX_SENT_LENGTH_WORD = 24;
 
-  public DynamicSentenceSplitter() {
-
-  }
-
   @Override
   public void annotate(Annotation annotation) {
-    log.debug("Dynamic Sentence splitter annotator started");
+    log.trace("Dynamic Sentence splitter annotator started");
     List<CoreMap> newSentences = new ArrayList<>();
     for (var sent : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
       int wordTokensCount = countWordTokens(sent.get(CoreAnnotations.TokensAnnotation.class));
       if (wordTokensCount > MAX_SENT_LENGTH_WORD) {
-        log.debug("Resplitting sentence {} words long", wordTokensCount);
+        log.trace("Resplitting sentence {} words long", wordTokensCount);
 
         List<CoreMap> splitSentences = splitLongSentence(sent.get(CoreAnnotations.TokensAnnotation.class));
-        log.debug("Created {} new sentences", splitSentences.size());
+        log.trace("Created {} new sentences", splitSentences.size());
 
         newSentences.addAll(splitSentences);
       } else {

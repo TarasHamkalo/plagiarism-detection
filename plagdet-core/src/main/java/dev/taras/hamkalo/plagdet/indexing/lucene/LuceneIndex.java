@@ -44,9 +44,12 @@ public class LuceneIndex {
       final var duplicateDocuments = retrieveByField(
         LuceneConstants.ID, String.valueOf(document.getId()), 1
       );
-      log.debug("Duplicate list {}" , duplicateDocuments);
+      log.trace("Duplicate list {}" , duplicateDocuments);
       if (!duplicateDocuments.isEmpty()) {
-        log.info("Indexing for document with id {} aborted, already indexed", document.getId());
+        log.info(
+          "Indexing for document {} aborted, already indexed",
+          document.getFileData().getPersistentPath()
+        );
         return;
       }
 

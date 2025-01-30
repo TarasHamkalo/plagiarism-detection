@@ -37,7 +37,7 @@ public class StopWordAnnotator implements Annotator {
 
   @Override
   public void annotate(Annotation annotation) {
-    log.debug("Stopword tagger started");
+    log.trace("Stopword tagger started");
     for (var coreLabel : annotation.get(CoreAnnotations.TokensAnnotation.class)) {
       var isStopword = false;
       if (coreLabel.get(PlagdetAnnotations.WordAnnotation.class) != null) {

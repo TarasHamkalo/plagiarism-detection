@@ -18,7 +18,7 @@ public class WordAnnotator implements Annotator {
 
   @Override
   public void annotate(Annotation annotation) {
-    log.debug("Word annotator started");
+    log.trace("Word annotator started");
     annotation.set(PlagdetAnnotations.WordsAnnotation.class, new ArrayList<>());
 
     for (CoreMap sentence : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {

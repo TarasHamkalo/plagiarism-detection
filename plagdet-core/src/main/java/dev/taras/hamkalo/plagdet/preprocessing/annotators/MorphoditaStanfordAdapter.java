@@ -12,11 +12,13 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+@Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class MorphoditaStanfordAdapter implements Annotator {
 
@@ -53,7 +55,7 @@ public class MorphoditaStanfordAdapter implements Annotator {
     }
 
     var taggerPath = IoUtils.resourceFromTemp(TAGGER_RESOURCE_PREFIX + SK_TAGGER, SK_TAGGER);
-    System.out.println("Tagger path is " + taggerPath);
+    log.debug("Tagger path is " + taggerPath);
     return Tagger.load(taggerPath.toString());
   }
 
