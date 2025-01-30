@@ -4,15 +4,11 @@ import dev.taras.hamkalo.plagdet.io.Metadata;
 import dev.taras.hamkalo.plagdet.io.exception.ContentReadException;
 import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
 import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.text.PDFTextStripper;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Date;
 import java.util.Optional;
 
 public class PdfDocumentReader implements ContentReader, MetadataReader {
@@ -22,7 +18,7 @@ public class PdfDocumentReader implements ContentReader, MetadataReader {
     try (PDDocument document = Loader.loadPDF(path.toFile())) {
       PDFTextStripper stripper = new PDFTextStripper();
       return stripper.getText(document);
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new ContentReadException(e.getMessage());
     }
   }
@@ -44,6 +40,7 @@ public class PdfDocumentReader implements ContentReader, MetadataReader {
         .modifier(modifier)
         .creationDate(creationDate)
         .modificationDate(modificationDate)
+        .totalEditTime(0L)
         .lastPrinted(null)
         .revisionsNumber(0)
         .build();

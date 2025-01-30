@@ -30,7 +30,7 @@ public abstract class IoUtils {
       .getResourceAsStream(resource);
 
     try {
-      Path tempDir = Files.createTempDirectory("dir");
+      Path tempDir = Files.createTempDirectory("dir_");
       Path tempFilePath = tempDir.resolve(filename);
       Files.copy(resourceAsStream, tempFilePath);
       tempDir.toFile().deleteOnExit();

@@ -185,6 +185,7 @@ public class SubmissionsParser {
       tempDir.toFile().deleteOnExit();
 
       Path extractDest = tempDir.resolve(FilenameUtils.getBaseName(file.getName()));
+      extractDest.toFile().deleteOnExit();
 
       ArchiveEntry entry;
       while ((entry = ais.getNextEntry()) != null) {
@@ -205,6 +206,8 @@ public class SubmissionsParser {
         }
         File newFile = new File(extractDest.toFile(), entry.getName());
         newFile.getParentFile().mkdirs();
+        newFile.deleteOnExit();
+
         try (var fos = new FileOutputStream(newFile)) {
           IOUtils.copy(ais, fos);
         }

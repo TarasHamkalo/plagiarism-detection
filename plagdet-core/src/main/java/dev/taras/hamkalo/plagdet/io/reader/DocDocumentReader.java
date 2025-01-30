@@ -19,7 +19,7 @@ public class DocDocumentReader implements ContentReader, MetadataReader {
     try (HWPFDocument doc = new HWPFDocument(Files.newInputStream(path))) {
       WordExtractor extractor = new WordExtractor(doc);
       return extractor.getText();
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new ContentReadException(e.getMessage());
     }
   }

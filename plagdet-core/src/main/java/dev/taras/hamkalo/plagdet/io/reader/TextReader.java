@@ -17,7 +17,7 @@ public class TextReader implements ContentReader, MetadataReader {
   public String getContent(Path path) throws ContentReadException {
     try {
       return Files.readString(path);
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new ContentReadException(e.getMessage());
     }
 
@@ -37,7 +37,7 @@ public class TextReader implements ContentReader, MetadataReader {
         .modificationDate(new Date(attributes.lastModifiedTime().toMillis()))
         .lastPrinted(null)
         .build();
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new MetadataReadException("Unable to read metadata for file: " + path.toString());
     }
   }

@@ -21,7 +21,7 @@ public class DocxDocumentReader implements ContentReader, MetadataReader {
       XWPFWordExtractor xwpfWordExtractor = new XWPFWordExtractor(doc);
       return xwpfWordExtractor.getText();
 
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new ContentReadException(e.getMessage());
     }
 
