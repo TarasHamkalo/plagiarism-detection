@@ -76,6 +76,11 @@ public class ComparisonPipeline {
   }
 
   public void compareSubmissionsWithTemplate(@NotNull List<Submission> submissions) {
+    if (template == null) {
+      log.info("Template document was not provided, skipping");
+      return;
+    }
+
     for (Submission submission : submissions) {
       compareWithTemplate(submission.getDocuments());
     }

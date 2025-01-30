@@ -138,6 +138,7 @@ public class Plagdet {
 
 
   public void index(@NotNull List<Submission> submissions) {
+    comparisonPipeline.compareSubmissionsWithTemplate(submissions);
     for (var submission : submissions) {
       for (var document : submission.getDocuments()) {
         luceneIndex.addToIndex(document);
