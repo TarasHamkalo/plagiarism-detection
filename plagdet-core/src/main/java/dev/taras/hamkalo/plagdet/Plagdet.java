@@ -65,10 +65,10 @@ public class Plagdet {
 
   private SubmissionsParser initSubmissionsParser() {
     List<ContentReader> contentReaders = List.of(
-      new DocxDocumentReader(), new DocDocumentReader(), new TextReader()
+      new DocxDocumentReader(), new DocDocumentReader(), new PdfDocumentReader(), new TextReader()
     );
     List<MetadataReader> metadataReaders = List.of(
-      new DocxDocumentReader(), new DocDocumentReader(), new TextReader()
+      new DocxDocumentReader(), new DocDocumentReader(), new PdfDocumentReader(), new TextReader()
     );
 
     return new SubmissionsParser(contentReaders, metadataReaders);
