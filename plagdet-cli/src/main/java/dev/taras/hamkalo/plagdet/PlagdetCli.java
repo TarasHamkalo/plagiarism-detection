@@ -37,17 +37,17 @@ public class PlagdetCli {
       String templatePath = cmd.getOptionValue("t");
       String lucenePath = cmd.getOptionValue("l");
       if (oldPath != null && !Files.exists(Path.of(oldPath))) {
-        log.error("Old submissions path does exist, {}", oldPath);
+        log.error("Old submissions path does not exist, {}", oldPath);
         return;
       }
 
       if (newPath != null && !Files.exists(Path.of(newPath))) {
-        log.error("New submissions path does exist, {}", newPath);
+        log.error("New submissions path does not exist, {}", newPath);
         return;
       }
 
       if (templatePath != null && !Files.exists(Path.of(templatePath))) {
-        log.error("Template path does exist, {}", templatePath);
+        log.error("Template path does not exist, {}", templatePath);
         return;
       }
 
@@ -126,7 +126,7 @@ public class PlagdetCli {
     @NotNull PlagdetParameters parameters,
     boolean indexOnly
   ) {
-    System.out.println("Indexing with the following parameters:");
+    System.out.println("Parameters:");
     System.out.println("New Submissions Directory: " + inputDir);
     System.out.println("Old Submissions Directory: " + oldSubmissionsDir);
     System.out.println("Template Document: " + parameters.getTemplateDocumentPath());
