@@ -171,7 +171,7 @@ public class ZipAnalysisReportWriter {
     result.put("id", documentPair.getId());
     result.put("firstId", documentPair.getFirst().getId());
     result.put("secondId", documentPair.getSecond().getId());
-    result.put("direction", documentPair.getDirection());
+    result.put("source", documentPair.getPlagSource());
     result.put("plagCases", documentPair.getPlagCases());
     result.put("plagScores", documentPair.getPlagScores());
     ObjectMapper mapper = new ObjectMapper();

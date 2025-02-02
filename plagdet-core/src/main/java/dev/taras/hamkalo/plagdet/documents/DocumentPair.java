@@ -1,7 +1,7 @@
 package dev.taras.hamkalo.plagdet.documents;
 
 
-import dev.taras.hamkalo.plagdet.comparision.PlagDirection;
+import dev.taras.hamkalo.plagdet.comparision.PlagSource;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
 import lombok.AccessLevel;
@@ -25,7 +25,7 @@ public class DocumentPair implements Comparable<DocumentPair> {
 
   @NotNull
   @Builder.Default
-  PlagDirection direction = PlagDirection.UNCERTAIN;
+  PlagSource plagSource = PlagSource.UNCERTAIN;
 
   @NotNull
   @Builder.Default

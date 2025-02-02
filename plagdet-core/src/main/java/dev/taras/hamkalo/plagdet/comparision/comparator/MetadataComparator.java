@@ -1,6 +1,6 @@
 package dev.taras.hamkalo.plagdet.comparision.comparator;
 
-import dev.taras.hamkalo.plagdet.comparision.PlagDirection;
+import dev.taras.hamkalo.plagdet.comparision.PlagSource;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.io.Metadata;
@@ -59,14 +59,14 @@ public class MetadataComparator implements DocumentComparator {
       score = 1;
     }
 
-    PlagDirection direction;
+    PlagSource plagSource;
     if (!documentPair.getFirst().isIndexed() && !documentPair.getSecond().isIndexed()) {
       double plagDirectionScore = compareAndComment(first, second, comments);
-      direction = inferPlagiarismDirection(plagDirectionScore);
+      plagSource = inferPlagiarismSource(plagDirectionScore);
     } else if (documentPair.getFirst().isIndexed()) {
-      direction = PlagDirection.SECOND;
+      plagSource = PlagSource.FIRST;
     } else {
-      direction = PlagDirection.FIRST;
+      plagSource = PlagSource.SECOND;
     }
 
     documentPair.getPlagScores().add(
@@ -77,7 +77,7 @@ public class MetadataComparator implements DocumentComparator {
         .build()
     );
 
-    documentPair.setDirection(direction);
+    documentPair.setPlagSource(plagSource);
     if (parameters.bypassFiltering) {
       return ComparisonResult.CONTINUE;
     }
@@ -93,18 +93,18 @@ public class MetadataComparator implements DocumentComparator {
     return s1.equals(s2);
   }
 
-  public PlagDirection inferPlagiarismDirection(double comparisonScore) {
-    if (comparisonScore < 0) {
-      return PlagDirection.FIRST;
-    } else if (comparisonScore > 0) {
-      return PlagDirection.SECOND;
+  public PlagSource inferPlagiarismSource(double comparisonScore) {
+    if (comparisonScore > 0) {
+      return PlagSource.SECOND;
+    } else if (comparisonScore < 0) {
+      return PlagSource.FIRST;
     }
 
-    return PlagDirection.UNCERTAIN;
+    return PlagSource.UNCERTAIN;
   }
 
   /**
-   * @return value greater than zero if m1 has higher probability to plagiarize from m2
+   * @return value greater than zero if m2 is source
    */
   public double compareAndComment(Metadata m1, Metadata m2, List<String> comments) {
     double result = 0;
@@ -122,21 +122,24 @@ public class MetadataComparator implements DocumentComparator {
     }
 
     tmp = compareNullableDates(m1.getLastPrinted(), m2.getLastPrinted());
+
     if (tmp != 0) {
       result += tmp * PRINTED_DATE_WEIGHT;
       comments.add((tmp < 0 ? "First" : "Second") + " document was printed earlier.");
     }
 
-    tmp = m1.getTotalEditTime() - m2.getTotalEditTime();
+    long diff = m2.getTotalEditTime() - m1.getTotalEditTime();
+    tmp = diff / Math.abs(diff);
     if (tmp != 0) {
       result += tmp * TOTAL_EDIT_TIME_WEIGHT;
-      comments.add((tmp > 0 ? "First" : "Second") + " document was edited more.");
+      comments.add((tmp > 0 ? "Second" : "First") + " document was edited more.");
     }
 
-    tmp = m1.getRevisionsNumber() - m2.getRevisionsNumber();
+    diff = m2.getRevisionsNumber() - m1.getRevisionsNumber();
+    tmp = diff / Math.abs(diff);
     if (tmp != 0) {
       result += tmp * REVISIONS_NUMBER_WEIGHT;
-      comments.add((tmp > 0 ? "First" : "Second") + " document was saved more.");
+      comments.add((tmp > 0 ? "Second" : "First") + " document was saved more.");
     }
 
     return result;
@@ -144,8 +147,8 @@ public class MetadataComparator implements DocumentComparator {
 
   private int compareNullableDates(Date d1, Date d2) {
     if (d1 == null && d2 == null) return 0;
-    if (d1 == null) return 1;
-    if (d2 == null) return -1;
+    if (d1 == null) return -1;
+    if (d2 == null) return 1;
     return d1.compareTo(d2);
   }
 
