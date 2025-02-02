@@ -128,16 +128,16 @@ public class MetadataComparator implements DocumentComparator {
       comments.add((tmp < 0 ? "First" : "Second") + " document was printed earlier.");
     }
 
-    long diff = m2.getTotalEditTime() - m1.getTotalEditTime();
-    tmp = diff / Math.abs(diff);
+    tmp = m2.getTotalEditTime() - m1.getTotalEditTime();
     if (tmp != 0) {
+      tmp = tmp / Math.abs(tmp);
       result += tmp * TOTAL_EDIT_TIME_WEIGHT;
       comments.add((tmp > 0 ? "Second" : "First") + " document was edited more.");
     }
 
-    diff = m2.getRevisionsNumber() - m1.getRevisionsNumber();
-    tmp = diff / Math.abs(diff);
+    tmp = m2.getRevisionsNumber() - m1.getRevisionsNumber();
     if (tmp != 0) {
+      tmp = tmp / Math.abs(tmp);
       result += tmp * REVISIONS_NUMBER_WEIGHT;
       comments.add((tmp > 0 ? "Second" : "First") + " document was saved more.");
     }
