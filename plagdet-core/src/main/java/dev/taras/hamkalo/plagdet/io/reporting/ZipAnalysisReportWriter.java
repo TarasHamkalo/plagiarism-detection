@@ -107,7 +107,7 @@ public class ZipAnalysisReportWriter {
     result.put("pdfFiles", extensionToCount.getOrDefault("pdf", 0));
     result.put("totalFilesCount", documents.size());
     result.put("status", "success");
-    result.put("configurationUsed", Collections.emptyList());
+    result.put("configuration", report.getPlagdetParameters());
     ObjectMapper mapper = new ObjectMapper();
 
     try {

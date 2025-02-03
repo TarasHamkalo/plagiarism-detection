@@ -46,7 +46,10 @@ public class Plagdet {
 
   @NotNull ComparisonPipeline comparisonPipeline;
 
+  @NotNull PlagdetParameters parameters;
+
   public Plagdet(@NotNull PlagdetParameters parameters) {
+    this.parameters = parameters;
     this.luceneIndex = this.initLucene(parameters.getLuceneIndexDirectoryPath());
     this.documentAnnotator = new DocumentAnnotator(Pipeline.getPipeline());
 
@@ -129,6 +132,7 @@ public class Plagdet {
       .toList();
 
     return Report.builder()
+      .plagdetParameters(this.parameters)
       .submissions(submissions)
       .comparisonsCount(comparisonPipeline.getComparisonsCount())
       .pairs(new ArrayList<>(deduplicatedComparisonResults.values()))

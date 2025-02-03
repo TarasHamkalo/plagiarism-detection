@@ -17,6 +17,9 @@ public class Report {
   int comparisonsCount;
 
   @NotNull
+  PlagdetParameters plagdetParameters;
+
+  @NotNull
   @Builder.Default
   List<Submission> submissions = new ArrayList<>();
 
