@@ -43,7 +43,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     public static final double DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD = 0.7;
 
-    public static final double DEFAULT_DICE_SIMILARITY_THRESHOLD = 0.3;
+    public static final double DEFAULT_DICE_SIMILARITY_THRESHOLD = 0.4;
 
     public static final int DEFAULT_MIN_CLUSTER_SIZE = 3;
 
@@ -128,6 +128,8 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
     fragments.stream().flatMap(f -> f.getSeeds().stream())
       .forEach(seed -> {
         seed.getFirstSent().coreMap().set(PlagdetAnnotations.TemplateAnnotation.class, true);
+        seed.getFirstSent().tokens()
+          .forEach(t -> t.set(PlagdetAnnotations.TemplateAnnotation.class, true));
       });
 
     var markings = fragments.stream()

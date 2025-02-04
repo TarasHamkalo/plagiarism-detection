@@ -1,6 +1,7 @@
 package dev.taras.hamkalo.plagdet.comparision.comparator;
 
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
+import dev.taras.hamkalo.plagdet.comparision.PlagUtil;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
@@ -99,10 +100,7 @@ public class ShingleComparator implements DocumentComparator {
     final int step = parameters.size - parameters.overlap;
 
     var wordTokens = coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
-      .filter(t ->
-        !t.get(PlagdetAnnotations.StopWordAnnotation.class) ||
-        !t.get(PlagdetAnnotations.CodeSegmentAnnotation.class)
-      ).toList();
+      .filter(PlagUtil::isInformative).toList();
 
 
     var shingleSet = new HashSet<Shingle>();

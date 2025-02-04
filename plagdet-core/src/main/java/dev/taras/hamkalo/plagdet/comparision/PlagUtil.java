@@ -3,7 +3,9 @@ package dev.taras.hamkalo.plagdet.comparision;
 import dev.taras.hamkalo.plagdet.comparision.comparator.SentenceComparator;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
+import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreSentence;
+import edu.stanford.nlp.util.CoreMap;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -168,13 +170,23 @@ public abstract class PlagUtil {
   }
 
   public static boolean isInformativeSentence(@NotNull CoreSentence sentence) {
-    var codeSegmentAnnotation = sentence.coreMap()
+    return isInformative(sentence.coreMap());
+  }
+
+  public static boolean isInformative(@NotNull CoreMap coreMap) {
+    var stopWordAnnotation = coreMap
+      .get(PlagdetAnnotations.StopWordAnnotation.class);
+
+    var codeSegmentAnnotation = coreMap
       .get(PlagdetAnnotations.CodeSegmentAnnotation.class);
-    var templateAnnotation = sentence.coreMap()
+
+    var templateAnnotation = coreMap
       .get(PlagdetAnnotations.TemplateAnnotation.class);
 
+    boolean isStopWord = stopWordAnnotation != null && stopWordAnnotation;
     boolean isCodeSegment = codeSegmentAnnotation != null && codeSegmentAnnotation;
     boolean isTemplate = templateAnnotation != null && templateAnnotation;
-    return !isCodeSegment && !isTemplate;
+    return !isCodeSegment && !isTemplate && !isStopWord;
   }
+
 }
