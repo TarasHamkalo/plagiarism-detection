@@ -16,6 +16,8 @@ public class Report {
 
   int comparisonsCount;
 
+  @NotNull String inputPath;
+
   @NotNull
   PlagdetParameters plagdetParameters;
 

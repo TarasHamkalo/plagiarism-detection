@@ -132,6 +132,7 @@ public class Plagdet {
       .toList();
 
     return Report.builder()
+      .inputPath(path)
       .plagdetParameters(this.parameters)
       .submissions(submissions)
       .comparisonsCount(comparisonPipeline.getComparisonsCount())

@@ -87,9 +87,8 @@ public class ZipAnalysisReportWriter {
 
   private String analysisOverviewJsonString(@NotNull Report report) {
     final Map<String, Object> result = new HashMap<>();
-    final String analysisName = FilenameUtils.getBaseName(
-      report.getSubmissions().get(0).getPath().getParent().toString()
-    );
+    final String baseName = FilenameUtils.getBaseName(report.getInputPath());
+    final String fullName = FilenameUtils.getName(report.getInputPath());
 
     List<DocumentEntry> documents = report.getSubmissions().stream()
       .flatMap(submission -> submission.getDocuments().stream())
@@ -98,8 +97,8 @@ public class ZipAnalysisReportWriter {
     Map<String, Integer> extensionToCount = documents.stream()
       .collect(Collectors.toMap((d) -> d.getFileData().getExtension(), d -> 1, (p1, p2) -> p1 + 1));
 
-    result.put("name", analysisName);
-    result.put("analyzedFileName", analysisName);
+    result.put("name", baseName);
+    result.put("analyzedFileName", fullName);
     result.put("dateAnalyzed", Date.from(Instant.now()));
     result.put("numberOfComparisons", report.getComparisonsCount());
     result.put("docxFiles", extensionToCount.getOrDefault("docx", 0));
@@ -196,13 +195,12 @@ public class ZipAnalysisReportWriter {
       .orElse(0);
 
     result.put("id", documentEntry.getId());
-
-    var filePath = documentEntry.isIndexed() ?
-      fileData.getPersistentPath() : fileData.getTemporaryPath().toString();
+//    var filePath = documentEntry.isIndexed() ?
+//      fileData.getPersistentPath() : fileData.getTemporaryPath().toString();
 
     result.put("filename", FilenameUtils.getBaseName(fileData.getPersistentPath()));
     result.put("metadata", fileData.getMetadata());
-    result.put("filepath", filePath);
+    result.put("filepath", fileData.getPersistentPath());
     result.put("submitter", fileData.getSubmitter());
     result.put("indexed", documentEntry.isIndexed());
     result.put("pairIds", pairIds);
