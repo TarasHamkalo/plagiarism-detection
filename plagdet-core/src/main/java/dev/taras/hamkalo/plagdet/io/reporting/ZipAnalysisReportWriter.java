@@ -57,16 +57,23 @@ public class ZipAnalysisReportWriter {
          BufferedOutputStream bos = new BufferedOutputStream(fos);
          ArchiveOutputStream<ZipArchiveEntry> aos = new ZipArchiveOutputStream(bos)) {
       Files.walk(tempDir).forEach(srcPath -> {
-        if (!Files.isDirectory(srcPath)) {
-          var entryName = srcPath.toString().replace(finalTempDir.toString(), "");
-          ZipArchiveEntry ze = new ZipArchiveEntry(srcPath.toFile(), entryName);
-          try {
+        var entryName = finalTempDir.relativize(srcPath).toString();
+        try {
+          if (!Files.isDirectory(srcPath)) {
+//          var entryName = srcPath.toString().replace(finalTempDir + "/", "");
+            ZipArchiveEntry ze = new ZipArchiveEntry(srcPath.toFile(), entryName);
             aos.putArchiveEntry(ze);
             aos.write(Files.readAllBytes(srcPath));
             aos.closeArchiveEntry();
-          } catch (IOException e) {
-            throw new RuntimeException(e);
+          } else {
+            ZipArchiveEntry dirEntry = new ZipArchiveEntry(
+              entryName.endsWith("/") ? entryName : entryName + "/"
+            );
+            aos.putArchiveEntry(dirEntry);
+            aos.closeArchiveEntry();
           }
+        } catch (IOException e) {
+          throw new RuntimeException(e);
         }
       });
     } catch (IOException e) {
