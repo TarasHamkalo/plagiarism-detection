@@ -1,8 +1,7 @@
-package dev.taras.hamkalo.plagdet.readers;
+package dev.taras.hamkalo.plagdet.io;
 
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;

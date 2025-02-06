@@ -1,7 +1,6 @@
 package dev.taras.hamkalo.plagdet.index.lucene;
 
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
-import dev.taras.hamkalo.plagdet.index.DocumentIndex;
 import jakarta.annotation.PreDestroy;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
@@ -25,9 +24,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class LuceneIndex {

@@ -11,16 +11,12 @@ import dev.taras.hamkalo.plagdet.documents.DocumentProcessor;
 import dev.taras.hamkalo.plagdet.index.FileSystemStore;
 import dev.taras.hamkalo.plagdet.index.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.index.metadata.MetadataIndex;
-import demos.WordAnnotatorDemo;
-import dev.taras.hamkalo.plagdet.util.Utils;
-import edu.stanford.nlp.ling.Word;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import org.springframework.stereotype.Component;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 

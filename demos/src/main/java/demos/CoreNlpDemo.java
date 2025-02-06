@@ -1,6 +1,6 @@
 package demos;
 
-import dev.taras.hamkalo.plagdet.readers.TextReader;
+import dev.taras.hamkalo.plagdet.io.TextReader;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;

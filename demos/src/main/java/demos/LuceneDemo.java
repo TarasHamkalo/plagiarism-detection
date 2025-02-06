@@ -1,6 +1,6 @@
 package demos;
 
-import dev.taras.hamkalo.plagdet.readers.WordDocumentReader;
+import dev.taras.hamkalo.plagdet.io.WordDocumentReader;
 import lombok.AccessLevel;
 import lombok.SneakyThrows;
 import lombok.experimental.FieldDefaults;
