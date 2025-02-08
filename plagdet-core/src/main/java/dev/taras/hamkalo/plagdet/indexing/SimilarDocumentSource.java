@@ -11,10 +11,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 @Slf4j
@@ -54,6 +51,9 @@ public class SimilarDocumentSource {
 
   public List<DocumentEntry> retrieveSimilar(@NotNull DocumentEntry documentEntry)
     throws IndexingException {
+    if (this.parameters.getSimilarDocumentsLimit() <= 0) {
+      return new ArrayList<>();
+    }
 
     var similarDocs = this.luceneIndex.retrieveSimilar(
       documentEntry, parameters.getSimilarDocumentsLimit()
