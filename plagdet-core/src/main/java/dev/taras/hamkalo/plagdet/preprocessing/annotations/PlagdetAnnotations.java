@@ -79,4 +79,13 @@ public class PlagdetAnnotations {
     }
 
   }
+
+  public class MisspelledAnnotation implements CoreAnnotation<Boolean> {
+
+    @Override
+    public Class<Boolean> getType() {
+      return Boolean.class;
+    }
+
+  }
 }

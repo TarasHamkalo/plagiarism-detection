@@ -215,6 +215,7 @@ public class ZipAnalysisReportWriter {
 
     var markings = new ArrayList<>(documentEntry.getTemplateMarking());
     markings.addAll(documentEntry.getCodeMarking());
+    markings.addAll(documentEntry.getMisspelledMarking());
     result.put("markings", markings);
 
     ObjectMapper mapper = new ObjectMapper();

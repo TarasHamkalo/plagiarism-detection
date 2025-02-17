@@ -1,6 +1,5 @@
 package dev.taras.hamkalo.plagdet.documents;
 
-import com.google.protobuf.AbstractMessage;
 import dev.taras.hamkalo.plagdet.comparision.MarkingOffsets;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
@@ -85,4 +84,15 @@ public class DocumentEntry {
     return this.codeMarking;
   }
 
+  public @NotNull List<SpecialMarking> getMisspelledMarking() {
+    return this.coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
+      .filter(t -> t.get(PlagdetAnnotations.MisspelledAnnotation.class) != null && t.get(PlagdetAnnotations.MisspelledAnnotation.class) )
+      .map(t ->
+        SpecialMarking.builder()
+          .type(SpecialMarkingType.MISSPELLED)
+          .first(MarkingOffsets.from(t))
+          .build()
+      )
+      .toList();
+  }
 }

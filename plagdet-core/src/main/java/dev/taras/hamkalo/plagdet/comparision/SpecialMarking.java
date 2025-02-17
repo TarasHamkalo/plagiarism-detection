@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 public class SpecialMarking {
 
   public enum SpecialMarkingType {
-    PLAG, CODE, TEMPLATE
+    PLAG, CODE, TEMPLATE, MISSPELLED
   }
 
   @NotNull SpecialMarkingType type;

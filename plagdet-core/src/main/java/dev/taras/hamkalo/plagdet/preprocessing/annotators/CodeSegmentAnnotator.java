@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// TODO: increase accuracy by checking amount of no tag text elements
 @Slf4j
 public class CodeSegmentAnnotator implements Annotator {
 
