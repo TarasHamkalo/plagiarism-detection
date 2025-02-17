@@ -1,8 +1,4 @@
 //file:noinspection GroovyAssignabilityCheck
-//plugins {
-//  id 'org.springframework.boot' version "${springBootVersion}"
-//  id 'io.spring.dependency-management' version "$springDependencyManagementPluginVersion"
-//}
 
 repositories {
   mavenCentral()
@@ -11,8 +7,6 @@ repositories {
 allprojects {
   apply plugin: 'idea'
   apply plugin: 'java'
-//  apply plugin: 'org.springframework.boot'
-//  apply plugin: 'io.spring.dependency-management'
 
   group = "dev.taras.hamkalo"
   version = "0.0.1"
@@ -40,16 +34,13 @@ allprojects {
 
 subprojects {
   dependencies {
-//    implementation 'org.springframework.boot:spring-boot-starter'
-//    implementation 'org.springframework.boot:spring-boot-devtools'
-
     implementation 'org.jetbrains:annotations:26.0.1'
 
-    implementation 'ch.qos.logback:logback-core:1.5.16'
+    implementation 'org.apache.logging.log4j:log4j-to-slf4j:2.24.3'
 
+    implementation 'ch.qos.logback:logback-core:1.5.16'
     implementation 'ch.qos.logback:logback-classic:1.5.16'
 
-    testImplementation 'ch.qos.logback:logback-classic:1.5.16'
 
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"
     compileOnly "org.projectlombok:lombok:$lombokVersion"
@@ -57,16 +48,12 @@ subprojects {
     testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
     testCompileOnly "org.projectlombok:lombok:$lombokVersion"
 
-//    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-
     testImplementation platform("org.junit:junit-bom:$junitBomVersion")
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.junit.jupiter:junit-jupiter-params'
-  }
 
-//  tasks.compileJava {
-//    options.compilerArgs += ["-parameters", "-Xlint:unchecked,rawtypes", "-Werror"]
-//  }
+    testImplementation 'ch.qos.logback:logback-classic:1.5.16'
+  }
 
   test {
     useJUnitPlatform()
