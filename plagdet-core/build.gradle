@@ -51,6 +51,8 @@ dependencies {
 
   implementation 'org.apache.lucene:lucene-analyzers-common:8.10.1'
 
+  implementation 'org.apache.lucene:lucene-backward-codecs:8.10.1'
+
   implementation 'org.apache.poi:poi-ooxml:5.4.0'
 
   implementation 'org.apache.poi:poi:5.4.0'
@@ -66,8 +68,6 @@ dependencies {
   implementation 'org.apache.pdfbox:pdfbox:3.0.4'
 
   implementation 'org.apache.commons:commons-text:1.13.0'
-
-//  implementation 'info.debatty:java-string-similarity:2.0.0'
 
   implementation ':morphodita:'
 
@@ -92,9 +92,7 @@ dependencies {
 
   implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
 
-//  implementation 'org.languagetool:languagetool-core:6.6.9'
-
-//  implementation 'org.languagetool:language-sk:6.5'
+  implementation 'org.languagetool:language-sk:6.5'
 
   implementation 'com.ibm.icu:icu4j:76.1'
 }
