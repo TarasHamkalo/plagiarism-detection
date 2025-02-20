@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -66,9 +67,10 @@ public class MorphoditaStanfordAdapter implements Annotator {
   public void annotate(Annotation annotation) {
     final var guessedSentences = new ArrayList<CoreMap>();
     for (var sentence : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
-      var tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+      var tokens = sentence.get(PlagdetAnnotations.WordsAnnotation.class);
       var texts = tokens.stream()
-        .map(CoreLabel::originalText)
+        .map(t -> t.get(PlagdetAnnotations.WordAnnotation.class))
+//        .filter(Objects::nonNull)
         .map(String::toLowerCase)
         .toList();
 
@@ -124,7 +126,8 @@ public class MorphoditaStanfordAdapter implements Annotator {
     return Set.of(
       CoreAnnotations.TextAnnotation.class,
       CoreAnnotations.TokensAnnotation.class,
-      CoreAnnotations.SentencesAnnotation.class
+      CoreAnnotations.SentencesAnnotation.class,
+      PlagdetAnnotations.WordAnnotation.class
     );
   }
 

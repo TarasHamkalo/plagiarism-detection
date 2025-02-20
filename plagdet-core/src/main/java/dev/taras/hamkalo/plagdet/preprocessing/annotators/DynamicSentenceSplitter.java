@@ -25,7 +25,7 @@ public class DynamicSentenceSplitter implements Annotator {
     log.trace("Dynamic Sentence splitter annotator started");
     List<CoreMap> newSentences = new ArrayList<>();
     for (var sent : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
-      int wordTokensCount = countWordTokens(sent.get(CoreAnnotations.TokensAnnotation.class));
+      long wordTokensCount = countWordTokens(sent.get(CoreAnnotations.TokensAnnotation.class));
       if (wordTokensCount > MAX_SENT_LENGTH_WORD) {
         log.trace("Resplitting sentence {} words long", wordTokensCount);
 
@@ -78,16 +78,10 @@ public class DynamicSentenceSplitter implements Annotator {
     return coreMap;
   }
 
-  // TODO: refactor pipeline
-  private static int countWordTokens(List<CoreLabel> tokens) {
-    int count = 0;
-    for (var token : tokens) {
-      var normalized = StringUtils.stripAccents(token.word());
-      if (normalized.matches("[a-zA-Z]+")) {
-        count++;
-      }
-    }
-    return count;
+  private static long countWordTokens(List<CoreLabel> tokens) {
+    return tokens.stream()
+      .filter(t -> t.get(PlagdetAnnotations.WordsAnnotation.class) != null)
+      .count();
   }
 
   @Override
@@ -99,7 +93,8 @@ public class DynamicSentenceSplitter implements Annotator {
   public Set<Class<? extends CoreAnnotation>> requires() {
     return Set.of(
       CoreAnnotations.TokensAnnotation.class,
-      CoreAnnotations.SentencesAnnotation.class
+      CoreAnnotations.SentencesAnnotation.class,
+      PlagdetAnnotations.WordAnnotation.class
     );
   }
 }

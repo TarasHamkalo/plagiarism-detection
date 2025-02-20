@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.preprocessing.annotators;
 
+import com.ibm.icu.text.SpoofChecker;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
@@ -11,10 +12,8 @@ import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import com.ibm.icu.text.SpoofChecker;
 import org.jetbrains.annotations.NotNull;
 
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Set;
 
@@ -95,8 +94,7 @@ public class WordAnnotator implements Annotator {
   public Set<Class<? extends CoreAnnotation>> requires() {
     return Set.of(
       CoreAnnotations.TokensAnnotation.class,
-      CoreAnnotations.SentencesAnnotation.class,
-      PlagdetAnnotations.ValidatedSentenceAnnotation.class
+      CoreAnnotations.SentencesAnnotation.class
     );
   }
 

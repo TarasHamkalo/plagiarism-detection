@@ -60,8 +60,7 @@ public class StopWordAnnotator implements Annotator {
     return Set.of(
       CoreAnnotations.TokensAnnotation.class,
       PlagdetAnnotations.WordAnnotation.class,
-      PlagdetAnnotations.WordsAnnotation.class,
-      PlagdetAnnotations.ValidatedSentenceAnnotation.class
+      PlagdetAnnotations.WordsAnnotation.class
     );
   }
 }

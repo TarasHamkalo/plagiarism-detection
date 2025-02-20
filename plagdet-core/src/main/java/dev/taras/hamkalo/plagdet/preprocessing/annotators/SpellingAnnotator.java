@@ -162,79 +162,9 @@ public class SpellingAnnotator implements Annotator {
       CoreAnnotations.LemmaAnnotation.class,
       PlagdetAnnotations.SpoofAnnotation.class,
       PlagdetAnnotations.WordsAnnotation.class,
-      PlagdetAnnotations.ValidatedSentenceAnnotation.class,
       PlagdetAnnotations.GuessedLemmaAnnotation.class,
       PlagdetAnnotations.CodeSegmentAnnotation.class
     );
   }
 
-  private void attempt2() {
-//    var documentText = annotation.get(CoreAnnotations.TextAnnotation.class);
-//    var sentenceText = sentence.get(CoreAnnotations.TextAnnotation.class);
-//
-//    var sentenceOffset = sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-//    var sentenceCodePointOffset = documentText.codePointCount(0, sentenceOffset);
-//    if (sentenceOffset != sentenceCodePointOffset) {
-//      log.debug("Not equal {} {}", sentenceOffset, sentenceCodePointOffset);
-//    }
-//    var nonWordTokens = sentence.get(CoreAnnotations.TokensAnnotation.class).stream()
-//      .filter(t -> t.get(PlagdetAnnotations.WordAnnotation.class) == null)
-//      .toList();
-//
-//    for (var t: nonWordTokens) {
-//        System.out.println(t.word());
-//        var tokenCodePointOffset = documentText.codePointCount(0, t.beginPosition());
-//        if (tokenCodePointOffset != t.beginPosition()) {
-//          log.debug("Not equal {} {}", t.beginPosition(), tokenCodePointOffset);
-//        }
-//        var tokenStart = tokenCodePointOffset - sentenceCodePointOffset;
-//        textBuilder.replace(tokenStart, tokenStart + t.word().length() - 1, " ".repeat(t.word().length()));
-//    }
-//    log.debug("[Before {}] [After {}]", sentenceText, textBuilder.toString());
-  }
-
-  private void attempt1() {
-//    String simpleText = sentence.get(CoreAnnotations.TextAnnotation.class);
-////    String text = sentence.get(PlagdetAnnotations.WordsAnnotation.class).stream().map(CoreLabel::word).collect(Collectors.joining(""));
-//    String text = sentence.get(CoreAnnotations.TokensAnnotation.class).stream()
-//      .map(t -> {
-//        if (t.get(PlagdetAnnotations.WordAnnotation.class) != null) {
-//          return t.word();
-//        }
-//
-//        return " ".repeat(t.word().length());
-//      })
-//      .collect(Collectors.joining(" "));
-//
-//    List<RuleMatch> matches = languageTool.check(text, false, JLanguageTool.ParagraphHandling.NORMAL);
-//    if (matches.isEmpty()) {
-//      return;
-//    }
-//
-//    var sentenceOffset = sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-//    for (RuleMatch match : matches) {
-//      var tokenTextSubstr = text.substring(match.getFromPos(), match.getToPos());
-//
-//      var optionalToken = sentence.get(CoreAnnotations.TokensAnnotation.class).stream()
-//        .filter(t -> t.beginPosition() - sentenceOffset == match.getFromPos())
-////        .filter(t -> isLocatedAt(annotation, sentence, t, match.getFromPos()))
-//        .findFirst();
-////      Martin Eliaš   Bianka Drábová   Samuel Ušala OS
-//      var textFromToken = "not found";
-//      if (optionalToken.isPresent()) {
-//        textFromToken = optionalToken.get().word();
-//      }
-//
-//      log.debug(
-//        "[Token {}] [Text {}] [Options {}] [Message {}] [Rule {}]",
-//        textFromToken,
-//        tokenTextSubstr,
-//        "",
-
-    /// /        match.getSuggestedReplacements(),
-//        match.getMessage(),
-//        match.getRule().getId()
-//      );
-//    }
-  }
 }

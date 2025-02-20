@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.documents;
 
+import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import lombok.AccessLevel;
@@ -15,8 +16,6 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class DocumentAnnotator {
 
-  StanfordCoreNLP pipeline;
-
   public void annotateSubmissions(@NotNull List<Submission> submissions) {
     for (Submission submission : submissions) {
       annotateDocuments(submission.getDocuments());
@@ -31,7 +30,7 @@ public class DocumentAnnotator {
       }
 
       CoreDocument coreDocument = new CoreDocument(document.getFileData().getContent());
-      pipeline.annotate(coreDocument);
+      Pipeline.annotate(coreDocument);
       document.setCoreDocument(coreDocument);
     }
   }

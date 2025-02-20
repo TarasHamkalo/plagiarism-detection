@@ -51,7 +51,7 @@ public class Plagdet {
   public Plagdet(@NotNull PlagdetParameters parameters) {
     this.parameters = parameters;
     this.luceneIndex = this.initLucene(parameters.getLuceneIndexDirectoryPath());
-    this.documentAnnotator = new DocumentAnnotator(Pipeline.getPipeline());
+    this.documentAnnotator = new DocumentAnnotator();
 
     this.similarDocumentSource = new SimilarDocumentSource(
       parameters.getSimilarDocumentSourceParameters(), this.luceneIndex
