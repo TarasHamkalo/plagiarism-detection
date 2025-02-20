@@ -5,15 +5,18 @@ import cz.cuni.mff.ufal.morphodita.Morpho;
 import cz.cuni.mff.ufal.morphodita.TaggedLemmas;
 import cz.cuni.mff.ufal.morphodita.Tagger;
 import dev.taras.hamkalo.plagdet.io.IoUtils;
+import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
+import edu.stanford.nlp.util.CoreMap;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -61,6 +64,7 @@ public class MorphoditaStanfordAdapter implements Annotator {
 
   @Override
   public void annotate(Annotation annotation) {
+    final var guessedSentences = new ArrayList<CoreMap>();
     for (var sentence : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
       var tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
       var texts = tokens.stream()
@@ -72,15 +76,28 @@ public class MorphoditaStanfordAdapter implements Annotator {
       TaggedLemmas lemmas = new TaggedLemmas();
       tagger.tag(forms, lemmas, Morpho.GUESSER);
 
+      var hasGuessedLemma = false;
       for (int i = 0; i < tokens.size(); i++) {
+        final var guesserMode = morpho.analyze(forms.get(i), Morpho.GUESSER, new TaggedLemmas());
+        final var isGuessed = guesserMode == Morpho.GUESSER;
+        hasGuessedLemma |= isGuessed;
+
+        tokens.get(i).set(PlagdetAnnotations.GuessedLemmaAnnotation.class, isGuessed);
         tokens.get(i).set(
           CoreAnnotations.LemmaAnnotation.class, morpho.rawLemma(lemmas.get(i).getLemma())
         );
+
         tokens.get(i).set(
           CoreAnnotations.PartOfSpeechAnnotation.class, remapTag(lemmas.get(i).getTag())
         );
       }
+
+      if (hasGuessedLemma) {
+        guessedSentences.add(sentence);
+      }
     }
+
+    annotation.set(PlagdetAnnotations.GuessedSentencesAnnotation.class, guessedSentences);
   }
 
   private String remapTag(String tag) {
@@ -96,7 +113,9 @@ public class MorphoditaStanfordAdapter implements Annotator {
   public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
     return Set.of(
       CoreAnnotations.PartOfSpeechAnnotation.class,
-      CoreAnnotations.LemmaAnnotation.class
+      CoreAnnotations.LemmaAnnotation.class,
+      PlagdetAnnotations.GuessedLemmaAnnotation.class,
+      PlagdetAnnotations.GuessedSentencesAnnotation.class
     );
   }
 
