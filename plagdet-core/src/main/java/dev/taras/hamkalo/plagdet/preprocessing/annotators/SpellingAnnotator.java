@@ -60,10 +60,12 @@ public class SpellingAnnotator implements Annotator {
     var offsetToTokenMap = new HashMap<Integer, CoreLabel>();
     StringBuilder textBuilder = new StringBuilder();
     for (var token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
-      if (token.get(PlagdetAnnotations.WordAnnotation.class) != null) {
+      var word = token.get(PlagdetAnnotations.WordAnnotation.class);
+      if (word != null) {
         offsetToTokenMap.put(textBuilder.length(), token);
-        textBuilder.append(token.word()).append(" ");
+        textBuilder.append(word).append(" ");
       }
+
     }
     var matches = languageTool.check(
       textBuilder.toString(), false, JLanguageTool.ParagraphHandling.NORMAL
@@ -92,14 +94,19 @@ public class SpellingAnnotator implements Annotator {
     @NotNull List<String> suggestions
   ) {
     var noMultiWordSuggestions = suggestions.stream().filter(s -> !s.contains(" ")).toList();
-    if (noMultiWordSuggestions.isEmpty()) {
+    var misspelledTokenLetter = misspelledToken.get(PlagdetAnnotations.WordAnnotation.class).substring(0, 1);
+    var startWithSameLetter = noMultiWordSuggestions.stream()
+      .filter(s -> s.toLowerCase().startsWith(misspelledTokenLetter))
+      .toList();
+
+    if (startWithSameLetter.isEmpty()) {
       return null;
     }
 
     int min = 0;
     double minDistance = Double.MAX_VALUE;
-    for (int i = 0; i < noMultiWordSuggestions.size(); i++) {
-      var suggestion = noMultiWordSuggestions.get(i);
+    for (int i = 0; i < startWithSameLetter.size(); i++) {
+      var suggestion = startWithSameLetter.get(i);
       double suggestionDistance = distance(misspelledToken, suggestion);
       if (suggestionDistance < minDistance) {
         min = i;
@@ -107,7 +114,7 @@ public class SpellingAnnotator implements Annotator {
       }
     }
 
-    return noMultiWordSuggestions.get(min);
+    return startWithSameLetter.get(min);
   }
 
   private double distance(CoreLabel token, String suggestion) {
@@ -120,7 +127,7 @@ public class SpellingAnnotator implements Annotator {
     var d1 = doubleMetaphone.doubleMetaphone(word);
     var d2 = doubleMetaphone.doubleMetaphone(suggestion);
     var metaphoneDistance = LevenshteinDistance.getDefaultInstance().apply(d1, d2);
-    return metaphoneDistance + (1.2 * noDiaDistance);
+    return metaphoneDistance + (1.5 * noDiaDistance);
   }
 
   private double jaccardCoefficient(String s1, String s2) {
@@ -154,6 +161,7 @@ public class SpellingAnnotator implements Annotator {
       CoreAnnotations.SentencesAnnotation.class,
       CoreAnnotations.LemmaAnnotation.class,
       PlagdetAnnotations.SpoofAnnotation.class,
+      PlagdetAnnotations.WordsAnnotation.class,
       PlagdetAnnotations.ValidatedSentenceAnnotation.class,
       PlagdetAnnotations.GuessedLemmaAnnotation.class,
       PlagdetAnnotations.CodeSegmentAnnotation.class
