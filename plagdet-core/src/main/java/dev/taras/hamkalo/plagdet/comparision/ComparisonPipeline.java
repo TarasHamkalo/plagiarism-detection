@@ -1,5 +1,6 @@
-package dev.taras.hamkalo.plagdet;
+package dev.taras.hamkalo.plagdet.comparision;
 
+import dev.taras.hamkalo.plagdet.ResultsFilter;
 import dev.taras.hamkalo.plagdet.comparision.comparator.ComparisonResult;
 import dev.taras.hamkalo.plagdet.comparision.comparator.DocumentComparator;
 import dev.taras.hamkalo.plagdet.comparision.comparator.TemplateComparator;
@@ -88,7 +89,7 @@ public class ComparisonPipeline {
 
   public void compareWithTemplate(@NotNull List<DocumentEntry> documentEntries) {
     if (template == null) {
-      log.info("Template document was not provided, skipping");
+      log.trace("Template document was not provided, skipping");
       return;
     }
 

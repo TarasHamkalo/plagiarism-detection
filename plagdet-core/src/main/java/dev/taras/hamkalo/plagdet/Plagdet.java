@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet;
 
+import dev.taras.hamkalo.plagdet.comparision.ComparisonPipeline;
 import dev.taras.hamkalo.plagdet.comparision.comparator.*;
 import dev.taras.hamkalo.plagdet.comparision.comparator.blocks.Embeddings;
 import dev.taras.hamkalo.plagdet.documents.DocumentAnnotator;
@@ -11,7 +12,6 @@ import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.io.SubmissionsParser;
 import dev.taras.hamkalo.plagdet.io.reader.*;
-import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
