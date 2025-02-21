@@ -202,9 +202,6 @@ public class ZipAnalysisReportWriter {
       .orElse(0);
 
     result.put("id", documentEntry.getId());
-//    var filePath = documentEntry.isIndexed() ?
-//      fileData.getPersistentPath() : fileData.getTemporaryPath().toString();
-
     result.put("filename", FilenameUtils.getBaseName(fileData.getPersistentPath()));
     result.put("metadata", fileData.getMetadata());
     result.put("filepath", fileData.getPersistentPath());
@@ -216,6 +213,7 @@ public class ZipAnalysisReportWriter {
     var markings = new ArrayList<>(documentEntry.getTemplateMarking());
     markings.addAll(documentEntry.getCodeMarking());
     markings.addAll(documentEntry.getMisspelledMarking());
+    markings.addAll(documentEntry.getSpoofMarking());
     result.put("markings", markings);
 
     ObjectMapper mapper = new ObjectMapper();

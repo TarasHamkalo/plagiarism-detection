@@ -6,6 +6,7 @@ import dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
 import dev.taras.hamkalo.plagdet.io.FileData;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -13,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 @Data
 @Builder
@@ -86,13 +88,45 @@ public class DocumentEntry {
 
   public @NotNull List<SpecialMarking> getMisspelledMarking() {
     return this.coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
-      .filter(t -> t.get(PlagdetAnnotations.MisspelledAnnotation.class) != null && t.get(PlagdetAnnotations.MisspelledAnnotation.class) )
+      .filter(isMisspelledToken())
       .map(t ->
         SpecialMarking.builder()
           .type(SpecialMarkingType.MISSPELLED)
           .first(MarkingOffsets.from(t))
+          .comments(getCorrection(t))
           .build()
       )
       .toList();
+  }
+
+  public @NotNull List<SpecialMarking> getSpoofMarking() {
+    return this.coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
+      .filter(isSpoofedToken())
+      .map(t ->
+        SpecialMarking.builder()
+          .type(SpecialMarkingType.SPOOF)
+          .first(MarkingOffsets.from(t))
+          .comments(getCorrection(t))
+          .build()
+      )
+      .toList();
+  }
+
+  private Predicate<CoreLabel> isSpoofedToken() {
+    return t -> t.get(PlagdetAnnotations.SpoofedWordAnnotation.class);
+  }
+
+  private @NotNull List<String> getCorrection(@NotNull CoreLabel token) {
+    var correctedWordAnnotation = token.get(PlagdetAnnotations.CorrectedWordAnnotation.class);
+    if (correctedWordAnnotation != null) {
+      return List.of(correctedWordAnnotation);
+    }
+
+    return Collections.emptyList();
+  }
+
+  private static @NotNull Predicate<CoreLabel> isMisspelledToken() {
+    return t -> t.get(PlagdetAnnotations.MisspelledAnnotation.class) != null &&
+                t.get(PlagdetAnnotations.MisspelledAnnotation.class);
   }
 }
