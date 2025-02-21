@@ -43,6 +43,7 @@ public class SpellingAnnotator implements Annotator {
 
   @Override
   public void annotate(Annotation annotation) {
+    log.trace("Spell annotator started");
     var sentences = annotation.get(PlagdetAnnotations.GuessedSentencesAnnotation.class).stream()
       .filter(s -> {
         var isCodeSegmentAnnotation = s.get(PlagdetAnnotations.CodeSegmentAnnotation.class);
@@ -103,20 +104,24 @@ public class SpellingAnnotator implements Annotator {
     @NotNull CoreLabel misspelledToken,
     @NotNull List<String> suggestions
   ) {
-    var noMultiWordSuggestions = suggestions.stream().filter(s -> !s.contains(" ")).toList();
-    var misspelledTokenLetter = misspelledToken.get(PlagdetAnnotations.WordAnnotation.class).substring(0, 1);
-    var startWithSameLetter = noMultiWordSuggestions.stream()
+
+    var misspelledTokenLetter = misspelledToken.get(PlagdetAnnotations.WordAnnotation.class)
+      .toLowerCase()
+      .substring(0, 1);
+
+    var filtered = suggestions.stream()
+      .filter(s -> !s.contains(" "))
       .filter(s -> s.toLowerCase().startsWith(misspelledTokenLetter))
       .toList();
 
-    if (startWithSameLetter.isEmpty()) {
+    if (filtered.isEmpty()) {
       return null;
     }
 
     int min = 0;
     double minDistance = Double.MAX_VALUE;
-    for (int i = 0; i < startWithSameLetter.size(); i++) {
-      var suggestion = startWithSameLetter.get(i);
+    for (int i = 0; i < filtered.size(); i++) {
+      var suggestion = filtered.get(i);
       double suggestionDistance = distance(misspelledToken, suggestion);
       if (suggestionDistance < minDistance) {
         min = i;
@@ -124,11 +129,11 @@ public class SpellingAnnotator implements Annotator {
       }
     }
 
-    return startWithSameLetter.get(min);
+    return filtered.get(min);
   }
 
   private double distance(CoreLabel token, String suggestion) {
-    String word = token.word();
+    String word = token.get(PlagdetAnnotations.WordAnnotation.class);
     String strippedWord = StringUtils.stripAccents(word);
     String strippedSuggestion = StringUtils.stripAccents(suggestion);
 
