@@ -19,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.languagetool.JLanguageTool;
 import org.languagetool.Languages;
+import org.languagetool.rules.spelling.SpellingCheckRule;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,16 +30,21 @@ import java.util.Set;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SpellingAnnotator implements Annotator {
 
-
   JLanguageTool languageTool;
 
   public SpellingAnnotator() {
-    this.languageTool = new JLanguageTool(Languages.getLanguageForShortCode("sk"));
+    languageTool = prepareLanguageTool();
+  }
+
+  private @NotNull JLanguageTool prepareLanguageTool() {
+    var languageTool = new JLanguageTool(Languages.getLanguageForShortCode("sk"));
     for (var rule : languageTool.getAllActiveRules()) {
-      if (!rule.getCategory().getId().toString().equals("TYPOS")) {
+      if (!(rule instanceof SpellingCheckRule)) {
         languageTool.disableRule(rule.getId());
       }
     }
+
+    return languageTool;
   }
 
   @Override
@@ -50,7 +56,6 @@ public class SpellingAnnotator implements Annotator {
         return isCodeSegmentAnnotation == null || !isCodeSegmentAnnotation;
       })
       .toList();
-
     annotation.set(PlagdetAnnotations.CorrectedSentencesAnnotation.class, new ArrayList<>());
     for (var sentence : sentences) {
       markSpellingWithLanguageTool(annotation, sentence);
