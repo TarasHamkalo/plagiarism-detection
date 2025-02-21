@@ -60,7 +60,7 @@ public abstract class Pipeline {
       props.put(
         "customAnnotatorClass.code",
         "dev.taras.hamkalo.plagdet.preprocessing.annotators.CodeSegmentAnnotator"
-        );
+      );
 
       props.put(
         "customAnnotatorClass.spell",
