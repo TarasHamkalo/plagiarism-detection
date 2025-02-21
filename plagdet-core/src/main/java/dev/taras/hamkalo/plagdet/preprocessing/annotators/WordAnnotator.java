@@ -45,13 +45,13 @@ public class WordAnnotator implements Annotator {
         var noAccentsWord = StringUtils.stripAccents(word);
         if (noAccentsWord.matches("[a-zA-Z]+")) {
           token.set(PlagdetAnnotations.WordAnnotation.class, word);
-          token.set(PlagdetAnnotations.NoDiaAnnotation.class, noAccentsWord);
+          token.set(PlagdetAnnotations.NoDiaWordAnnotation.class, noAccentsWord);
 
           words.add(token);
           annotation.get(PlagdetAnnotations.WordsAnnotation.class).add(token);
         } else {
           token.set(PlagdetAnnotations.WordAnnotation.class, null);
-          token.set(PlagdetAnnotations.NoDiaAnnotation.class, token.word());
+          token.set(PlagdetAnnotations.NoDiaWordAnnotation.class, token.word());
         }
       }
 
@@ -63,7 +63,7 @@ public class WordAnnotator implements Annotator {
     var word = token.word();
 
     var isSpoof = spoofChecker.failsChecks(word);
-    token.set(PlagdetAnnotations.SpoofAnnotation.class, isSpoof);
+    token.set(PlagdetAnnotations.SpoofedWordAnnotation.class, isSpoof);
     if (isSpoof) {
       var sb = new StringBuilder(spoofChecker.getSkeleton(word));
       var tokenChars = word.toCharArray();
@@ -85,8 +85,8 @@ public class WordAnnotator implements Annotator {
     return Set.of(
       PlagdetAnnotations.WordAnnotation.class,
       PlagdetAnnotations.WordsAnnotation.class,
-      PlagdetAnnotations.NoDiaAnnotation.class,
-      PlagdetAnnotations.SpoofAnnotation.class
+      PlagdetAnnotations.NoDiaWordAnnotation.class,
+      PlagdetAnnotations.SpoofedWordAnnotation.class
     );
   }
 

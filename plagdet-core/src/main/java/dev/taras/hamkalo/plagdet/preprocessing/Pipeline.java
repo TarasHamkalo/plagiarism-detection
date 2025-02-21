@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.preprocessing;
 
+import dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoditaStanfordAdapter;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import org.jetbrains.annotations.NotNull;
@@ -76,20 +77,28 @@ public abstract class Pipeline {
   public static StanfordCoreNLP getPostLemmatizationPipeline() {
     if (postLemmatizationPipeline == null) {
       var props = new Properties();
-      props.put("annotators", "word, morpho");
+      props.put("annotators", "morpho");
       props.put(
         "customAnnotatorClass.morpho",
         "dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoditaStanfordAdapter"
       );
+
+      props.put(
+        MorphoditaStanfordAdapter.MISSPELLED_ONLY, "true"
+      );
+
+      props.put("enforceRequirements", "false");
+
       postLemmatizationPipeline = new StanfordCoreNLP(props);
     }
-    return secondStagePipeline;
+
+    return postLemmatizationPipeline;
   }
 
 
   public static void annotate(@NotNull CoreDocument coreDocument) {
     getFirstStagePipeline().annotate(coreDocument);
     getSecondStagePipeline().annotate(coreDocument);
-//    postLemmatizationPipeline.annotate(coreDocument);
+    getPostLemmatizationPipeline().annotate(coreDocument);
   }
 }

@@ -20,8 +20,8 @@ import org.jetbrains.annotations.Nullable;
 import org.languagetool.JLanguageTool;
 import org.languagetool.Languages;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -50,6 +50,7 @@ public class SpellingAnnotator implements Annotator {
       })
       .toList();
 
+    annotation.set(PlagdetAnnotations.CorrectedSentencesAnnotation.class, new ArrayList<>());
     for (var sentence : sentences) {
       markSpellingWithLanguageTool(annotation, sentence);
     }
@@ -70,21 +71,30 @@ public class SpellingAnnotator implements Annotator {
     var matches = languageTool.check(
       textBuilder.toString(), false, JLanguageTool.ParagraphHandling.NORMAL
     );
+
     if (matches.isEmpty()) {
       return;
     }
-
+    var hasCorrections = false;
     for (var match : matches) {
       var misspelledToken = offsetToTokenMap.get(match.getFromPos());
       if (misspelledToken.get(PlagdetAnnotations.GuessedLemmaAnnotation.class)) {
+        misspelledToken.set(PlagdetAnnotations.MisspelledAnnotation.class, true);
         var suggestions = match.getSuggestedReplacements();
         var best = pickBest(misspelledToken, suggestions);
         if (best != null) {
-          log.debug("[Misspell at {}] [Pick {}] [Options {}]", misspelledToken.word(), best, suggestions);
+          hasCorrections = true;
+          misspelledToken.set(PlagdetAnnotations.CorrectedWordAnnotation.class, best);
+          log.trace(
+            "[Misspell at {}] [Pick {}] [Options {}]", misspelledToken.word(), best, suggestions
+          );
+
         }
-      } else {
-        log.debug("[Misspell at {}] [Ignored because was not guessed]", misspelledToken.word());
       }
+    }
+
+    if (hasCorrections) {
+      annotation.get(PlagdetAnnotations.CorrectedSentencesAnnotation.class).add(sentence);
     }
 
   }
@@ -130,29 +140,14 @@ public class SpellingAnnotator implements Annotator {
     return metaphoneDistance + (1.5 * noDiaDistance);
   }
 
-  private double jaccardCoefficient(String s1, String s2) {
-    Set<String> set1 = new HashSet<>();
-    Set<String> set2 = new HashSet<>();
-
-    for (int i = 0; i < s1.length() - 1; i++) {
-      set1.add(s1.substring(i, i + 2));
-    }
-    for (int i = 0; i < s2.length() - 1; i++) {
-      set2.add(s2.substring(i, i + 2));
-    }
-
-    Set<String> intersection = new HashSet<>(set1);
-    intersection.retainAll(set2);
-
-    Set<String> union = new HashSet<>(set1);
-    union.addAll(set2);
-
-    return (double) intersection.size() / union.size();
-  }
 
   @Override
   public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
-    return Set.of(PlagdetAnnotations.MisspelledAnnotation.class);
+    return Set.of(
+      PlagdetAnnotations.MisspelledAnnotation.class,
+      PlagdetAnnotations.CorrectedWordAnnotation.class,
+      PlagdetAnnotations.CorrectedSentencesAnnotation.class
+    );
   }
 
   @Override
@@ -160,7 +155,7 @@ public class SpellingAnnotator implements Annotator {
     return Set.of(
       CoreAnnotations.SentencesAnnotation.class,
       CoreAnnotations.LemmaAnnotation.class,
-      PlagdetAnnotations.SpoofAnnotation.class,
+      PlagdetAnnotations.SpoofedWordAnnotation.class,
       PlagdetAnnotations.WordsAnnotation.class,
       PlagdetAnnotations.GuessedLemmaAnnotation.class,
       PlagdetAnnotations.CodeSegmentAnnotation.class

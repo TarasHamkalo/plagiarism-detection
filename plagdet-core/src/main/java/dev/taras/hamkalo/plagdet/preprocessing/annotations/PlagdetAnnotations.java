@@ -27,7 +27,7 @@ public class PlagdetAnnotations {
 
   }
 
-  public static class SpoofAnnotation implements CoreAnnotation<Boolean> {
+  public static class SpoofedWordAnnotation implements CoreAnnotation<Boolean> {
 
     @Override
     public Class<Boolean> getType() {
@@ -45,7 +45,7 @@ public class PlagdetAnnotations {
 
   }
 
-  public static class NoDiaAnnotation implements CoreAnnotation<String> {
+  public static class NoDiaWordAnnotation implements CoreAnnotation<String> {
 
     @Override
     public Class<String> getType() {
@@ -54,7 +54,7 @@ public class PlagdetAnnotations {
 
   }
 
-  public static class TemplateAnnotation implements CoreAnnotation<Boolean> {
+  public static class TemplateSentenceAnnotation implements CoreAnnotation<Boolean> {
 
     @Override
     public Class<Boolean> getType() {
@@ -95,6 +95,24 @@ public class PlagdetAnnotations {
     @Override
     public Class<Boolean> getType() {
       return Boolean.class;
+    }
+
+  }
+
+  public static class CorrectedSentencesAnnotation implements CoreAnnotation<List<CoreMap>> {
+
+    @Override
+    public Class<List<CoreMap>> getType() {
+      return ErasureUtils.uncheckedCast(List.class);
+    }
+
+  }
+
+  public static class CorrectedWordAnnotation implements CoreAnnotation<String> {
+
+    @Override
+    public Class<String> getType() {
+      return String.class;
     }
 
   }

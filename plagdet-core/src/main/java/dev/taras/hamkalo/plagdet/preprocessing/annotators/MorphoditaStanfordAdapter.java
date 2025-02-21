@@ -15,16 +15,16 @@ import edu.stanford.nlp.util.CoreMap;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class MorphoditaStanfordAdapter implements Annotator {
+
+  public static final String MISSPELLED_ONLY = "morpho.misspelledonly";
 
   public static final String TAGGER_RESOURCE_PREFIX = "models/";
 
@@ -44,35 +44,35 @@ public class MorphoditaStanfordAdapter implements Annotator {
     Map.entry(Pattern.compile("Q.*"), "Sy")
   );
 
-  Tagger tagger;
+  private static Tagger tagger;
 
-  Morpho morpho;
+  boolean isMisspelledOnly;
 
-  public MorphoditaStanfordAdapter() {
-    this.tagger = this.loadTagger();
-    this.morpho = tagger.getMorpho();
+  public MorphoditaStanfordAdapter(String name, Properties props) {
+    var booleanProperty = props.get(MISSPELLED_ONLY);
+    this.isMisspelledOnly = Boolean.parseBoolean(String.valueOf(booleanProperty));
   }
 
   private Tagger loadTagger() {
-    if (tagger != null) {
-      return tagger;
+    if (tagger == null) {
+      var taggerPath = IoUtils.resourceFromTemp(TAGGER_RESOURCE_PREFIX + SK_TAGGER, SK_TAGGER);
+      log.debug("Tagger path is [{}]", taggerPath);
+      tagger = Tagger.load(taggerPath.toString());
     }
 
-    var taggerPath = IoUtils.resourceFromTemp(TAGGER_RESOURCE_PREFIX + SK_TAGGER, SK_TAGGER);
-    log.debug("Tagger path is " + taggerPath);
-    return Tagger.load(taggerPath.toString());
+    return tagger;
   }
 
   @Override
   public void annotate(Annotation annotation) {
+    final var tagger = this.loadTagger();
+    final var morpho = tagger.getMorpho();
+
     final var guessedSentences = new ArrayList<CoreMap>();
-    for (var sentence : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
+    final var sentences = getSentencesForTagging(annotation);
+    for (var sentence : sentences) {
       var tokens = sentence.get(PlagdetAnnotations.WordsAnnotation.class);
-      var texts = tokens.stream()
-        .map(t -> t.get(PlagdetAnnotations.WordAnnotation.class))
-//        .filter(Objects::nonNull)
-        .map(String::toLowerCase)
-        .toList();
+      var texts = extractTokenText(tokens);
 
       Forms forms = new Forms(texts);
       TaggedLemmas lemmas = new TaggedLemmas();
@@ -84,14 +84,12 @@ public class MorphoditaStanfordAdapter implements Annotator {
         final var isGuessed = guesserMode == Morpho.GUESSER;
         hasGuessedLemma |= isGuessed;
 
-        tokens.get(i).set(PlagdetAnnotations.GuessedLemmaAnnotation.class, isGuessed);
-        tokens.get(i).set(
-          CoreAnnotations.LemmaAnnotation.class, morpho.rawLemma(lemmas.get(i).getLemma())
-        );
+        var lemma = morpho.rawLemma(lemmas.get(i).getLemma());
+        var tag = remapTag(lemmas.get(i).getTag());
 
-        tokens.get(i).set(
-          CoreAnnotations.PartOfSpeechAnnotation.class, remapTag(lemmas.get(i).getTag())
-        );
+        tokens.get(i).set(PlagdetAnnotations.GuessedLemmaAnnotation.class, isGuessed);
+        tokens.get(i).set(CoreAnnotations.LemmaAnnotation.class, lemma);
+        tokens.get(i).set(CoreAnnotations.PartOfSpeechAnnotation.class, tag);
       }
 
       if (hasGuessedLemma) {
@@ -100,6 +98,24 @@ public class MorphoditaStanfordAdapter implements Annotator {
     }
 
     annotation.set(PlagdetAnnotations.GuessedSentencesAnnotation.class, guessedSentences);
+  }
+
+  private @NotNull List<String> extractTokenText(@NotNull List<CoreLabel> tokens) {
+    return tokens.stream()
+      .map(t -> {
+        var corrected = t.get(PlagdetAnnotations.CorrectedWordAnnotation.class);
+        return corrected != null ? corrected : t.get(PlagdetAnnotations.WordAnnotation.class);
+      })
+      .map(String::toLowerCase)
+      .toList();
+  }
+
+  private @NotNull List<CoreMap> getSentencesForTagging(@NotNull Annotation annotation) {
+    if (isMisspelledOnly) {
+      return annotation.get(PlagdetAnnotations.CorrectedSentencesAnnotation.class);
+    }
+
+    return annotation.get(CoreAnnotations.SentencesAnnotation.class);
   }
 
   private String remapTag(String tag) {
