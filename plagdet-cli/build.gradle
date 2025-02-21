@@ -12,6 +12,15 @@ repositories {
   }
 }
 
+shadowJar {
+  archiveBaseName.set('plagdet-cli')
+  archiveClassifier.set('')
+  archiveVersion.set('2.1')
+  zip64 true
+//  minimize()
+  mergeServiceFiles()
+}
+
 application {
   mainClass = 'dev.taras.hamkalo.plagdet.Main'
 }
@@ -20,16 +29,7 @@ tasks.withType(JavaExec).configureEach {
   systemProperty 'java.library.path', '../libs'
 }
 
-//jar {
-//  manifest {
-//    attributes "Main-Class": "dev.taras.hamkalo.plagdet.Main"
-//  }
-//
-//}
-
 dependencies {
-
-//  classpath "gradle.plugin.com.github.johnrengelman:shadow:7.1.2"
 
   implementation 'commons-cli:commons-cli:1.9.0'
 

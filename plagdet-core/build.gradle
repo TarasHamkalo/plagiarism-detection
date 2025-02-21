@@ -10,6 +10,7 @@ shadowJar {
   archiveVersion.set('2.0')
   zip64 true
   minimize()
+  mergeServiceFiles()
   exclude('org/bytedeco/**/windows-x86_64/**')
   exclude('org/bytedeco/**/macosx-x86_64/**')
   exclude('org/bytedeco/**/android-arm/**')
@@ -52,6 +53,8 @@ dependencies {
   implementation 'org.apache.lucene:lucene-analyzers-common:8.10.1'
 
   implementation 'org.apache.lucene:lucene-backward-codecs:8.10.1'
+
+  implementation 'org.apache.lucene:lucene-codecs:8.10.1'
 
   implementation 'org.apache.poi:poi-ooxml:5.4.0'
 
