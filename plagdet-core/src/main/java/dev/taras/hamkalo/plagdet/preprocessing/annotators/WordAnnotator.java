@@ -75,7 +75,7 @@ public class WordAnnotator implements Annotator {
       }
 
       word = sb.toString();
-      log.debug("Spoof detected at [{}] with skeleton of [{}]", token.word(), sb);
+      log.trace("Spoof detected at [{}] with skeleton of [{}]", token.word(), sb);
     }
     return word;
   }

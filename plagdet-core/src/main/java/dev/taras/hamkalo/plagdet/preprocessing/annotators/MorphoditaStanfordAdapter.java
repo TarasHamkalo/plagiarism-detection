@@ -65,6 +65,8 @@ public class MorphoditaStanfordAdapter implements Annotator {
 
   @Override
   public void annotate(Annotation annotation) {
+    log.trace("Morpho annotator started");
+
     final var tagger = this.loadTagger();
     final var morpho = tagger.getMorpho();
 
