@@ -4,18 +4,21 @@ package dev.taras.hamkalo.plagdet.documents;
 import dev.taras.hamkalo.plagdet.comparision.PlagSource;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.apache.commons.lang3.builder.HashCodeExclude;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 
-@Data
+@Getter
+@Setter
 @Builder
+@ToString
+@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DocumentPair implements Comparable<DocumentPair> {
 
@@ -59,4 +62,19 @@ public class DocumentPair implements Comparable<DocumentPair> {
     return documentPair.getFirst().getId() + "_" + documentPair.getSecond().getId();
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    DocumentPair that = (DocumentPair) o;
+    return Objects.equals(getFirst(), that.getFirst()) &&
+           Objects.equals(getSecond(), that.getSecond());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getFirst(), getSecond());
+  }
 }

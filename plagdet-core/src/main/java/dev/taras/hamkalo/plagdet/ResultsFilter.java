@@ -10,6 +10,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Queue;
+
 /**
  * Filter results for each document by some threshold, leaving only meaningfull
  */
@@ -61,12 +63,16 @@ public class ResultsFilter {
     @NotNull DocumentEntry documentEntry,
     @NotNull DocumentPair documentPair
   ) {
-    documentEntry.getDocumentPairs().offer(documentPair);
-    final int documentPairsSize = documentEntry.getDocumentPairs().size();
+    synchronized (documentEntry) {
+      Queue<DocumentPair> documentPairs = documentEntry.getDocumentPairs();
+      log.debug("[{}] Comparisons size {}", documentEntry.getFileData().getSubmitter(), documentEntry.getDocumentPairs().size());
+      log.debug("Was added {} ", documentPairs.add(documentPair));
 
-    if (!parameters.bypassResultsFiltering &&
-        documentPairsSize > parameters.getMaxResultsPerDocument()) {
-        documentEntry.getDocumentPairs().poll();
+      final int documentPairsSize = documentPairs.size();
+      if (!parameters.bypassResultsFiltering &&
+          documentPairsSize > parameters.getMaxResultsPerDocument()) {
+        documentPairs.poll();
+      }
     }
   }
 

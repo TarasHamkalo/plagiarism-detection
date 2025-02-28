@@ -19,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 
 @Slf4j
@@ -34,7 +35,7 @@ public class ComparisonPipeline {
 
   @NotNull Queue<DocumentPair> comparisonTasks = new LinkedList<>();
 
-  @NotNull PriorityQueue<DocumentPair> comparisonResults = new PriorityQueue<>();
+  @NotNull Queue<DocumentPair> comparisonResults = new ConcurrentLinkedQueue<>();
 
   @NotNull ResultsFilter resultsFilter;
 
@@ -110,30 +111,52 @@ public class ComparisonPipeline {
 
     log.info("Comparisons count is {}", comparisonTasks.size());
 
+    ExecutorService executor = Executors.newFixedThreadPool(
+      Runtime.getRuntime().availableProcessors()
+    );
+
+    List<Future<Void>> futures = new ArrayList<>();
+
     while (!comparisonTasks.isEmpty()) {
       var comparisonTask = comparisonTasks.poll();
-      log.info("Comparing pair:\n\tFirst document {}\n\tSecond document {}",
-        comparisonTask.getFirst().getFileData().getPersistentPath(),
-        comparisonTask.getSecond().getFileData().getPersistentPath()
-      );
+      futures.add(executor.submit(() -> {
 
-      for (DocumentComparator comparator : comparators) {
-        ComparisonResult result = comparator.compare(comparisonTask);
-        if (!ComparisonResult.CONTINUE.equals(result)) {
-          break;
+
+        for (DocumentComparator comparator : comparators) {
+          ComparisonResult result = comparator.compare(comparisonTask);
+          if (!ComparisonResult.CONTINUE.equals(result)) {
+            break;
+          }
         }
-      }
-      log.info("Pair scores {}\n", comparisonTask.getPlagScores());
 
-      addComparisonResults(comparisonTask);
+        log.info("Comparing pair:\n\tFirst document {}\n\tSecond document {}\n\tPair scores {}\n",
+          comparisonTask.getFirst().getFileData().getPersistentPath(),
+          comparisonTask.getSecond().getFileData().getPersistentPath(),
+          comparisonTask.getPlagScores()
+        );
+
+        addComparisonResults(comparisonTask);
+
+        return null;
+      }));
     }
+
+    for (Future<Void> future : futures) {
+      try {
+        future.get();
+      } catch (InterruptedException | ExecutionException e) {
+        log.error("Comparison task failed", e);
+      }
+    }
+
+    executor.shutdown();
   }
 
   private void addComparisonResults(@NotNull DocumentPair comparisonTask) {
     if (resultsFilter.filterDocumentPair(comparisonTask)) {
       resultsFilter.safeAddDocumentPair(comparisonTask.getFirst(), comparisonTask);
       resultsFilter.safeAddDocumentPair(comparisonTask.getSecond(), comparisonTask);
-      comparisonResults.add(comparisonTask);
+      comparisonResults.offer(comparisonTask);
     }
   }
 

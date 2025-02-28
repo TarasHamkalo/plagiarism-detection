@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Predicate;
 
 @Data
@@ -36,15 +37,18 @@ public class DocumentEntry {
   @NotNull
   @ToString.Exclude
   @Builder.Default
+  @EqualsAndHashCode.Exclude
   Queue<DocumentPair> documentPairs = new PriorityQueue<>();
 
   @NotNull
   @Builder.Default
+  @EqualsAndHashCode.Exclude
   List<SpecialMarking> templateMarking = new ArrayList<>();
 
   @Nullable
   @ToString.Exclude
   @Builder.Default
+  @EqualsAndHashCode.Exclude
   List<SpecialMarking> codeMarking = null;
 
   public int getId() {
@@ -129,4 +133,5 @@ public class DocumentEntry {
     return t -> t.get(PlagdetAnnotations.MisspelledAnnotation.class) != null &&
                 t.get(PlagdetAnnotations.MisspelledAnnotation.class);
   }
+
 }

@@ -13,6 +13,7 @@ import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -60,7 +61,7 @@ public class ShingleComparator implements DocumentComparator {
     }
 
     this.parameters = parameters;
-    this.documentToShingle = new HashMap<>();
+    this.documentToShingle = new ConcurrentHashMap<>();
   }
 
   public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {

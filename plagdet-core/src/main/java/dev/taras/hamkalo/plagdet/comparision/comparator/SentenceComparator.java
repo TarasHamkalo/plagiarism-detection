@@ -41,7 +41,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     public static final int DEFAULT_MAX_GAP = 2;
 
-    public static final double DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD = 0.7;
+    public static final double DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD = 0.65;
 
     public static final double DEFAULT_DICE_SIMILARITY_THRESHOLD = 0.4;
 
@@ -127,9 +127,9 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     fragments.stream().flatMap(f -> f.getSeeds().stream())
       .forEach(seed -> {
-        seed.getFirstSent().coreMap().set(PlagdetAnnotations.TemplateAnnotation.class, true);
+        seed.getFirstSent().coreMap().set(PlagdetAnnotations.TemplateSentenceAnnotation.class, true);
         seed.getFirstSent().tokens()
-          .forEach(t -> t.set(PlagdetAnnotations.TemplateAnnotation.class, true));
+          .forEach(t -> t.set(PlagdetAnnotations.TemplateSentenceAnnotation.class, true));
       });
 
     var markings = fragments.stream()
@@ -159,7 +159,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
     log.debug("First document contains {} sentences", firstSents.size());
     log.debug("Second document contains {} sentences", secondSents.size());
     log.debug("Possible seeds count {}", firstSents.size() * secondSents.size());
-
+    // TODO: possible optimization, calculate dice first, without querying for word vectors
     for (int i = 0; i < firstSents.size(); i++) {
       var firstSent = firstSents.get(i);
       if (!isInformativeSentence(firstSent)) {

@@ -18,8 +18,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -47,7 +47,7 @@ public class Embeddings {
   );
 
   @Nullable
-  private static Word2Vec word2Vec;
+  private static volatile Word2Vec word2Vec;
 
   @NotNull
   LuceneIndex luceneIndex;
@@ -56,7 +56,7 @@ public class Embeddings {
   Map<String, INDArray> sentenceToWeightedAccVector;
 
   public Embeddings(@NotNull LuceneIndex luceneIndex) {
-    this.sentenceToWeightedAccVector = new HashMap<>();
+    this.sentenceToWeightedAccVector = new ConcurrentHashMap<>();
     this.luceneIndex = luceneIndex;
   }
 
@@ -67,7 +67,11 @@ public class Embeddings {
 
   public @Nullable INDArray getWordVector(@NotNull String word) {
     if (word2Vec == null) {
-      word2Vec = loadWordVectors();
+      synchronized (Embeddings.class) {
+        if (word2Vec == null) {
+          word2Vec = loadWordVectors();
+        }
+      }
     }
 
     var wordVec = word2Vec.getWordVector(word);
@@ -109,7 +113,8 @@ public class Embeddings {
         double idf = 1;
         try {
           idf = luceneIndex.inverseTermFrequency(wordToken.lemma());
-        } catch (IndexingException ignoreEmptyIndex) {}
+        } catch (IndexingException ignoreEmptyIndex) {
+        }
 
         log.trace("Word {}, has idf {}", wordToken.lemma(), idf);
         log.trace("Using idf {}", idf);
@@ -122,12 +127,6 @@ public class Embeddings {
   }
 
   private static @Nullable Word2Vec loadWordVectors() {
-//    var modelPath = Path.of(
-//      ClassLoader.getSystemClassLoader().getResource(POS_LEMMA_MODEL_RESOURCE).getPath()
-//    );
-//    var modelInputStream = ClassLoader.getSystemClassLoader()
-//      .getResourceAsStream(POS_LEMMA_MODEL_RESOURCE);
-//    var word2vec = WordVectorSerializer.readAsBinaryNoLineBreaks(modelInputStream);
     var modelPath = IoUtils.resourceFromTemp(MODEL_RESOURCE_PREFIX + POS_LEMMA_MODEL, POS_LEMMA_MODEL);
     log.warn("Loading Word2Vec model from {}", MODEL_RESOURCE_PREFIX + POS_LEMMA_MODEL);
     var word2vec = WordVectorSerializer.readWord2VecModel(modelPath.toFile());
