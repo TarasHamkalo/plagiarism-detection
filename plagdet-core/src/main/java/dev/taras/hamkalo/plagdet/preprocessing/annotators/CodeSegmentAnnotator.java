@@ -8,7 +8,6 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
 import edu.stanford.nlp.util.CoreMap;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.units.qual.N;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -29,7 +28,7 @@ public class CodeSegmentAnnotator implements Annotator {
 
   @Override
   public void annotate(Annotation annotation) {
-    log.error("Code segment annotator started");
+    log.trace("Code segment annotator started");
     var sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
     List<Integer> codeSentencesIndexes = new ArrayList<>();
     for (int i = 0; i < sentences.size(); i++) {
@@ -46,7 +45,7 @@ public class CodeSegmentAnnotator implements Annotator {
     annotation.set(PlagdetAnnotations.CodeSentencesAnnotation.class, codeSentencesIndexes);
   }
 
-  private boolean isSentenceLemmatizedCorrectly(@N CoreMap sentence) {
+  private boolean isSentenceLemmatizedCorrectly(@NotNull CoreMap sentence) {
     var words = sentence.get(PlagdetAnnotations.WordsAnnotation.class);
     var guessedLemmaCount = words.stream().filter(isGuessed()).count();
     return (1 - ((double) guessedLemmaCount / words.size())) >= GUESSED_RATIO_THRESHOLD;
