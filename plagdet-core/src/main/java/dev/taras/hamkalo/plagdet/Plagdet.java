@@ -2,6 +2,7 @@ package dev.taras.hamkalo.plagdet;
 
 import dev.taras.hamkalo.plagdet.comparision.comparator.*;
 import dev.taras.hamkalo.plagdet.comparision.comparator.blocks.Embeddings;
+import dev.taras.hamkalo.plagdet.concurrency.ExecutorServiceSingleton;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.documents.Submission;
@@ -10,6 +11,7 @@ import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.io.SubmissionsParser;
 import dev.taras.hamkalo.plagdet.io.reader.*;
+import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
@@ -110,12 +112,20 @@ public class Plagdet {
 
   public Report compare(@NotNull String path) {
     var submissions = submissionsParser.parseSubmissions(path);
+
+    Pipeline.init();
+    ExecutorServiceSingleton.getExecutorService().init();
+
     var ignore = comparisonPipeline.compareSubmissions(submissions);
 
     var deduplicatedComparisonResults = submissions.stream()
       .flatMap(s -> s.getDocuments().stream())
       .flatMap(d -> d.getDocumentPairs().stream())
-      .collect(Collectors.toMap((p) -> p.getId(), p -> p, (p1, p2) -> p1));
+      .collect(Collectors.toMap(
+        (p) -> p.getId(),
+        p -> p,
+        (p1, p2) -> p1)
+      );
 
     SimilarDocumentSource.getRetrievedIndexedDocuments().clear();
     var filteredRetrievedDocuments = deduplicatedComparisonResults.values().stream()
@@ -123,6 +133,7 @@ public class Plagdet {
       .filter(DocumentEntry::isIndexed)
       .toList();
 
+    ExecutorServiceSingleton.getExecutorService().deInit();
     return Report.builder()
       .inputPath(path)
       .plagdetParameters(this.parameters)
@@ -135,7 +146,6 @@ public class Plagdet {
 
 
   public void index(@NotNull List<Submission> submissions) {
-//    comparisonPipeline.compareSubmissionsWithTemplate(submissions);
     for (var submission : submissions) {
       for (var document : submission.getDocuments()) {
         luceneIndex.addToIndex(document);
@@ -144,9 +154,16 @@ public class Plagdet {
   }
 
   public void index(@NotNull String path) {
-    var submissions = submissionsParser.parseSubmissions(path);
-//    documentAnnotator.annotateSubmissions(submissions);
+    ExecutorServiceSingleton.getExecutorService().init();
+    final var submissions = submissionsParser.parseSubmissions(path);
+    final var documents = submissions.stream()
+      .flatMap(s -> s.getDocuments().stream())
+      .toList();
+
+    comparisonPipeline.preprocessDocuments(documents);
     index(submissions);
+
+    ExecutorServiceSingleton.getExecutorService().deInit();
   }
 
 }
