@@ -95,7 +95,7 @@ public abstract class Pipeline {
     return postLemmatizationPipeline;
   }
 
-  public static void createPipelines() {
+  public static void init() {
     firstStagePipeline = getFirstStagePipeline();
     secondStagePipeline = getSecondStagePipeline();
     postLemmatizationPipeline = getPostLemmatizationPipeline();
