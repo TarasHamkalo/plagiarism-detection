@@ -65,8 +65,8 @@ public class ResultsFilter {
   ) {
     synchronized (documentEntry) {
       Queue<DocumentPair> documentPairs = documentEntry.getDocumentPairs();
-      log.debug("[{}] Comparisons size {}", documentEntry.getFileData().getSubmitter(), documentEntry.getDocumentPairs().size());
-      log.debug("Was added {} ", documentPairs.add(documentPair));
+      log.trace("[{}] Comparisons size {}", documentEntry.getFileData().getSubmitter(), documentEntry.getDocumentPairs().size());
+      log.trace("Was added {} ", documentPairs.add(documentPair));
 
       final int documentPairsSize = documentPairs.size();
       if (!parameters.bypassResultsFiltering &&
