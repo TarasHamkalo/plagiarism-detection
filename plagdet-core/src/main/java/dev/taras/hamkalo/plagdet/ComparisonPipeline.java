@@ -1,14 +1,16 @@
-package dev.taras.hamkalo.plagdet.comparision;
+package dev.taras.hamkalo.plagdet;
 
-import dev.taras.hamkalo.plagdet.ResultsFilter;
 import dev.taras.hamkalo.plagdet.comparision.comparator.ComparisonResult;
 import dev.taras.hamkalo.plagdet.comparision.comparator.DocumentComparator;
 import dev.taras.hamkalo.plagdet.comparision.comparator.TemplateComparator;
-import dev.taras.hamkalo.plagdet.documents.DocumentAnnotator;
+import dev.taras.hamkalo.plagdet.concurrency.ExecutorServiceSingleton;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.documents.Submission;
+import dev.taras.hamkalo.plagdet.exception.PlagdetException;
 import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource;
+import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
+import edu.stanford.nlp.pipeline.CoreDocument;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +21,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 
 @Slf4j
@@ -28,8 +33,6 @@ import java.util.concurrent.*;
 public class ComparisonPipeline {
 
   @NotNull List<DocumentComparator> comparators;
-
-  @NotNull DocumentAnnotator documentAnnotator;
 
   @NotNull SimilarDocumentSource similarDocumentSource;
 
@@ -48,7 +51,6 @@ public class ComparisonPipeline {
   int comparisonsCount;
 
   public ComparisonPipeline(
-    @NotNull DocumentAnnotator documentAnnotator,
     @NotNull SimilarDocumentSource similarDocumentSource,
     @NotNull TemplateComparator templateComparator,
     @NotNull ResultsFilter resultsFilter,
@@ -57,7 +59,6 @@ public class ComparisonPipeline {
   ) {
     this(
       new ArrayList<>(Arrays.asList(documentComparators)),
-      documentAnnotator,
       similarDocumentSource,
       resultsFilter,
       templateComparator,
@@ -70,58 +71,74 @@ public class ComparisonPipeline {
    * @return list of compared document pair
    */
   public @NotNull List<DocumentPair> compareSubmissions(@NotNull List<Submission> submissions) {
-    documentAnnotator.annotateSubmissions(submissions);
-    compareSubmissionsWithTemplate(submissions);
+    Pipeline.init();
+    ExecutorServiceSingleton.getExecutorService().init();
+
+    final var documents = submissions.stream()
+      .flatMap(s -> s.getDocuments().stream())
+      .toList();
+
+    preprocessTemplate();
+
+    preprocessDocuments(documents);
+
     prepareComparisonTasks(submissions);
+
+    preprocessDocuments(SimilarDocumentSource.getRetrievedIndexedDocuments().values());
+
     doCompare();
+
+    ExecutorServiceSingleton.getExecutorService().deInit();
     return new ArrayList<>(this.comparisonResults);
   }
 
-  public void compareSubmissionsWithTemplate(@NotNull List<Submission> submissions) {
-    if (template == null) {
-      log.info("Template document was not provided, skipping");
-      return;
+  private void preprocessDocuments(@NotNull Collection<DocumentEntry> documentEntries) {
+    try {
+      ExecutorServiceSingleton.getExecutorService().invokeAll(
+        documentEntries.stream()
+          .map(this::toPreprocessingTask)
+          .toList()
+      );
+    } catch (InterruptedException e) {
+      throw new PlagdetException("Was not able to preprocess all documents");
     }
 
-    for (Submission submission : submissions) {
-      compareWithTemplate(submission.getDocuments());
-    }
   }
 
-  public void compareWithTemplate(@NotNull List<DocumentEntry> documentEntries) {
+  private void preprocessTemplate() {
     if (template == null) {
-      log.trace("Template document was not provided, skipping");
+      log.info("Template file was not provided, skipping");
       return;
     }
 
     if (!template.isAnnotated()) {
-      documentAnnotator.annotateDocuments(List.of(template));
+      CoreDocument coreDocument = new CoreDocument(template.getFileData().getContent());
+      Pipeline.annotate(coreDocument);
+      template.setCoreDocument(coreDocument);
     }
+  }
 
-    for (var document : documentEntries) {
-      if (!document.isComparedWithTemplate()) {
-        // TODO: filter by template coverage
-        templateComparator.compareWithTemplate(document, template);
+  private @NotNull Callable<Void> toPreprocessingTask(@NotNull DocumentEntry d) {
+    return () -> {
+      CoreDocument coreDocument = new CoreDocument(d.getFileData().getContent());
+      Pipeline.annotate(coreDocument);
+      d.setCoreDocument(coreDocument);
+      if (template != null) {
+        templateComparator.compareWithTemplate(d, template);
       }
-    }
-
+      return null;
+    };
   }
 
   private void doCompare() {
 
     log.info("Comparisons count is {}", comparisonTasks.size());
 
-    ExecutorService executor = Executors.newFixedThreadPool(
-      Runtime.getRuntime().availableProcessors()
-    );
-
-    List<Future<Void>> futures = new ArrayList<>();
-
+    List<Future<DocumentPair>> futures = new ArrayList<>();
+    var executor = ExecutorServiceSingleton.getExecutorService();
     while (!comparisonTasks.isEmpty()) {
       var comparisonTask = comparisonTasks.poll();
       futures.add(executor.submit(() -> {
-
-
         for (DocumentComparator comparator : comparators) {
           ComparisonResult result = comparator.compare(comparisonTask);
           if (!ComparisonResult.CONTINUE.equals(result)) {
@@ -135,21 +152,17 @@ public class ComparisonPipeline {
           comparisonTask.getPlagScores()
         );
 
-        addComparisonResults(comparisonTask);
-
-        return null;
+        return comparisonTask;
       }));
     }
 
-    for (Future<Void> future : futures) {
+    for (Future<DocumentPair> future : futures) {
       try {
-        future.get();
+        addComparisonResults(future.get());
       } catch (InterruptedException | ExecutionException e) {
         log.error("Comparison task failed", e);
       }
     }
-
-    executor.shutdown();
   }
 
   private void addComparisonResults(@NotNull DocumentPair comparisonTask) {
@@ -164,15 +177,18 @@ public class ComparisonPipeline {
     for (int i = 0; i < submissions.size(); i++) {
       Submission first = submissions.get(i);
       for (var firstDocument : first.getDocuments()) {
+        if (firstDocument.isHasPassedLuceneSearch()) {
+          continue;
+        }
+
         var similarDocuments = similarDocumentSource.retrieveSimilar(firstDocument);
-        documentAnnotator.annotateDocuments(similarDocuments);
-        compareWithTemplate(similarDocuments);
         addComparisonTasks(firstDocument, similarDocuments);
         for (int j = i + 1; j < submissions.size(); j++) {
           Submission second = submissions.get(j);
           addComparisonTasks(firstDocument, second.getDocuments());
         }
 
+        firstDocument.setHasPassedLuceneSearch(true); // kinda okay, when interrupt will occur, comparison tasks will
       }
     }
     this.comparisonsCount = comparisonTasks.size();

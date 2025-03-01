@@ -1,9 +1,7 @@
 package dev.taras.hamkalo.plagdet;
 
-import dev.taras.hamkalo.plagdet.comparision.ComparisonPipeline;
 import dev.taras.hamkalo.plagdet.comparision.comparator.*;
 import dev.taras.hamkalo.plagdet.comparision.comparator.blocks.Embeddings;
-import dev.taras.hamkalo.plagdet.documents.DocumentAnnotator;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.documents.Submission;
@@ -36,8 +34,6 @@ public class Plagdet {
   @Getter
   LuceneIndex luceneIndex;
 
-  @NotNull DocumentAnnotator documentAnnotator;
-
   @NotNull SimilarDocumentSource similarDocumentSource;
 
   @NotNull SubmissionsParser submissionsParser;
@@ -51,8 +47,6 @@ public class Plagdet {
   public Plagdet(@NotNull PlagdetParameters parameters) {
     this.parameters = parameters;
     this.luceneIndex = this.initLucene(parameters.getLuceneIndexDirectoryPath());
-    this.documentAnnotator = new DocumentAnnotator();
-
     this.similarDocumentSource = new SimilarDocumentSource(
       parameters.getSimilarDocumentSourceParameters(), this.luceneIndex
     );
@@ -61,7 +55,7 @@ public class Plagdet {
     this.template = submissionsParser.readTemplate(parameters.getTemplateDocumentPath());
     this.embeddings = new Embeddings(luceneIndex);
     this.comparisonPipeline = this.initComparisonPipeline(
-      parameters, embeddings, documentAnnotator, similarDocumentSource, template
+      parameters, embeddings, similarDocumentSource, template
     );
 
   }
@@ -80,7 +74,6 @@ public class Plagdet {
   private @NotNull ComparisonPipeline initComparisonPipeline(
     @NotNull PlagdetParameters parameters,
     @NotNull Embeddings embeddings,
-    @NotNull DocumentAnnotator documentAnnotator,
     @NotNull SimilarDocumentSource similarDocumentSource,
     @Nullable DocumentEntry template
   ) {
@@ -90,7 +83,6 @@ public class Plagdet {
     );
 
     return new ComparisonPipeline(
-      documentAnnotator,
       similarDocumentSource,
       (TemplateComparator) sentenceComparator,
       new ResultsFilter(parameters.getResultsFilterParameters()),
@@ -143,7 +135,7 @@ public class Plagdet {
 
 
   public void index(@NotNull List<Submission> submissions) {
-    comparisonPipeline.compareSubmissionsWithTemplate(submissions);
+//    comparisonPipeline.compareSubmissionsWithTemplate(submissions);
     for (var submission : submissions) {
       for (var document : submission.getDocuments()) {
         luceneIndex.addToIndex(document);
@@ -153,7 +145,7 @@ public class Plagdet {
 
   public void index(@NotNull String path) {
     var submissions = submissionsParser.parseSubmissions(path);
-    documentAnnotator.annotateSubmissions(submissions);
+//    documentAnnotator.annotateSubmissions(submissions);
     index(submissions);
   }
 
