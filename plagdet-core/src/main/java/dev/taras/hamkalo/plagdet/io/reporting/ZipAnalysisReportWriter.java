@@ -1,12 +1,11 @@
 package dev.taras.hamkalo.plagdet.io.reporting;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.taras.hamkalo.plagdet.Report;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.documents.Submission;
-import dev.taras.hamkalo.plagdet.io.FileData;
+import dev.taras.hamkalo.plagdet.io.IoUtils;
+import dev.taras.hamkalo.plagdet.io.mapping.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -20,47 +19,44 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
 
 
 @Slf4j
 public class ZipAnalysisReportWriter {
 
   public static final String REPORT_NAME = "report.zip";
+  public static final String OVERVIEW_NAME = "overview.json";
+  public static final String PAIRS_DIR = "pairs";
+  public static final String FILES_DIR = "files";
+  public static final String INDEXED_FILES_DIR = "files/indexed";
 
-  /**
-   * Generate zip report
-   * report.zip
-   * /files -> txt files of compared files content, and meta files in json
-   * /pairs -> a.b.json comparison results
-   */
   public void writeReport(@NotNull Report report) {
-    Path tempDir = null;
     try {
-
-      tempDir = Files.createTempDirectory("zip_report");
-      tempDir.toFile().deleteOnExit();
+      Path tempDir = Files.createTempDirectory("zip_report");
 
       log.debug("Created temp directory: {}", tempDir);
       writeOverview(report, tempDir);
       writeSubmittedDocuments(report.getSubmissions(), tempDir);
       writeIndexedDocuments(report.getDocumentsRetrievedFromIndex(), tempDir);
       writeDocumentPairs(report.getPairs(), tempDir);
+
+      zipDirectory(tempDir);
+
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
 
-    final Path finalTempDir = tempDir;
+  }
+
+  private static void zipDirectory(Path tempDir) {
     try (OutputStream fos = new FileOutputStream(REPORT_NAME);
          BufferedOutputStream bos = new BufferedOutputStream(fos);
          ArchiveOutputStream<ZipArchiveEntry> aos = new ZipArchiveOutputStream(bos)) {
       Files.walk(tempDir).forEach(srcPath -> {
-        var entryName = finalTempDir.relativize(srcPath).toString();
+        var entryName = tempDir.relativize(srcPath).toString();
         try {
           if (!Files.isDirectory(srcPath)) {
-//          var entryName = srcPath.toString().replace(finalTempDir + "/", "");
             ZipArchiveEntry ze = new ZipArchiveEntry(srcPath.toFile(), entryName);
             aos.putArchiveEntry(ze);
             aos.write(Files.readAllBytes(srcPath));
@@ -83,147 +79,61 @@ public class ZipAnalysisReportWriter {
 
   private void writeOverview(
     @NotNull Report report,
-    @NotNull Path tempDir
+    @NotNull Path destination
   ) throws IOException {
-    Path overviewPath = tempDir.resolve("overview.json");
-    String overviewJson = analysisOverviewJsonString(report);
-    log.debug("Writing overview to {}", overviewPath);
-    Files.writeString(overviewPath, overviewJson);
-    overviewPath.toFile().deleteOnExit();
+    Path overviewPath = IoUtils.temporaryFile(destination, OVERVIEW_NAME);
+    Files.writeString(overviewPath, JsonMapper.reportJson(report));
+    log.trace("Wrote overview to {}", overviewPath);
   }
 
-  private String analysisOverviewJsonString(@NotNull Report report) {
-    final Map<String, Object> result = new HashMap<>();
-    final String baseName = FilenameUtils.getBaseName(report.getInputPath());
-    final String fullName = FilenameUtils.getName(report.getInputPath());
-
-    List<DocumentEntry> documents = report.getSubmissions().stream()
-      .flatMap(submission -> submission.getDocuments().stream())
-      .collect(Collectors.toList());
-
-    Map<String, Integer> extensionToCount = documents.stream()
-      .collect(Collectors.toMap((d) -> d.getFileData().getExtension(), d -> 1, (p1, p2) -> p1 + 1));
-
-    result.put("name", baseName);
-    result.put("analyzedFileName", fullName);
-    result.put("dateAnalyzed", Date.from(Instant.now()));
-    result.put("numberOfComparisons", report.getComparisonsCount());
-    result.put("docxFiles", extensionToCount.getOrDefault("docx", 0));
-    result.put("docFiles", extensionToCount.getOrDefault("doc", 0));
-    result.put("pdfFiles", extensionToCount.getOrDefault("pdf", 0));
-    result.put("totalFilesCount", documents.size());
-    result.put("status", "success");
-    result.put("configuration", report.getPlagdetParameters());
-    ObjectMapper mapper = new ObjectMapper();
-
-    try {
-      return mapper.writeValueAsString(result);
-    } catch (JsonProcessingException e) {
-      log.warn("Failed to create json mapping, cause {}", e.toString());
-    }
-    return "";
-  }
-
-  private void writeDocumentPairs(List<DocumentPair> documentPairs, Path tempDir) throws IOException {
-    Path pairsDir = tempDir.resolve("pairs");
-    Files.createDirectories(pairsDir);
-    pairsDir.toFile().deleteOnExit();
+  private void writeDocumentPairs(
+    @NotNull List<DocumentPair> documentPairs,
+    @NotNull Path destination
+  ) throws IOException {
+    Path pairsDir = IoUtils.temporaryDirectory(destination, PAIRS_DIR);
     for (DocumentPair documentPair : documentPairs) {
-      Path resultJson = pairsDir.resolve(
-        documentPair.getId() + ".json"
-      );
-      String documentPairJson = mapDocumentPairToJson(documentPair);
-      log.debug("Writing document pair to: {}", resultJson);
-      Files.writeString(resultJson, documentPairJson);
-      resultJson.toFile().deleteOnExit();
+      Path path = IoUtils.temporaryFile(pairsDir, documentPair.getId() + ".json");
+      Files.writeString(path, JsonMapper.documentPairJson(documentPair));
+      log.trace("Wrote document pair to: {}", path);
     }
   }
 
-  private void writeSubmittedDocuments(List<Submission> submissions, Path tempDir) throws IOException {
-    Path filesDir = tempDir.resolve("files");
-    Files.createDirectories(filesDir);
-    filesDir.toFile().deleteOnExit();
+  private void writeSubmittedDocuments(
+    @NotNull List<Submission> submissions,
+    @NotNull Path destination
+  ) throws IOException {
+    Path filesDir = IoUtils.temporaryDirectory(destination, FILES_DIR);
     for (Submission submission : submissions) {
-      Path submissionDir = filesDir.resolve(FilenameUtils.getBaseName(submission.getPath().toString()));
-      submissionDir.toFile().deleteOnExit();
-      Files.createDirectories(submissionDir);
+      String baseName = FilenameUtils.getBaseName(submission.getPath().toString());
+      Path submissionDir = IoUtils.temporaryDirectory(filesDir, baseName);
       writeDocuments(submission.getDocuments(), submissionDir);
     }
   }
 
-  private void writeDocuments(List<DocumentEntry> documentEntries, Path outputDir) throws IOException {
+  private void writeDocuments(
+    @NotNull List<DocumentEntry> documentEntries,
+    @NotNull Path destination
+  ) throws IOException {
     for (var documentEntry : documentEntries) {
-      log.debug("Writing document {}", documentEntry.getFileData().getPersistentPath());
-      Path contentFilePath = outputDir.resolve(documentEntry.getId() + "_content.txt");
+      Path contentFilePath = IoUtils.temporaryFile(
+        destination, documentEntry.getId() + "_content.txt"
+      );
       Files.writeString(contentFilePath, documentEntry.getFileData().getContent());
-      contentFilePath.toFile().deleteOnExit();
-      Path metadataFilePath = outputDir.resolve(documentEntry.getId() + "_meta.json");
-      String metadataJson = mapDocumentEntryToJson(documentEntry);
-      Files.writeString(metadataFilePath, metadataJson);
-      metadataFilePath.toFile().deleteOnExit();
+
+      Path metadataFilePath = IoUtils.temporaryFile(
+        destination, documentEntry.getId() + "_meta.json"
+      );
+      Files.writeString(metadataFilePath, JsonMapper.documentEntryJson(documentEntry));
+      log.trace("Wrote document entry {}", documentEntry.getFileData().getPersistentPath());
     }
   }
 
-  private void writeIndexedDocuments(List<DocumentEntry> documentEntries, Path tempDir) throws IOException {
-    Path indexedPath = tempDir.resolve("files/indexed");
-    indexedPath.toFile().deleteOnExit();
-    Files.createDirectories(indexedPath);
+  private void writeIndexedDocuments(
+    @NotNull List<DocumentEntry> documentEntries,
+    @NotNull Path destination
+  ) throws IOException {
+    Path indexedPath = IoUtils.temporaryDirectory(destination, INDEXED_FILES_DIR);
     writeDocuments(documentEntries, indexedPath);
-  }
-
-
-  private String mapDocumentPairToJson(DocumentPair documentPair) {
-    Map<String, Object> result = new HashMap<>();
-    result.put("id", documentPair.getId());
-    result.put("firstId", documentPair.getFirst().getId());
-    result.put("secondId", documentPair.getSecond().getId());
-    result.put("source", documentPair.getPlagSource());
-    result.put("plagCases", documentPair.getPlagCases());
-    result.put("plagScores", documentPair.getPlagScores());
-    ObjectMapper mapper = new ObjectMapper();
-    try {
-      return mapper.writeValueAsString(result);
-    } catch (JsonProcessingException e) {
-      log.warn("Failed to create json mapping, cause {}", e.toString());
-    }
-    return "";
-  }
-
-  private String mapDocumentEntryToJson(DocumentEntry documentEntry) {
-    Map<String, Object> result = new HashMap<>();
-    FileData fileData = documentEntry.getFileData();
-    List<String> pairIds = documentEntry.getDocumentPairs().stream()
-      .map(p -> p.getId())
-      .toList();
-
-    final double maxSimilarity = documentEntry.getDocumentPairs().stream()
-      .mapToDouble(p -> p.getMaxScore())
-      .max()
-      .orElse(0);
-
-    result.put("id", documentEntry.getId());
-    result.put("filename", FilenameUtils.getBaseName(fileData.getPersistentPath()));
-    result.put("metadata", fileData.getMetadata());
-    result.put("filepath", fileData.getPersistentPath());
-    result.put("submitter", fileData.getSubmitter());
-    result.put("indexed", documentEntry.isIndexed());
-    result.put("pairIds", pairIds);
-    result.put("maxSimilarity", maxSimilarity);
-
-    var markings = new ArrayList<>(documentEntry.getTemplateMarking());
-    markings.addAll(documentEntry.getCodeMarking());
-    markings.addAll(documentEntry.getMisspelledMarking());
-    markings.addAll(documentEntry.getSpoofMarking());
-    result.put("markings", markings);
-
-    ObjectMapper mapper = new ObjectMapper();
-    try {
-      return mapper.writeValueAsString(result);
-    } catch (JsonProcessingException e) {
-      log.warn("Failed to create json mapping, cause {}", e.toString());
-    }
-
-    return "";
   }
 
 }

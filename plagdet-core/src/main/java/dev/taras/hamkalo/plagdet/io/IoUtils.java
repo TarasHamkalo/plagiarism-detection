@@ -41,4 +41,25 @@ public abstract class IoUtils {
     }
   }
 
+
+  public static @NotNull Path temporaryFile(
+    @NotNull Path tempDir,
+    @NotNull String fileName
+  ) {
+    Path overviewPath = tempDir.resolve(fileName);
+    overviewPath.toFile().deleteOnExit();
+    return overviewPath;
+  }
+
+  public static @NotNull Path temporaryDirectory(
+    @NotNull Path filesDir,
+    @NotNull String directoryName
+  ) throws IOException {
+    Path directoryPath = filesDir.resolve(directoryName);
+    Files.createDirectories(directoryPath);
+    directoryPath.toFile().deleteOnExit();
+    return directoryPath;
+  }
+
+
 }
