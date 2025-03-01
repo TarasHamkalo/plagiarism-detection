@@ -46,16 +46,16 @@ public abstract class IoUtils {
     @NotNull Path tempDir,
     @NotNull String fileName
   ) {
-    Path overviewPath = tempDir.resolve(fileName);
-    overviewPath.toFile().deleteOnExit();
-    return overviewPath;
+    Path path = tempDir.resolve(fileName);
+    path.toFile().deleteOnExit();
+    return path;
   }
 
   public static @NotNull Path temporaryDirectory(
-    @NotNull Path filesDir,
+    @NotNull Path rootDir,
     @NotNull String directoryName
   ) throws IOException {
-    Path directoryPath = filesDir.resolve(directoryName);
+    Path directoryPath = rootDir.resolve(directoryName);
     Files.createDirectories(directoryPath);
     directoryPath.toFile().deleteOnExit();
     return directoryPath;
