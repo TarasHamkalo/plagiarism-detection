@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 @Slf4j
@@ -35,7 +36,8 @@ public class SimilarDocumentSource {
     Map.entry(LuceneConstants.MODIFIER, Metadata::getModifier)
   );
 
-  @Getter private static final Map<Integer, DocumentEntry> retrievedIndexedDocuments = new HashMap<>();
+  @Getter
+  private static final Map<Integer, DocumentEntry> retrievedIndexedDocuments = new ConcurrentHashMap<>();
 
   @NotNull SimilarDocumentSourceParameters parameters;
 
