@@ -71,9 +71,6 @@ public class ComparisonPipeline {
    * @return list of compared document pair
    */
   public @NotNull List<DocumentPair> compareSubmissions(@NotNull List<Submission> submissions) {
-    Pipeline.init();
-    ExecutorServiceSingleton.getExecutorService().init();
-
     final var documents = submissions.stream()
       .flatMap(s -> s.getDocuments().stream())
       .toList();
@@ -87,12 +84,10 @@ public class ComparisonPipeline {
     preprocessDocuments(SimilarDocumentSource.getRetrievedIndexedDocuments().values());
 
     doCompare();
-
-    ExecutorServiceSingleton.getExecutorService().deInit();
     return new ArrayList<>(this.comparisonResults);
   }
 
-  private void preprocessDocuments(@NotNull Collection<DocumentEntry> documentEntries) {
+  public void preprocessDocuments(@NotNull Collection<DocumentEntry> documentEntries) {
     try {
       ExecutorServiceSingleton.getExecutorService().invokeAll(
         documentEntries.stream()
