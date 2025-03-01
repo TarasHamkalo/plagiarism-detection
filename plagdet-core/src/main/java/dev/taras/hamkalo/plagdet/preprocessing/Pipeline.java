@@ -95,10 +95,15 @@ public abstract class Pipeline {
     return postLemmatizationPipeline;
   }
 
+  public static void createPipelines() {
+    firstStagePipeline = getFirstStagePipeline();
+    secondStagePipeline = getSecondStagePipeline();
+    postLemmatizationPipeline = getPostLemmatizationPipeline();
+  }
 
   public static void annotate(@NotNull CoreDocument coreDocument) {
-    getFirstStagePipeline().annotate(coreDocument);
-    getSecondStagePipeline().annotate(coreDocument);
-    getPostLemmatizationPipeline().annotate(coreDocument);
+    firstStagePipeline.annotate(coreDocument);
+    secondStagePipeline.annotate(coreDocument);
+    postLemmatizationPipeline.annotate(coreDocument);
   }
 }

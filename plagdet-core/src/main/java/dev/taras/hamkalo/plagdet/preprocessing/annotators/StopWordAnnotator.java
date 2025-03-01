@@ -7,13 +7,13 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
 import lombok.AccessLevel;
+import lombok.SneakyThrows;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.WordlistLoader;
 
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.Set;
 
 @Slf4j
@@ -22,13 +22,10 @@ public class StopWordAnnotator implements Annotator {
 
   public static final String STOP_WORD_RESOURCE ="sk-stopwords.txt";
 
-  CharArraySet stopwordSet;
+  private static final CharArraySet stopwordSet = loadStopwordSet();
 
-  public StopWordAnnotator() throws IOException {
-    this.stopwordSet = loadStopwordSet();
-  }
-
-  private static CharArraySet loadStopwordSet() throws IOException {
+  @SneakyThrows
+  private static CharArraySet loadStopwordSet() {
     var stopWordsPath = IoUtils.resourceFromTemp(STOP_WORD_RESOURCE, STOP_WORD_RESOURCE);
     var stopwords = new FileReader(stopWordsPath.toFile());
     var stopwordSet = WordlistLoader.getWordSet(stopwords);

@@ -30,22 +30,17 @@ import java.util.Set;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SpellingAnnotator implements Annotator {
 
-  JLanguageTool languageTool;
-
-  public SpellingAnnotator() {
-    languageTool = prepareLanguageTool();
-  }
-
-  private @NotNull JLanguageTool prepareLanguageTool() {
-    var languageTool = new JLanguageTool(Languages.getLanguageForShortCode("sk"));
-    for (var rule : languageTool.getAllActiveRules()) {
-      if (!(rule instanceof SpellingCheckRule)) {
-        languageTool.disableRule(rule.getId());
+  private static final ThreadLocal<JLanguageTool> languageToolThreadLocal =
+    ThreadLocal.withInitial(() -> {
+      JLanguageTool tool = new JLanguageTool(Languages.getLanguageForShortCode("sk"));
+      for (var rule : tool.getAllActiveRules()) {
+        if (!(rule instanceof SpellingCheckRule)) {
+          tool.disableRule(rule.getId());
+        }
       }
-    }
+      return tool;
+    });
 
-    return languageTool;
-  }
 
   @Override
   public void annotate(Annotation annotation) {
@@ -74,6 +69,8 @@ public class SpellingAnnotator implements Annotator {
       }
 
     }
+    var languageTool = languageToolThreadLocal.get();
+
     var matches = languageTool.check(
       textBuilder.toString(), false, JLanguageTool.ParagraphHandling.NORMAL
     );

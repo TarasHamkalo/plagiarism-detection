@@ -51,23 +51,21 @@ public class MorphoditaStanfordAdapter implements Annotator {
   public MorphoditaStanfordAdapter(String name, Properties props) {
     var booleanProperty = props.get(MISSPELLED_ONLY);
     this.isMisspelledOnly = Boolean.parseBoolean(String.valueOf(booleanProperty));
+    loadTagger();
   }
 
-  private Tagger loadTagger() {
+  private static synchronized void loadTagger() {
     if (tagger == null) {
       var taggerPath = IoUtils.resourceFromTemp(TAGGER_RESOURCE_PREFIX + SK_TAGGER, SK_TAGGER);
       log.debug("Tagger path is [{}]", taggerPath);
       tagger = Tagger.load(taggerPath.toString());
     }
-
-    return tagger;
   }
 
   @Override
   public void annotate(Annotation annotation) {
     log.trace("Morpho annotator started");
 
-    final var tagger = this.loadTagger();
     final var morpho = tagger.getMorpho();
 
     final var guessedSentences = new ArrayList<CoreMap>();
