@@ -2,13 +2,11 @@ package dev.taras.hamkalo.plagdet.indexing.lucene;
 
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.indexing.exception.IndexingException;
-import dev.taras.hamkalo.plagdet.io.FileData;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.*;
@@ -70,7 +68,7 @@ public class LuceneIndex {
       mlt.setAnalyzer(new DocumentAnalyzer(document, true));
 
       Query query = mlt.like(LuceneConstants.SEARCH_CONTENT, new StringReader(""));
-      return executeSearch(query, limit, reader);
+      return executeSearch(query, reader, limit);
     } catch (IndexNotFoundException error) {
       log.error("Index is empty");
       return new ArrayList<>();
@@ -87,7 +85,7 @@ public class LuceneIndex {
     try (DirectoryReader reader = DirectoryReader.open(this.indexDirectory)) {
       Query query = new TermQuery(new Term(field, value));
 
-      return executeSearch(query, limit, reader);
+      return executeSearch(query, reader, limit);
     } catch (IndexNotFoundException error) {
       log.error("Index is empty");
       return new ArrayList<>();
@@ -96,7 +94,11 @@ public class LuceneIndex {
     }
   }
 
-  private List<LuceneResult> executeSearch(Query query, int limit, IndexReader reader) throws IOException {
+  private @NotNull List<LuceneResult> executeSearch(
+    @NotNull Query query,
+    @NotNull IndexReader reader,
+    int limit
+  ) throws IOException {
     IndexSearcher searcher = new IndexSearcher(reader);
     List<LuceneResult> results = new ArrayList<>();
     TopDocs topDocs = searcher.search(query, limit);
