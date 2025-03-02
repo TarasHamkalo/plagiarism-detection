@@ -5,6 +5,7 @@ import dev.taras.hamkalo.plagdet.Report;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.documents.Submission;
+import dev.taras.hamkalo.plagdet.exception.PlagdetException;
 import dev.taras.hamkalo.plagdet.io.IoUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,17 @@ public class FileReportWriter {
   @NotNull Boolean removeFilesOnExit;
 
   ObjectMapper mapper = new ObjectMapper();
+
+  public void writeReport(@NotNull Report report, @NotNull Path destination) {
+    try {
+      writeOverview(report, destination);
+      writeSubmittedDocuments(report.getSubmissions(), destination);
+      writeIndexedDocuments(report.getDocumentsRetrievedFromIndex(), destination);
+      writeDocumentPairs(report.getPairs(), destination);
+    } catch (IOException e) {
+      throw new PlagdetException("Could not write zip report", e);
+    }
+  }
 
   public void writeOverview(
     @NotNull Report report,

@@ -31,10 +31,7 @@ public class ZipReportWriter {
       tempDir.toFile().deleteOnExit();
 
       log.debug("Created temp directory: {}", tempDir);
-      fileReportWriter.writeOverview(report, tempDir);
-      fileReportWriter.writeSubmittedDocuments(report.getSubmissions(), tempDir);
-      fileReportWriter.writeIndexedDocuments(report.getDocumentsRetrievedFromIndex(), tempDir);
-      fileReportWriter.writeDocumentPairs(report.getPairs(), tempDir);
+      fileReportWriter.writeReport(report, tempDir);
       zipDirectory(tempDir);
 
     } catch (IOException e) {
