@@ -42,22 +42,29 @@ public abstract class IoUtils {
   }
 
 
-  public static @NotNull Path temporaryFile(
-    @NotNull Path tempDir,
-    @NotNull String fileName
+  public static @NotNull Path resolveFile(
+    @NotNull Path rootDir,
+    @NotNull String fileName,
+    boolean removeOnExit
   ) {
-    Path path = tempDir.resolve(fileName);
-    path.toFile().deleteOnExit();
+    Path path = rootDir.resolve(fileName);
+    if (removeOnExit) {
+      path.toFile().deleteOnExit();
+    }
+
     return path;
   }
 
-  public static @NotNull Path temporaryDirectory(
+  public static @NotNull Path resolveDirectory(
     @NotNull Path rootDir,
-    @NotNull String directoryName
+    @NotNull String directoryName,
+    boolean removeOnExit
   ) throws IOException {
     Path directoryPath = rootDir.resolve(directoryName);
     Files.createDirectories(directoryPath);
-    directoryPath.toFile().deleteOnExit();
+    if (removeOnExit) {
+      directoryPath.toFile().deleteOnExit();
+    }
     return directoryPath;
   }
 
