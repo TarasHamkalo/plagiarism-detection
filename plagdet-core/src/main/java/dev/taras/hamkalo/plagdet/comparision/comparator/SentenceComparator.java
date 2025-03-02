@@ -2,7 +2,7 @@ package dev.taras.hamkalo.plagdet.comparision.comparator;
 
 import dev.taras.hamkalo.plagdet.comparision.Fragment;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
-import dev.taras.hamkalo.plagdet.comparision.PlagUtil;
+import dev.taras.hamkalo.plagdet.comparision.ScoreUtils;
 import dev.taras.hamkalo.plagdet.comparision.Seed;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
 import dev.taras.hamkalo.plagdet.comparision.comparator.blocks.Embeddings;
@@ -10,6 +10,7 @@ import dev.taras.hamkalo.plagdet.comparision.comparator.blocks.ExtensionStrategy
 import dev.taras.hamkalo.plagdet.comparision.comparator.blocks.FilteringStrategy;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
+import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreSentence;
@@ -27,7 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static dev.taras.hamkalo.plagdet.comparision.PlagUtil.isInformativeSentence;
+import static dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils.isInformativeSentence;
 
 @Slf4j
 @AllArgsConstructor
@@ -106,7 +107,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
       );
 
 //      score = PlagUtil.plagScoreAsCharacterCoverage(documentPair);
-      score = PlagUtil.plagScoreAsSentenceCoverage(documentPair, fragments);
+      score = ScoreUtils.plagScoreAsSentenceCoverage(documentPair, fragments);
     }
 
     documentPair.getPlagScores().add(
@@ -126,11 +127,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
     log.warn("Template fragments size {}", fragments.size());
 
     fragments.stream().flatMap(f -> f.getSeeds().stream())
-      .forEach(seed -> {
-        seed.getFirstSent().coreMap().set(PlagdetAnnotations.TemplateSentenceAnnotation.class, true);
-        seed.getFirstSent().tokens()
-          .forEach(t -> t.set(PlagdetAnnotations.TemplateSentenceAnnotation.class, true));
-      });
+      .forEach(seed -> AnnotationUtils.addTemplateAnnotation(seed.getFirstSent().coreMap()));
 
     var markings = fragments.stream()
       .map(f -> f.toMarkingWithType(SpecialMarkingType.TEMPLATE))
@@ -195,7 +192,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
     @NotNull CoreSentence secondSent,
     int i,
     int j
-    ) {
+  ) {
     seeds.add(Seed.builder()
       .firstSentIndex(i)
       .secondSentIndex(j)

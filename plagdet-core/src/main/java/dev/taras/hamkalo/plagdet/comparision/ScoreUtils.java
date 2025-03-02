@@ -1,9 +1,8 @@
 package dev.taras.hamkalo.plagdet.comparision;
 
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
-import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
+import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import edu.stanford.nlp.pipeline.CoreSentence;
-import edu.stanford.nlp.util.CoreMap;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -12,7 +11,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 @Slf4j
-public abstract class PlagUtil {
+public abstract class ScoreUtils {
 
   public static double plagScoreAsSentenceCoverage(
     @NotNull DocumentPair documentPair,
@@ -20,12 +19,12 @@ public abstract class PlagUtil {
   ) {
 
     long totalCoverage = sideSentenceCoverage(plagiarizedFragments, 0) +
-                        sideSentenceCoverage(plagiarizedFragments, 1);
+                         sideSentenceCoverage(plagiarizedFragments, 1);
     List<CoreSentence> firstSentences = documentPair.getFirst().getCoreDocument().sentences();
     List<CoreSentence> secondSentences = documentPair.getSecond().getCoreDocument().sentences();
     long ignoredCount =
-      firstSentences.stream().filter(Predicate.not(PlagUtil::isInformativeSentence)).count() +
-      secondSentences.stream().filter(Predicate.not(PlagUtil::isInformativeSentence)).count();
+      firstSentences.stream().filter(Predicate.not(AnnotationUtils::isInformativeSentence)).count() +
+      secondSentences.stream().filter(Predicate.not(AnnotationUtils::isInformativeSentence)).count();
 
     long total = firstSentences.size() + secondSentences.size();
 
@@ -148,7 +147,6 @@ public abstract class PlagUtil {
     int coverage = 0;
     int i = 0;
     while (i < specialMarkings.size()) {
-
       int plagStart = specialMarkings.get(i).getSideMarking(side).getStart();
       int plagEnd = specialMarkings.get(i).getSideMarking(side).getEnd();
       int j = i + 1;
@@ -165,26 +163,6 @@ public abstract class PlagUtil {
     }
 
     return coverage;
-  }
-
-  public static boolean isInformativeSentence(@NotNull CoreSentence sentence) {
-    return isInformative(sentence.coreMap());
-  }
-
-  public static boolean isInformative(@NotNull CoreMap coreMap) {
-    var stopWordAnnotation = coreMap
-      .get(PlagdetAnnotations.StopWordAnnotation.class);
-
-    var codeSegmentAnnotation = coreMap
-      .get(PlagdetAnnotations.CodeSegmentAnnotation.class);
-
-    var templateAnnotation = coreMap
-      .get(PlagdetAnnotations.TemplateSentenceAnnotation.class);
-
-    boolean isStopWord = stopWordAnnotation != null && stopWordAnnotation;
-    boolean isCodeSegment = codeSegmentAnnotation != null && codeSegmentAnnotation;
-    boolean isTemplate = templateAnnotation != null && templateAnnotation;
-    return !isCodeSegment && !isTemplate && !isStopWord;
   }
 
 }

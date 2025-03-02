@@ -1,11 +1,11 @@
 
 package dev.taras.hamkalo.plagdet.indexing.lucene;
 
-import dev.taras.hamkalo.plagdet.comparision.PlagUtil;
+import dev.taras.hamkalo.plagdet.comparision.ScoreUtils;
+import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreDocument;
-import edu.stanford.nlp.pipeline.CoreSentence;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -63,7 +62,7 @@ public class StanfordAdapterTokenizer extends Tokenizer {
 
   private Iterator<CoreLabel> createFilteredWordIterator() {
     return coreDocument.sentences().stream()
-      .filter(PlagUtil::isInformativeSentence)
+      .filter(AnnotationUtils::isInformativeSentence)
       .flatMap(s -> s.tokens().stream())
       .filter(t ->
         !(filterStopwords && t.get(PlagdetAnnotations.StopWordAnnotation.class)) &&

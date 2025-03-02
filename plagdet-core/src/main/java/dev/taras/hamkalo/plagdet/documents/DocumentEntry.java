@@ -1,20 +1,26 @@
 package dev.taras.hamkalo.plagdet.documents;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import dev.taras.hamkalo.plagdet.comparision.MarkingOffsets;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
 import dev.taras.hamkalo.plagdet.io.FileData;
+import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations;
-import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.function.Predicate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
 
 @Data
 @Builder
@@ -28,7 +34,9 @@ public class DocumentEntry {
 
   boolean luceneSearchPassed;
 
-  @NotNull FileData fileData;
+  @NotNull
+  @JsonProperty("metadata")
+  FileData fileData;
 
   @Nullable
   @ToString.Exclude
@@ -38,6 +46,7 @@ public class DocumentEntry {
   @NotNull
   @ToString.Exclude
   @Builder.Default
+  @JsonIgnore
   @EqualsAndHashCode.Exclude
   Queue<DocumentPair> documentPairs = new PriorityQueue<>();
 
@@ -47,26 +56,57 @@ public class DocumentEntry {
   List<Integer> indexCache = new ArrayList<>();
 
   @NotNull
+  @JsonIgnore
   @Builder.Default
   @EqualsAndHashCode.Exclude
   List<SpecialMarking> templateMarking = new ArrayList<>();
 
   @Nullable
+  @JsonIgnore
   @ToString.Exclude
   @Builder.Default
   @EqualsAndHashCode.Exclude
   List<SpecialMarking> codeMarking = null;
 
+  @JsonProperty("id")
   public int getId() {
     return getId(this.fileData);
   }
 
-  public static int getId(@NotNull FileData fileData) {
-    return 31 * fileData.getContent().hashCode() + fileData.getPersistentPath().hashCode();
+  @JsonProperty("maxSimilarity")
+  public double maxSimilarity() {
+    return documentPairs.stream()
+      .mapToDouble(p -> p.getMaxScore())
+      .max()
+      .orElse(0);
   }
 
-  public boolean isComparedWithTemplate() {
-    return this.template || !this.templateMarking.isEmpty();
+  @JsonProperty("pairIds")
+  public List<String> getDocumentPairIds() {
+    return documentPairs.stream()
+      .map(p -> p.getId())
+      .toList();
+  }
+
+  @JsonGetter("markings")
+  public @NotNull List<SpecialMarking> getMarkings() {
+    var markings = new ArrayList<>(getTemplateMarking());
+    markings.addAll(getCodeMarking());
+    markings.addAll(getMisspelledMarking());
+    markings.addAll(getSpoofMarking());
+    return markings;
+  }
+
+  @JsonSetter("markings")
+  public void setMarkings(List<SpecialMarking> markings) {
+    this.templateMarking = markings.stream()
+      .filter(m -> SpecialMarkingType.TEMPLATE.equals(m.getType()))
+      .toList();
+  }
+
+
+  public static int getId(@NotNull FileData fileData) {
+    return 31 * fileData.getContent().hashCode() + fileData.getPersistentPath().hashCode();
   }
 
   public boolean isAnnotated() {
@@ -93,51 +133,33 @@ public class DocumentEntry {
           .build()
       ).toList();
 
-    return this.codeMarking;
+    return codeMarking;
   }
 
   public @NotNull List<SpecialMarking> getMisspelledMarking() {
-    return this.coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
-      .filter(isMisspelledToken())
+    return coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
+      .filter(AnnotationUtils.isMisspelledToken())
       .map(t ->
         SpecialMarking.builder()
           .type(SpecialMarkingType.MISSPELLED)
           .first(MarkingOffsets.from(t))
-          .comments(getCorrection(t))
+          .comments(AnnotationUtils.getCorrection(t))
           .build()
       )
       .toList();
   }
 
   public @NotNull List<SpecialMarking> getSpoofMarking() {
-    return this.coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
-      .filter(isSpoofedToken())
+    return coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
+      .filter(AnnotationUtils.isSpoofedToken())
       .map(t ->
         SpecialMarking.builder()
           .type(SpecialMarkingType.SPOOF)
           .first(MarkingOffsets.from(t))
-          .comments(getCorrection(t))
+          .comments(AnnotationUtils.getCorrection(t))
           .build()
       )
       .toList();
-  }
-
-  private Predicate<CoreLabel> isSpoofedToken() {
-    return t -> t.get(PlagdetAnnotations.SpoofedWordAnnotation.class);
-  }
-
-  private @NotNull List<String> getCorrection(@NotNull CoreLabel token) {
-    var correctedWordAnnotation = token.get(PlagdetAnnotations.CorrectedWordAnnotation.class);
-    if (correctedWordAnnotation != null) {
-      return List.of(correctedWordAnnotation);
-    }
-
-    return Collections.emptyList();
-  }
-
-  private static @NotNull Predicate<CoreLabel> isMisspelledToken() {
-    return t -> t.get(PlagdetAnnotations.MisspelledAnnotation.class) != null &&
-                t.get(PlagdetAnnotations.MisspelledAnnotation.class);
   }
 
 }
