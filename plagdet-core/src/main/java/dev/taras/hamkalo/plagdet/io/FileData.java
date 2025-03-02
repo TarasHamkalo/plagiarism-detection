@@ -1,5 +1,7 @@
 package dev.taras.hamkalo.plagdet.io;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
@@ -24,8 +26,13 @@ public class FileData {
 
   Metadata metadata;
 
+  @JsonIgnore
   @ToString.Exclude
   String content;
+
+  public String getFilename() {
+    return FilenameUtils.getBaseName(persistentPath);
+  }
 
   public String getExtension() {
     return FilenameUtils.getExtension(persistentPath);

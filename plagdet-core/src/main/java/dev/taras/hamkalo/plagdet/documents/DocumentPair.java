@@ -1,12 +1,14 @@
 package dev.taras.hamkalo.plagdet.documents;
 
 
-import dev.taras.hamkalo.plagdet.comparision.PlagSource;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
+import dev.taras.hamkalo.plagdet.comparision.PlagSource;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.apache.commons.lang3.builder.HashCodeExclude;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -18,16 +20,29 @@ import java.util.Objects;
 @Setter
 @Builder
 @ToString
-@RequiredArgsConstructor
+@AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DocumentPair implements Comparable<DocumentPair> {
 
-  @NotNull DocumentEntry first;
+  @Builder.Default
+  @JsonProperty("firstId")
+  Integer firstDocumentId = null;
 
-  @NotNull DocumentEntry second;
+  @Builder.Default
+  @JsonProperty("secondId")
+  Integer secondDocumentId = null;
+
+  @NotNull
+  @JsonIgnore
+  DocumentEntry first;
+
+  @NotNull
+  @JsonIgnore
+  DocumentEntry second;
 
   @NotNull
   @Builder.Default
+  @JsonProperty("source")
   PlagSource plagSource = PlagSource.UNCERTAIN;
 
   @NotNull
@@ -38,11 +53,22 @@ public class DocumentPair implements Comparable<DocumentPair> {
   @Builder.Default
   List<PlagScore> plagScores = new ArrayList<>();
 
-  @Override
-  public int compareTo(@NotNull DocumentPair other) {
-    return Double.compare(this.getMaxScore(), other.getMaxScore());
+  @JsonProperty("id")
+  public @NotNull String getId() {
+    return getId(this);
   }
 
+  @JsonGetter("firstId")
+  public int getFirstDocumentId() {
+    return first.getId();
+  }
+
+  @JsonGetter("secondId")
+  public int getSecondDocumentId() {
+    return second.getId();
+  }
+
+  @JsonIgnore
   public double getMaxScore() {
     return getMaxScore(this);
   }
@@ -54,12 +80,13 @@ public class DocumentPair implements Comparable<DocumentPair> {
       .orElse(0.0);
   }
 
-  public @NotNull String getId() {
-    return getId(this);
-  }
-
   public static @NotNull String getId(DocumentPair documentPair) {
     return documentPair.getFirst().getId() + "_" + documentPair.getSecond().getId();
+  }
+
+  @Override
+  public int compareTo(@NotNull DocumentPair other) {
+    return Double.compare(this.getMaxScore(), other.getMaxScore());
   }
 
   @Override

@@ -35,10 +35,10 @@ public class DocumentEntry {
   boolean luceneSearchPassed;
 
   @NotNull
-  @JsonProperty("metadata")
   FileData fileData;
 
   @Nullable
+  @JsonIgnore
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
   CoreDocument coreDocument;
@@ -109,10 +109,12 @@ public class DocumentEntry {
     return 31 * fileData.getContent().hashCode() + fileData.getPersistentPath().hashCode();
   }
 
+  @JsonIgnore
   public boolean isAnnotated() {
     return this.coreDocument != null && this.coreDocument.annotation().size() != 0;
   }
 
+  @JsonIgnore
   public @NotNull List<SpecialMarking> getCodeMarking() {
     if (this.codeMarking != null) {
       return this.codeMarking;
@@ -136,6 +138,7 @@ public class DocumentEntry {
     return codeMarking;
   }
 
+  @JsonIgnore
   public @NotNull List<SpecialMarking> getMisspelledMarking() {
     return coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
       .filter(AnnotationUtils.isMisspelledToken())
@@ -149,6 +152,7 @@ public class DocumentEntry {
       .toList();
   }
 
+  @JsonIgnore
   public @NotNull List<SpecialMarking> getSpoofMarking() {
     return coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
       .filter(AnnotationUtils.isSpoofedToken())
