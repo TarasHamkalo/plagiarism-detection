@@ -34,7 +34,6 @@ public class ExecutorServiceSingleton {
     this.executorService = Executors.newFixedThreadPool(
       Runtime.getRuntime().availableProcessors()
     );
-
     registerShutdownHook();
     this.isInitialized = true;
   }
@@ -44,7 +43,7 @@ public class ExecutorServiceSingleton {
       return;
     }
 
-    this.executorService.shutdown();
+    this.executorService.shutdownNow();
     this.isInitialized = false;
   }
 
