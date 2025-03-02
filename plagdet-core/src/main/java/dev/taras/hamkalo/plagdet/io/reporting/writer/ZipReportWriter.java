@@ -1,4 +1,4 @@
-package dev.taras.hamkalo.plagdet.io.reporting;
+package dev.taras.hamkalo.plagdet.io.reporting.writer;
 
 import dev.taras.hamkalo.plagdet.Report;
 import dev.taras.hamkalo.plagdet.exception.PlagdetException;

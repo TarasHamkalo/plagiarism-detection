@@ -1,4 +1,4 @@
-package dev.taras.hamkalo.plagdet.io.reporting;
+package dev.taras.hamkalo.plagdet.io.reporting.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.taras.hamkalo.plagdet.Report;
@@ -25,8 +25,11 @@ import java.util.List;
 public class FileReportWriter {
 
   public static final String OVERVIEW_NAME = "overview.json";
+
   public static final String PAIRS_DIR = "pairs";
+
   public static final String FILES_DIR = "files";
+
   public static final String INDEXED_FILES_DIR = "files/indexed";
 
   @NotNull Boolean removeFilesOnExit;

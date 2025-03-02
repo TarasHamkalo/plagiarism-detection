@@ -5,7 +5,7 @@ import dev.taras.hamkalo.plagdet.comparision.comparator.MetadataComparator.Metad
 import dev.taras.hamkalo.plagdet.comparision.comparator.SentenceComparator.SentenceComparatorParameters;
 import dev.taras.hamkalo.plagdet.comparision.comparator.ShingleComparator.ShingleComparatorParameters;
 import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource.SimilarDocumentSourceParameters;
-import dev.taras.hamkalo.plagdet.io.reporting.ZipAnalysisReportWriter;
+import dev.taras.hamkalo.plagdet.io.reporting.writer.ZipReportWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.cli.*;
 import org.jetbrains.annotations.NotNull;
@@ -13,6 +13,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Slf4j
 public class PlagdetCli {
@@ -135,6 +137,7 @@ public class PlagdetCli {
     System.out.println("Metadata Parameters: " + parameters.getMetadataComparatorParameters());
     System.out.println("Similar Document Parameters: " + parameters.getSimilarDocumentSourceParameters());
 
+    ExecutorService executorService = Executors.newSingleThreadExecutor();
     Plagdet plagdet = new Plagdet(parameters);
     if (indexOnly) {
       index(inputDir, plagdet);
@@ -146,7 +149,7 @@ public class PlagdetCli {
     }
 
     var report = plagdet.compare(inputDir);
-    ZipAnalysisReportWriter analysisReportWriter = new ZipAnalysisReportWriter();
+    ZipReportWriter analysisReportWriter = new ZipReportWriter();
     analysisReportWriter.writeReport(report);
 
   }
