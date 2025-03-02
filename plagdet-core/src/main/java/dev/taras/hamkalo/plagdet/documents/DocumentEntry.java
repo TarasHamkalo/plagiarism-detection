@@ -26,7 +26,7 @@ public class DocumentEntry {
 
   boolean template;
 
-  boolean hasPassedLuceneSearch;
+  boolean luceneSearchPassed;
 
   @NotNull FileData fileData;
 
@@ -40,6 +40,11 @@ public class DocumentEntry {
   @Builder.Default
   @EqualsAndHashCode.Exclude
   Queue<DocumentPair> documentPairs = new PriorityQueue<>();
+
+  @NotNull
+  @Builder.Default
+  @EqualsAndHashCode.Exclude
+  List<Integer> indexCache = new ArrayList<>();
 
   @NotNull
   @Builder.Default

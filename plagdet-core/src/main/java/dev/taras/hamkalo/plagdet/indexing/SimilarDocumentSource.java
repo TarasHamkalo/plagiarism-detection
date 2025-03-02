@@ -37,7 +37,7 @@ public class SimilarDocumentSource {
   );
 
   @Getter
-  private static final Map<Integer, DocumentEntry> retrievedIndexedDocuments = new ConcurrentHashMap<>();
+  private static final Map<Integer, DocumentEntry> retrievedDocumentsCache = new ConcurrentHashMap<>();
 
   @NotNull SimilarDocumentSourceParameters parameters;
 
@@ -51,12 +51,41 @@ public class SimilarDocumentSource {
     this.luceneIndex = luceneIndex;
   }
 
+  public void addToDocumentsCache(List<DocumentEntry> documentEntries) {
+    documentEntries.forEach(d -> retrievedDocumentsCache.put(d.getId(), d));
+  }
+
   public List<DocumentEntry> retrieveSimilar(@NotNull DocumentEntry documentEntry)
     throws IndexingException {
     if (this.parameters.getSimilarDocumentsLimit() <= 0) {
       return new ArrayList<>();
     }
 
+    if (documentEntry.isLuceneSearchPassed()) {
+      return getFromCache(documentEntry);
+    }
+
+    var similarDocs = querySimilarFor(documentEntry);
+    var similarDocumentEntries = new HashMap<Integer, DocumentEntry>(); // deduplicate by id
+    for (var similarDoc : similarDocs) {
+      var documentId = DocumentEntry.getId(similarDoc.fileData());
+      var cached = getCachedDocumentEntry(similarDoc, documentId);
+      similarDocumentEntries.put(documentId, cached);
+    }
+
+    documentEntry.getIndexCache().addAll(similarDocumentEntries.keySet());
+    documentEntry.setLuceneSearchPassed(true);
+    return new ArrayList<>(similarDocumentEntries.values());
+  }
+
+  private static @NotNull List<DocumentEntry> getFromCache(@NotNull DocumentEntry documentEntry) {
+    return documentEntry.getIndexCache().stream()
+      .map(retrievedDocumentsCache::get)
+      .filter(Objects::nonNull)
+      .toList();
+  }
+
+  private @NotNull List<LuceneResult> querySimilarFor(@NotNull DocumentEntry documentEntry) {
     var similarDocs = this.luceneIndex.retrieveSimilar(
       documentEntry, parameters.getSimilarDocumentsLimit()
     );
@@ -71,19 +100,11 @@ public class SimilarDocumentSource {
         );
       }
     }
-
-    var similarDocumentEntries = new HashMap<Integer, DocumentEntry>();
-    for (var similarDoc : similarDocs) {
-      var documentId = DocumentEntry.getId(similarDoc.fileData());
-      var cached = getCachedDocumentEntry(similarDoc, documentId);
-      similarDocumentEntries.put(documentId, cached);
-    }
-
-    return new ArrayList<>(similarDocumentEntries.values());
+    return similarDocs;
   }
 
   private static DocumentEntry getCachedDocumentEntry(LuceneResult similarDoc, int documentId) {
-    return retrievedIndexedDocuments.computeIfAbsent(documentId, (key) ->
+    return retrievedDocumentsCache.computeIfAbsent(documentId, (key) ->
       DocumentEntry.builder()
         .indexed(true)
         .fileData(similarDoc.fileData())
