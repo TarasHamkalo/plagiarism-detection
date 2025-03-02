@@ -51,18 +51,10 @@ public class SimilarDocumentSource {
     this.luceneIndex = luceneIndex;
   }
 
-  public void addToDocumentsCache(List<DocumentEntry> documentEntries) {
-    documentEntries.forEach(d -> retrievedDocumentsCache.put(d.getId(), d));
-  }
-
   public List<DocumentEntry> retrieveSimilar(@NotNull DocumentEntry documentEntry)
     throws IndexingException {
     if (this.parameters.getSimilarDocumentsLimit() <= 0) {
       return new ArrayList<>();
-    }
-
-    if (documentEntry.isLuceneSearchPassed()) {
-      return getFromCache(documentEntry);
     }
 
     var similarDocs = querySimilarFor(documentEntry);
@@ -73,16 +65,7 @@ public class SimilarDocumentSource {
       similarDocumentEntries.put(documentId, cached);
     }
 
-    documentEntry.getIndexCache().addAll(similarDocumentEntries.keySet());
-    documentEntry.setLuceneSearchPassed(true);
     return new ArrayList<>(similarDocumentEntries.values());
-  }
-
-  private static @NotNull List<DocumentEntry> getFromCache(@NotNull DocumentEntry documentEntry) {
-    return documentEntry.getIndexCache().stream()
-      .map(retrievedDocumentsCache::get)
-      .filter(Objects::nonNull)
-      .toList();
   }
 
   private @NotNull List<LuceneResult> querySimilarFor(@NotNull DocumentEntry documentEntry) {
