@@ -16,10 +16,7 @@ import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.*;
 
 @Data
 @Builder
@@ -31,6 +28,8 @@ public class DocumentEntry {
   boolean indexed;
 
   boolean template;
+
+  boolean comparedToTemplate;
 
   Integer id;
 
@@ -128,6 +127,10 @@ public class DocumentEntry {
 
   @JsonIgnore
   public @NotNull List<SpecialMarking> getCodeMarking() {
+    if (coreDocument == null) {
+      return Collections.emptyList();
+    }
+
     if (this.codeMarking != null) {
       return this.codeMarking;
     }
@@ -152,6 +155,9 @@ public class DocumentEntry {
 
   @JsonIgnore
   public @NotNull List<SpecialMarking> getMisspelledMarking() {
+    if (coreDocument == null) {
+      return Collections.emptyList();
+    }
     return coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
       .filter(AnnotationUtils.isMisspelledToken())
       .map(t ->
@@ -166,6 +172,9 @@ public class DocumentEntry {
 
   @JsonIgnore
   public @NotNull List<SpecialMarking> getSpoofMarking() {
+    if (coreDocument == null) {
+      return Collections.emptyList();
+    }
     return coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
       .filter(AnnotationUtils.isSpoofedToken())
       .map(t ->

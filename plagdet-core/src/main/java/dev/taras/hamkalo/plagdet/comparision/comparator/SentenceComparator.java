@@ -124,7 +124,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
                                   @NotNull DocumentEntry template) {
     final var targetToTemplate = DocumentPair.builder().first(target).second(template).build();
     var fragments = this.doCompare(targetToTemplate);
-    log.warn("Template fragments size {}", fragments.size());
+    log.trace("Template fragments size {}", fragments.size());
 
     fragments.stream().flatMap(f -> f.getSeeds().stream())
       .forEach(seed -> AnnotationUtils.addTemplateAnnotation(seed.getFirstSent().coreMap()));
@@ -133,15 +133,16 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
       .map(f -> f.toMarkingWithType(SpecialMarkingType.TEMPLATE))
       .toList();
 
+    target.setComparedToTemplate(true);
     target.setTemplateMarking(markings);
   }
 
   private @NotNull List<Fragment> doCompare(@NotNull DocumentPair documentPair) {
     embeddings.getWordVector(""); // TODO: remove, debug purpose
     var seeds = seed(documentPair);
-    log.debug("Seeds count: {}", seeds.size());
+    log.trace("Seeds count: {}", seeds.size());
     var fragments = extensionStrategy.extend(seeds, this.parameters.getMaxGap());
-    log.debug("Fragments count: {}", fragments.size());
+    log.trace("Fragments count: {}", fragments.size());
 
     var filtered = fragments;
 //    var fragments = filteringStrategy.filter(fragments);
@@ -153,9 +154,9 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     var firstSents = documentPair.getFirst().getCoreDocument().sentences();
     var secondSents = documentPair.getSecond().getCoreDocument().sentences();
-    log.debug("First document contains {} sentences", firstSents.size());
-    log.debug("Second document contains {} sentences", secondSents.size());
-    log.debug("Possible seeds count {}", firstSents.size() * secondSents.size());
+    log.trace("First document contains {} sentences", firstSents.size());
+    log.trace("Second document contains {} sentences", secondSents.size());
+    log.trace("Possible seeds count {}", firstSents.size() * secondSents.size());
     // TODO: possible optimization, calculate dice first, without querying for word vectors
     for (int i = 0; i < firstSents.size(); i++) {
       var firstSent = firstSents.get(i);

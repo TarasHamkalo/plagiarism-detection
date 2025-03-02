@@ -7,9 +7,9 @@ import dev.taras.hamkalo.plagdet.concurrency.ExecutorServiceSingleton;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.documents.Submission;
-import dev.taras.hamkalo.plagdet.exception.PlagdetException;
 import dev.taras.hamkalo.plagdet.exception.PlagdetInterruptedException;
 import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource;
+import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import lombok.AccessLevel;
@@ -107,7 +107,7 @@ public class ComparisonPipeline {
           .toList()
       );
     } catch (InterruptedException e) {
-      throw new PlagdetException("Was not able to preprocess all documents");
+      log.warn("Was not able to preprocess all documents");
     }
 
   }
@@ -130,9 +130,17 @@ public class ComparisonPipeline {
       CoreDocument coreDocument = new CoreDocument(d.getFileData().getContent());
       Pipeline.annotate(coreDocument);
       d.setCoreDocument(coreDocument);
-      if (template != null) {
+      if (d.isComparedToTemplate()) {
+        log.debug("Found document with template marking, adding");
+        AnnotationUtils.addTemplateAnnotation(
+          d.getCoreDocument().annotation(), d.getTemplateMarking(), 0
+        );
+
+      } else if (template != null) {
+        log.debug("Comparing to template");
         templateComparator.compareWithTemplate(d, template);
       }
+
       return null;
     };
   }

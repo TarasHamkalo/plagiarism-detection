@@ -4,17 +4,18 @@ import dev.taras.hamkalo.plagdet.comparision.comparator.*;
 import dev.taras.hamkalo.plagdet.comparision.comparator.blocks.Embeddings;
 import dev.taras.hamkalo.plagdet.concurrency.ExecutorServiceSingleton;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
-import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.documents.Submission;
 import dev.taras.hamkalo.plagdet.exception.PlagdetException;
 import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.io.SubmissionsParser;
 import dev.taras.hamkalo.plagdet.io.reader.*;
+import dev.taras.hamkalo.plagdet.io.session.SessionManager;
 import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,17 +25,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
+@Getter
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class Plagdet {
 
   @NotNull Embeddings embeddings;
 
-  @NotNull
-  @Getter
-  LuceneIndex luceneIndex;
+  @NotNull LuceneIndex luceneIndex;
 
   @NotNull SimilarDocumentSource similarDocumentSource;
 
@@ -45,6 +44,12 @@ public class Plagdet {
   @NotNull ComparisonPipeline comparisonPipeline;
 
   @NotNull PlagdetParameters parameters;
+
+  @NotNull @NonFinal List<Submission> submissions = new ArrayList<>();
+
+  @NonFinal @Nullable String currentInputPath;
+
+  @NotNull SessionManager sessionManager;
 
   public Plagdet(@NotNull PlagdetParameters parameters) {
     this.parameters = parameters;
@@ -60,6 +65,7 @@ public class Plagdet {
       parameters, embeddings, similarDocumentSource, template
     );
 
+    this.sessionManager = new SessionManager();
   }
 
   private SubmissionsParser initSubmissionsParser() {
@@ -111,37 +117,20 @@ public class Plagdet {
   }
 
   public Report compare(@NotNull String path) {
-    var submissions = submissionsParser.parseSubmissions(path);
+    currentInputPath = path;
+    if (SessionManager.hasSessionFile()) {
+      sessionManager.restoreSession(this);
+    } else {
+      submissions = submissionsParser.parseSubmissions(path);
+    }
 
     Pipeline.init();
     ExecutorServiceSingleton.getExecutorService().init();
 
-    var ignore = comparisonPipeline.compareSubmissions(submissions);
-
-    var deduplicatedComparisonResults = submissions.stream()
-      .flatMap(s -> s.getDocuments().stream())
-      .flatMap(d -> d.getDocumentPairs().stream())
-      .collect(Collectors.toMap(
-        (p) -> p.getId(),
-        p -> p,
-        (p1, p2) -> p1)
-      );
-
-    SimilarDocumentSource.getRetrievedIndexedDocuments().clear();
-    var filteredRetrievedDocuments = deduplicatedComparisonResults.values().stream()
-      .map(DocumentPair::getSecond)
-      .filter(DocumentEntry::isIndexed)
-      .toList();
+    comparisonPipeline.compareSubmissions(submissions);
 
     ExecutorServiceSingleton.getExecutorService().deInit();
-    return Report.builder()
-      .inputPath(path)
-      .plagdetParameters(this.parameters)
-      .submissions(submissions)
-      .comparisonsCount(comparisonPipeline.getComparisonsCount())
-      .pairs(new ArrayList<>(deduplicatedComparisonResults.values()))
-      .documentsRetrievedFromIndex(filteredRetrievedDocuments)
-      .build();
+    return Report.from(this, false);
   }
 
 
