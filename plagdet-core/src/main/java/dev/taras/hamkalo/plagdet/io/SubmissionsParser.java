@@ -111,10 +111,9 @@ public class SubmissionsParser {
 
     var submissions = new ArrayList<Submission>();
     for (var submissionSource: submissionFiles.entrySet()) {
-      var submission = new Submission();
       var submissionFile = submissionSource.getValue();
       var submitterName = extractSubmitter(submissionFile.toPath());
-      submission.setPath(submissionFile.toPath());
+      var submission = new Submission(submissionFile.toPath(), new ArrayList<>());
 
       log.info("Parsing {}", submissionFile.getAbsolutePath());
 

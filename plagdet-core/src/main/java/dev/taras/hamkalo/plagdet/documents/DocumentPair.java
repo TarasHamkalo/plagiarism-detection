@@ -61,11 +61,23 @@ public class DocumentPair implements Comparable<DocumentPair> {
 
   @JsonGetter("firstId")
   public int getFirstDocumentId() {
+    if (firstDocumentId != null) {
+      int copy = firstDocumentId;
+      firstDocumentId = null;
+      return copy;
+    }
+
     return first.getId();
   }
 
   @JsonGetter("secondId")
   public int getSecondDocumentId() {
+    if (secondDocumentId != null) {
+      int copy = secondDocumentId;
+      secondDocumentId = null;
+      return copy;
+    }
+
     return second.getId();
   }
 
@@ -83,6 +95,10 @@ public class DocumentPair implements Comparable<DocumentPair> {
 
   public static @NotNull String getId(DocumentPair documentPair) {
     return documentPair.getFirst().getId() + "_" + documentPair.getSecond().getId();
+  }
+
+  public static @NotNull String getId(Integer firstDocumentId, Integer secondDocumentId) {
+    return firstDocumentId + "_" + secondDocumentId;
   }
 
   @Override

@@ -2,7 +2,6 @@ package dev.taras.hamkalo.plagdet.documents;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import dev.taras.hamkalo.plagdet.comparision.MarkingOffsets;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
@@ -33,8 +32,6 @@ public class DocumentEntry {
 
   boolean template;
 
-  boolean luceneSearchPassed;
-
   Integer id;
 
   @NotNull
@@ -58,11 +55,6 @@ public class DocumentEntry {
   @JsonIgnore
   @EqualsAndHashCode.Exclude
   Queue<DocumentPair> documentPairs = new PriorityQueue<>();
-
-  @NotNull
-  @Builder.Default
-  @EqualsAndHashCode.Exclude
-  List<Integer> indexCache = new ArrayList<>();
 
   @NotNull
   @JsonIgnore
@@ -96,6 +88,12 @@ public class DocumentEntry {
 
   @JsonGetter("pairIds")
   public List<String> getDocumentPairIds() {
+    if (!pairIds.isEmpty()) {
+      var copy = new ArrayList<>(pairIds);
+      pairIds.clear();
+      return copy;
+    }
+
     return documentPairs.stream()
       .map(p -> p.getId())
       .toList();
