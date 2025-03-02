@@ -2,12 +2,15 @@ package dev.taras.hamkalo.plagdet.comparision;
 
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.util.CoreMap;
-import lombok.Builder;
-import lombok.Value;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
-@Value
+@Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class MarkingOffsets implements Comparable<MarkingOffsets> {
 
   int start;

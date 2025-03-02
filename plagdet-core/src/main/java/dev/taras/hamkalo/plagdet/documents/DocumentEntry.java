@@ -25,6 +25,7 @@ import java.util.Queue;
 @Data
 @Builder
 @AllArgsConstructor
+@NoArgsConstructor // used for json to object mapping
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DocumentEntry {
 
@@ -34,6 +35,8 @@ public class DocumentEntry {
 
   boolean luceneSearchPassed;
 
+  Integer id;
+
   @NotNull
   FileData fileData;
 
@@ -42,6 +45,12 @@ public class DocumentEntry {
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
   CoreDocument coreDocument;
+
+  @NotNull
+  @ToString.Exclude
+  @Builder.Default
+  @EqualsAndHashCode.Exclude
+  List<String> pairIds = new ArrayList<>();
 
   @NotNull
   @ToString.Exclude
@@ -68,12 +77,16 @@ public class DocumentEntry {
   @EqualsAndHashCode.Exclude
   List<SpecialMarking> codeMarking = null;
 
-  @JsonProperty("id")
-  public int getId() {
-    return getId(this.fileData);
+  @JsonGetter("id")
+  public Integer getId() {
+    if (id != null) {
+      return id;
+    }
+
+    return id = getId(this.fileData);
   }
 
-  @JsonProperty("maxSimilarity")
+  @JsonGetter("maxSimilarity")
   public double maxSimilarity() {
     return documentPairs.stream()
       .mapToDouble(p -> p.getMaxScore())
@@ -81,12 +94,13 @@ public class DocumentEntry {
       .orElse(0);
   }
 
-  @JsonProperty("pairIds")
+  @JsonGetter("pairIds")
   public List<String> getDocumentPairIds() {
     return documentPairs.stream()
       .map(p -> p.getId())
       .toList();
   }
+
 
   @JsonGetter("markings")
   public @NotNull List<SpecialMarking> getMarkings() {

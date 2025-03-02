@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
@@ -51,14 +52,17 @@ public class Report {
   @Builder.Default
   Set<String> comparisonIgnore = new HashSet<>();
 
+  @JsonGetter
   public String getName() {
     return FilenameUtils.getBaseName(inputPath);
   }
 
+  @JsonGetter
   public String getAnalyzedFileName() {
     return FilenameUtils.getName(inputPath);
   }
 
+  @JsonGetter
   public Date getDateAnalyzed() {
     return Date.from(Instant.now());
   }

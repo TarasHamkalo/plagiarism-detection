@@ -21,6 +21,7 @@ import java.util.Objects;
 @Builder
 @ToString
 @AllArgsConstructor
+@NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DocumentPair implements Comparable<DocumentPair> {
 
@@ -53,7 +54,7 @@ public class DocumentPair implements Comparable<DocumentPair> {
   @Builder.Default
   List<PlagScore> plagScores = new ArrayList<>();
 
-  @JsonProperty("id")
+  @JsonGetter("id")
   public @NotNull String getId() {
     return getId(this);
   }
