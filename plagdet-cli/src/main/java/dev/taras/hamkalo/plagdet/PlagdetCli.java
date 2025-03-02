@@ -4,15 +4,18 @@ import dev.taras.hamkalo.plagdet.ResultsFilter.ResultsFilterParameters;
 import dev.taras.hamkalo.plagdet.comparision.comparator.MetadataComparator.MetadataComparatorParameters;
 import dev.taras.hamkalo.plagdet.comparision.comparator.SentenceComparator.SentenceComparatorParameters;
 import dev.taras.hamkalo.plagdet.comparision.comparator.ShingleComparator.ShingleComparatorParameters;
+import dev.taras.hamkalo.plagdet.exec.RestartTimeoutObserver;
 import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource.SimilarDocumentSourceParameters;
 import dev.taras.hamkalo.plagdet.io.reporting.writer.ZipReportWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.cli.*;
+import org.apache.commons.exec.Watchdog;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -74,7 +77,7 @@ public class PlagdetCli {
         .resultsFilterParameters(resultsFilterParameters)
         .build();
 
-      run(newPath, oldPath, plagdetParameters, indexOnly);
+      run(args, newPath, oldPath, plagdetParameters, indexOnly);
     } catch (ParseException e) {
       log.error("Error parsing command-line arguments: {}", e.getMessage());
       formatter.printHelp("java -jar plagdet.jar", options);
@@ -123,6 +126,7 @@ public class PlagdetCli {
   }
 
   private static void run(
+    @NotNull String[] args,
     @NotNull String inputDir,
     @Nullable String oldSubmissionsDir,
     @NotNull PlagdetParameters parameters,
@@ -137,8 +141,17 @@ public class PlagdetCli {
     System.out.println("Metadata Parameters: " + parameters.getMetadataComparatorParameters());
     System.out.println("Similar Document Parameters: " + parameters.getSimilarDocumentSourceParameters());
 
-    ExecutorService executorService = Executors.newSingleThreadExecutor();
     Plagdet plagdet = new Plagdet(parameters);
+
+    Watchdog watchdog = Watchdog.builder()
+      .setThreadFactory(Thread::new)
+      .setTimeout(Duration.ofMinutes(15)).get();
+
+    RestartTimeoutObserver restartTimeoutObserver =
+      new RestartTimeoutObserver(plagdet, Thread.currentThread(), args);
+    watchdog.addTimeoutObserver(restartTimeoutObserver);
+    watchdog.start();
+
     if (indexOnly) {
       index(inputDir, plagdet);
       return;
@@ -149,15 +162,13 @@ public class PlagdetCli {
     }
 
     var report = plagdet.compare(inputDir);
-    ZipReportWriter analysisReportWriter = new ZipReportWriter();
-    analysisReportWriter.writeReport(report);
-
+    if (!restartTimeoutObserver.getShouldRestart().get()) {
+      ZipReportWriter analysisReportWriter = new ZipReportWriter();
+      analysisReportWriter.writeReport(report);
+    }
   }
 
-  private static void index(
-    @NotNull String inputDir,
-    @NotNull Plagdet plagdet
-  ) {
+  private static void index(@NotNull String inputDir, @NotNull Plagdet plagdet) {
     System.out.printf("Indexing directory %s\n", inputDir);
     plagdet.index(inputDir);
     System.out.printf("Indexing done, index written to dir %s\n", plagdet.getLuceneIndex().getIndexDirectoryPath());
