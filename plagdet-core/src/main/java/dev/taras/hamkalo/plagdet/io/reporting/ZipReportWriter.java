@@ -1,6 +1,7 @@
 package dev.taras.hamkalo.plagdet.io.reporting;
 
 import dev.taras.hamkalo.plagdet.Report;
+import dev.taras.hamkalo.plagdet.exception.PlagdetException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
@@ -37,12 +38,11 @@ public class ZipReportWriter {
       zipDirectory(tempDir);
 
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new PlagdetException("Could not write zip report", e);
     }
-
   }
 
-  private static void zipDirectory(Path tempDir) {
+  private static void zipDirectory(Path tempDir) throws IOException {
     try (OutputStream fos = new FileOutputStream(REPORT_NAME);
          BufferedOutputStream bos = new BufferedOutputStream(fos);
          ArchiveOutputStream<ZipArchiveEntry> aos = new ZipArchiveOutputStream(bos)) {
@@ -62,11 +62,9 @@ public class ZipReportWriter {
             aos.closeArchiveEntry();
           }
         } catch (IOException e) {
-          throw new RuntimeException(e);
+          throw new PlagdetException("Could not create zip entry", e);
         }
       });
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     }
   }
 }
