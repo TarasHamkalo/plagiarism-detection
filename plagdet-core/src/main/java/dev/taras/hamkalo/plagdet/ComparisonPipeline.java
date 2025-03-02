@@ -8,6 +8,7 @@ import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.documents.Submission;
 import dev.taras.hamkalo.plagdet.exception.PlagdetException;
+import dev.taras.hamkalo.plagdet.exception.PlagdetInterruptedException;
 import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource;
 import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import edu.stanford.nlp.pipeline.CoreDocument;
@@ -22,9 +23,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @Slf4j
@@ -36,15 +37,22 @@ public class ComparisonPipeline {
 
   @NotNull SimilarDocumentSource similarDocumentSource;
 
-  @NotNull Queue<DocumentPair> comparisonTasks = new LinkedList<>();
+  @NotNull
+  @Getter
+  Queue<DocumentPair> comparisonTasks = new LinkedList<>();
 
-  @NotNull Queue<DocumentPair> comparisonResults = new ConcurrentLinkedQueue<>();
+  @NotNull
+  @Getter
+  Set<DocumentPair> comparisonResults = new HashSet<>();
 
   @NotNull ResultsFilter resultsFilter;
 
   @NotNull TemplateComparator templateComparator;
 
   @Nullable DocumentEntry template;
+
+  @Getter
+  AtomicBoolean isRunning = new AtomicBoolean(true);
 
   @Getter
   @NonFinal
@@ -70,21 +78,21 @@ public class ComparisonPipeline {
    * @param submissions parsed, not annotated submissions
    * @return list of compared document pair
    */
-  public @NotNull List<DocumentPair> compareSubmissions(@NotNull List<Submission> submissions) {
+  public void compareSubmissions(@NotNull List<Submission> submissions) {
     final var documents = submissions.stream()
       .flatMap(s -> s.getDocuments().stream())
       .toList();
 
     preprocessTemplate();
 
-    preprocessDocuments(documents);
+    preprocessDocuments(documents); // -> documents
+    // If aborted on that stage than don't restart actually
 
-    prepareComparisonTasks(submissions);
+    prepareComparisonTasks(submissions); // -> tasks
 
-    preprocessDocuments(SimilarDocumentSource.getRetrievedIndexedDocuments().values());
+    preprocessDocuments(SimilarDocumentSource.getRetrievedDocumentsCache().values()); // -> retrieved documents
 
-    doCompare();
-    return new ArrayList<>(this.comparisonResults);
+    doCompare(); // -> comparison results
   }
 
   public void preprocessDocuments(@NotNull Collection<DocumentEntry> documentEntries) {
@@ -131,8 +139,12 @@ public class ComparisonPipeline {
 
     List<Future<DocumentPair>> futures = new ArrayList<>();
     var executor = ExecutorServiceSingleton.getExecutorService();
-    while (!comparisonTasks.isEmpty()) {
+    while (!comparisonTasks.isEmpty() && isRunning.get()) {
       var comparisonTask = comparisonTasks.poll();
+      if (comparisonResults.contains(comparisonTask)) {
+        continue;
+      }
+
       futures.add(executor.submit(() -> {
         for (DocumentComparator comparator : comparators) {
           ComparisonResult result = comparator.compare(comparisonTask);
@@ -153,9 +165,13 @@ public class ComparisonPipeline {
 
     for (Future<DocumentPair> future : futures) {
       try {
-        addComparisonResults(future.get());
-      } catch (InterruptedException | ExecutionException e) {
+        if (isRunning.get()) {
+          addComparisonResults(future.get());
+        }
+      } catch (ExecutionException e) {
         log.error("Comparison task failed", e);
+      } catch (InterruptedException e) {
+        throw new PlagdetInterruptedException("Interrupt during comparison execution", e);
       }
     }
   }
@@ -164,7 +180,7 @@ public class ComparisonPipeline {
     if (resultsFilter.filterDocumentPair(comparisonTask)) {
       resultsFilter.safeAddDocumentPair(comparisonTask.getFirst(), comparisonTask);
       resultsFilter.safeAddDocumentPair(comparisonTask.getSecond(), comparisonTask);
-      comparisonResults.offer(comparisonTask);
+      comparisonResults.add(comparisonTask);
     }
   }
 
@@ -172,8 +188,8 @@ public class ComparisonPipeline {
     for (int i = 0; i < submissions.size(); i++) {
       Submission first = submissions.get(i);
       for (var firstDocument : first.getDocuments()) {
-        if (firstDocument.isHasPassedLuceneSearch()) {
-          continue;
+        if (!isRunning.get()) {
+          return;
         }
 
         var similarDocuments = similarDocumentSource.retrieveSimilar(firstDocument);
@@ -183,9 +199,9 @@ public class ComparisonPipeline {
           addComparisonTasks(firstDocument, second.getDocuments());
         }
 
-        firstDocument.setHasPassedLuceneSearch(true); // kinda okay, when interrupt will occur, comparison tasks will
       }
     }
+
     this.comparisonsCount = comparisonTasks.size();
   }
 
