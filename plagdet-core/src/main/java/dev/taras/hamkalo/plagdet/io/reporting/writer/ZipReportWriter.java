@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Stream;
 
 
 @Slf4j
@@ -42,8 +43,10 @@ public class ZipReportWriter {
   private static void zipDirectory(Path tempDir) throws IOException {
     try (OutputStream fos = new FileOutputStream(REPORT_NAME);
          BufferedOutputStream bos = new BufferedOutputStream(fos);
-         ArchiveOutputStream<ZipArchiveEntry> aos = new ZipArchiveOutputStream(bos)) {
-      Files.walk(tempDir).forEach(srcPath -> {
+         ArchiveOutputStream<ZipArchiveEntry> aos = new ZipArchiveOutputStream(bos);
+         Stream<Path> paths = Files.walk(tempDir)
+    ) {
+     paths.forEach(srcPath -> {
         var entryName = tempDir.relativize(srcPath).toString();
         try {
           if (!Files.isDirectory(srcPath)) {
