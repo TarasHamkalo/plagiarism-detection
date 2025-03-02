@@ -45,6 +45,10 @@ public class ComparisonPipeline {
   @Getter
   Set<DocumentPair> comparisonResults = new HashSet<>();
 
+  @NotNull
+  @Getter
+  Set<String> comparisonIgnore = new HashSet<>();
+
   @NotNull ResultsFilter resultsFilter;
 
   @NotNull TemplateComparator templateComparator;
@@ -141,7 +145,7 @@ public class ComparisonPipeline {
     var executor = ExecutorServiceSingleton.getExecutorService();
     while (!comparisonTasks.isEmpty() && isRunning.get()) {
       var comparisonTask = comparisonTasks.poll();
-      if (comparisonResults.contains(comparisonTask)) {
+      if (comparisonIgnore.contains(comparisonTask.getId())) {
         continue;
       }
 
@@ -182,6 +186,7 @@ public class ComparisonPipeline {
       resultsFilter.safeAddDocumentPair(comparisonTask.getSecond(), comparisonTask);
       comparisonResults.add(comparisonTask);
     }
+    comparisonIgnore.add(comparisonTask.getId());
   }
 
   private void prepareComparisonTasks(@NotNull List<Submission> submissions) {
