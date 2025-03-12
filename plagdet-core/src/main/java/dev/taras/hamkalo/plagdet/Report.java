@@ -29,8 +29,13 @@ public class Report {
   String inputPath;
 
   @NotNull
-  @JsonProperty(value = "configuration", access = JsonProperty.Access.READ_ONLY)
+  @JsonIgnore
   PlagdetParameters plagdetParameters;
+
+  @JsonGetter(value = "configuration")
+  public @NotNull PlagdetParameters getPlagdetParameters() {
+    return plagdetParameters;
+  }
 
   @NotNull
   @JsonIgnore

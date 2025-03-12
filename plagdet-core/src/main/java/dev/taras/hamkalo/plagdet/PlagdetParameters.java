@@ -19,6 +19,8 @@ public class PlagdetParameters {
 
   @Nullable String templateDocumentPath;
 
+  @NotNull Integer numberOfProcessors;
+
   @NotNull SentenceComparatorParameters sentenceComparatorParameters;
 
   @NotNull ShingleComparatorParameters shingleComparatorParameters;

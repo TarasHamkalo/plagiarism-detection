@@ -45,9 +45,12 @@ public class Plagdet {
 
   @NotNull PlagdetParameters parameters;
 
-  @NotNull @NonFinal List<Submission> submissions = new ArrayList<>();
+  @NotNull
+  @NonFinal
+  List<Submission> submissions = new ArrayList<>();
 
-  @NonFinal @Nullable String currentInputPath;
+  @NonFinal
+  @Nullable String currentInputPath;
 
   @NotNull SessionManager sessionManager;
 
@@ -66,6 +69,7 @@ public class Plagdet {
     );
 
     this.sessionManager = new SessionManager();
+    ExecutorServiceSingleton.setNumberOfProcessors(parameters.getNumberOfProcessors());
   }
 
   private SubmissionsParser initSubmissionsParser() {
@@ -118,12 +122,8 @@ public class Plagdet {
 
   public Report compare(@NotNull String path) {
     currentInputPath = path;
-    if (SessionManager.hasSessionFile()) {
-      sessionManager.restoreSession(this);
-    } else {
-      submissions = submissionsParser.parseSubmissions(path);
-    }
 
+    submissions = submissionsParser.parseSubmissions(path);
     Pipeline.init();
     ExecutorServiceSingleton.getExecutorService().init();
 

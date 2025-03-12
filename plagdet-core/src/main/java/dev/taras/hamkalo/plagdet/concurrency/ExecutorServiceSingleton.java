@@ -1,19 +1,26 @@
 package dev.taras.hamkalo.plagdet.concurrency;
 
 import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.concurrent.*;
 
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class ExecutorServiceSingleton {
 
   private static ExecutorServiceSingleton executorServiceSingleton;
 
-  private ExecutorService executorService;
+  @Setter
+  @Getter
+  private static int numberOfProcessors = Runtime.getRuntime().availableProcessors();
 
-  private boolean isInitialized = false;
+  ExecutorService executorService;
+
+  boolean isInitialized = false;
 
   public static synchronized ExecutorServiceSingleton getExecutorService() {
     if (executorServiceSingleton == null) {
@@ -32,7 +39,7 @@ public class ExecutorServiceSingleton {
     }
 
     this.executorService = Executors.newFixedThreadPool(
-      Runtime.getRuntime().availableProcessors()
+      ExecutorServiceSingleton.numberOfProcessors
     );
     registerShutdownHook();
     this.isInitialized = true;

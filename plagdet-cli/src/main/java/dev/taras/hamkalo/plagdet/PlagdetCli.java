@@ -64,9 +64,11 @@ public class PlagdetCli {
       SimilarDocumentSourceParameters similarDocParams = buildSimilarDocumentSourceParams(cmd);
       ResultsFilterParameters resultsFilterParameters = buildResultsFilterParams(cmd);
 
+      int numberOfProcessors = getOptionInt(cmd, "number-of-threads", Runtime.getRuntime().availableProcessors());
       PlagdetParameters plagdetParameters = PlagdetParameters.builder()
         .luceneIndexDirectoryPath(lucenePath)
         .templateDocumentPath(templatePath)
+        .numberOfProcessors(numberOfProcessors)
         .sentenceComparatorParameters(sentenceParams)
         .shingleComparatorParameters(shingleParams)
         .metadataComparatorParameters(metadataParams)
@@ -119,6 +121,8 @@ public class PlagdetCli {
     options.addOption("bypass-results-filter", "No limit for results count which would be equal to (files_count * (files_count - 1) / 2) + files_count * similar-docs-limit");
 
     options.addOption("similar-docs-limit", true, "Limit number of indexed documents retrieved for each submission document");
+
+    options.addOption("number-of-threads", true, "Number of threads for comparison execution");
     return options;
   }
 
@@ -137,7 +141,6 @@ public class PlagdetCli {
     System.out.println("Metadata Parameters: " + parameters.getMetadataComparatorParameters());
     System.out.println("Similar Document Parameters: " + parameters.getSimilarDocumentSourceParameters());
 
-    ExecutorService executorService = Executors.newSingleThreadExecutor();
     Plagdet plagdet = new Plagdet(parameters);
     if (indexOnly) {
       index(inputDir, plagdet);
@@ -149,8 +152,8 @@ public class PlagdetCli {
     }
 
     var report = plagdet.compare(inputDir);
-    ZipReportWriter analysisReportWriter = new ZipReportWriter();
-    analysisReportWriter.writeReport(report);
+    ZipReportWriter reportWriter = new ZipReportWriter();
+    reportWriter.writeReport(report);
 
   }
 
