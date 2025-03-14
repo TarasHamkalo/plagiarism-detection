@@ -143,6 +143,7 @@ public class Plagdet {
   }
 
   public void index(@NotNull String path) {
+    Pipeline.init();
     ExecutorServiceSingleton.getExecutorService().init();
     final var submissions = submissionsParser.parseSubmissions(path);
     final var documents = submissions.stream()
