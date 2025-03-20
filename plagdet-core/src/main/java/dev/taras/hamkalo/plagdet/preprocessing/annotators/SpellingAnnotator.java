@@ -141,9 +141,10 @@ public class SpellingAnnotator implements Annotator {
 
     int noDiaDistance = LevenshteinDistance.getDefaultInstance().apply(strippedWord, strippedSuggestion);
     var doubleMetaphone = new DoubleMetaphone();
-    var d1 = doubleMetaphone.doubleMetaphone(word);
-    var d2 = doubleMetaphone.doubleMetaphone(suggestion);
+    var d1 = doubleMetaphone.doubleMetaphone(strippedWord);
+    var d2 = doubleMetaphone.doubleMetaphone(strippedSuggestion);
     var metaphoneDistance = LevenshteinDistance.getDefaultInstance().apply(d1, d2);
+//    log.trace("W1 [{}] M1 [{}] -- W2 [{}] M2 [{}] -- S [{}]", strippedWord, d1, strippedSuggestion, d2, metaphoneDistance + (1.5 * noDiaDistance));
     return metaphoneDistance + (1.5 * noDiaDistance);
   }
 
