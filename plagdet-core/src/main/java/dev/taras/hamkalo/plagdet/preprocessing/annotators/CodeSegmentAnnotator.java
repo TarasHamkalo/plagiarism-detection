@@ -1,9 +1,9 @@
 package dev.taras.hamkalo.plagdet.preprocessing.annotators;
 
+import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
-import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
 import edu.stanford.nlp.util.CoreMap;
@@ -13,8 +13,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -30,53 +28,47 @@ public class CodeSegmentAnnotator implements Annotator {
   public void annotate(Annotation annotation) {
     log.trace("Code segment annotator started");
     var sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
-    List<Integer> codeSentencesIndexes = new ArrayList<>();
-    for (int i = 0; i < sentences.size(); i++) {
-      var sentence = sentences.get(i);
-      Matcher matcher = CODE_PATTERN.matcher(sentence.get(CoreAnnotations.TextAnnotation.class));
-      var isCode = matcher.matches();
-      var isLemmatizedCorrectly = isSentenceLemmatizedCorrectly(sentence);
-      if (isCode && !isLemmatizedCorrectly) {
-        codeSentencesIndexes.add(i);
+    List<CoreMap> filteredSentences = new ArrayList<>();
+    List<int[]> codeSentenceOffsets = new ArrayList<>();
+
+    for (var sentence : sentences) {
+      boolean codePatternMatches =
+        CODE_PATTERN.matcher(sentence.get(CoreAnnotations.TextAnnotation.class)).matches();
+      boolean hasLemmatizationErrors = !isLemmatizedCorrectly(sentence);
+      if (codePatternMatches && hasLemmatizationErrors) {
+        codeSentenceOffsets.add(new int[]{
+          sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class),
+          sentence.get(CoreAnnotations.CharacterOffsetEndAnnotation.class)
+        });
+      } else {
+        filteredSentences.add(sentence);
       }
-
-      mark(sentence, isCode);
     }
-    annotation.set(PlagdetAnnotations.CodeSentencesAnnotation.class, codeSentencesIndexes);
+
+    annotation.set(CoreAnnotations.SentencesAnnotation.class, filteredSentences);
+    annotation.set(CoreAnnotations.TokensAnnotation.class,
+      AnnotationUtils.sentences(annotation).stream()
+        .flatMap(sentence -> AnnotationUtils.wordTokens(sentence).stream())
+        .toList()
+    );
+    annotation.set(PlagdetAnnotations.CodeSentencesAnnotation.class, codeSentenceOffsets);
   }
 
-  private boolean isSentenceLemmatizedCorrectly(@NotNull CoreMap sentence) {
-    var words = sentence.get(PlagdetAnnotations.WordsAnnotation.class);
-    var guessedLemmaCount = words.stream().filter(isGuessed()).count();
-    return (1 - ((double) guessedLemmaCount / words.size())) >= GUESSED_RATIO_THRESHOLD;
-  }
-
-  public Predicate<CoreLabel> isGuessed() {
-    return t -> {
-      var guessedLemmaAnnotation = t.get(PlagdetAnnotations.GuessedLemmaAnnotation.class);
-      return guessedLemmaAnnotation != null && guessedLemmaAnnotation;
-    };
-  }
-
-  private void mark(@NotNull CoreMap sentence, boolean isCode) {
-    sentence.set(PlagdetAnnotations.CodeSegmentAnnotation.class, isCode);
-    for (var token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
-      token.set(PlagdetAnnotations.CodeSegmentAnnotation.class, isCode);
-    }
+  private boolean isLemmatizedCorrectly(@NotNull CoreMap sentence) {
+    var tokens = AnnotationUtils.wordTokens(sentence);
+    long guessedLemmaCount = tokens.stream().filter(AnnotationUtils.isGuessed()).count();
+    return (1 - ((double) guessedLemmaCount / tokens.size())) >= GUESSED_RATIO_THRESHOLD;
   }
 
   @Override
   public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
-    return Set.of(
-      PlagdetAnnotations.CodeSegmentAnnotation.class,
-      PlagdetAnnotations.CodeSentencesAnnotation.class,
-      PlagdetAnnotations.GuessedLemmaAnnotation.class
-    );
+    return Set.of(PlagdetAnnotations.CodeSentencesAnnotation.class);
   }
 
   @Override
   public Set<Class<? extends CoreAnnotation>> requires() {
     return Set.of(
+      PlagdetAnnotations.GuessedLemmaAnnotation.class,
       CoreAnnotations.SentencesAnnotation.class
     );
   }

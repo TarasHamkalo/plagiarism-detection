@@ -4,6 +4,7 @@ import dev.taras.hamkalo.plagdet.comparision.Fragment;
 import dev.taras.hamkalo.plagdet.indexing.exception.IndexingException;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.io.IoUtils;
+import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.util.CoreMap;
@@ -101,7 +102,7 @@ public class Embeddings {
 
   private @NotNull INDArray computeAccVector(@NotNull CoreMap sentence) {
     INDArray accVector = Nd4j.zeros(Embeddings.WORD_VECTOR_SIZE);
-    for (var wordToken : sentence.get(PlagdetAnnotations.WordsAnnotation.class)) {
+    for (var wordToken : AnnotationUtils.wordTokens(sentence)) {
       if (wordToken.get(PlagdetAnnotations.StopWordAnnotation.class)) {
         continue;
       }

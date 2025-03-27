@@ -5,6 +5,7 @@ import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
+import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.util.Sets;
@@ -100,8 +101,9 @@ public class ShingleComparator implements DocumentComparator {
   private Set<Shingle> generateShingles(@NotNull CoreDocument coreDocument) {
     final int step = parameters.size - parameters.overlap;
 
-    var wordTokens = coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
-      .filter(AnnotationUtils::isInformative).toList();
+    var wordTokens = coreDocument.annotation().get(CoreAnnotations.TokensAnnotation.class).stream()
+      .filter(AnnotationUtils::isInformative)
+      .toList();
 
 
     var shingleSet = new HashSet<Shingle>();

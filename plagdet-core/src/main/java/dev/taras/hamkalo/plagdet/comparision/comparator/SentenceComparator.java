@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,15 +70,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     @Builder.Default
     double diceSimilarityThreshold = DEFAULT_DICE_SIMILARITY_THRESHOLD;
-//    public SentenceComparatorParameters() {
-//      this(
-//        DEFAULT_MAX_GAP,
-//        DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD,
-//        DEFAULT_MIN_CLUSTER_SIZE,
-//        DEFAULT_MIN_FRAGMENT_SIDE_SIM,
-//        DEFAULT_MIN_FRAGMENT_CHAR_LENGTH
-//      );
-//    }
+
   }
 
   SentenceComparatorParameters parameters;
@@ -208,13 +201,8 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
     @NotNull CoreSentence firstSentence,
     @NotNull CoreSentence secondSentence
   ) {
-    var firstLemmaSet = firstSentence.coreMap().get(PlagdetAnnotations.WordsAnnotation.class).stream()
-      .map(CoreLabel::lemma)
-      .collect(Collectors.toSet());
-    var secondLemmaSet = secondSentence.coreMap().get(PlagdetAnnotations.WordsAnnotation.class).stream()
-      .map(CoreLabel::lemma)
-      .collect(Collectors.toSet());
-
+    var firstLemmaSet = new HashSet<>(AnnotationUtils.lemmas(firstSentence.coreMap()));
+    var secondLemmaSet = new HashSet<>(AnnotationUtils.lemmas(secondSentence.coreMap()));
     double intersectionSize = Sets.intersection(firstLemmaSet, secondLemmaSet).size() * 1.0;
     return 2 * intersectionSize / (firstLemmaSet.size() + secondLemmaSet.size());
   }

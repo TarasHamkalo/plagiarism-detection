@@ -9,23 +9,35 @@ import java.util.List;
 
 public class PlagdetAnnotations {
 
-  public static class WordAnnotation implements CoreAnnotation<String> {
+  // TODO: used to communicate between stages (spell -> pos)
+  public static class CorrectedSentencesAnnotation implements CoreAnnotation<List<CoreMap>> {
 
     @Override
-    public Class<String> getType() {
-      return String.class;
-    }
-
-  }
-
-  public static class WordsAnnotation implements CoreAnnotation<List<CoreLabel>> {
-
-    @Override
-    public Class<List<CoreLabel>> getType() {
+    public Class<List<CoreMap>> getType() {
       return ErasureUtils.uncheckedCast(List.class);
     }
 
   }
+
+  // TODO: used to communicate between stages (pos -> spell)
+  public static class GuessedSentencesAnnotation implements CoreAnnotation<List<CoreMap>> {
+
+    @Override
+    public Class<List<CoreMap>> getType() {
+      return ErasureUtils.uncheckedCast(List.class);
+    }
+
+  }
+
+  public static class CodeSentencesAnnotation implements CoreAnnotation<List<int[]>> {
+
+    @Override
+    public Class<List<int[]>> getType() {
+      return ErasureUtils.uncheckedCast(List.class);
+    }
+
+  }
+
 
   public static class SpoofedWordAnnotation implements CoreAnnotation<Boolean> {
 
@@ -41,15 +53,6 @@ public class PlagdetAnnotations {
     @Override
     public Class<Boolean> getType() {
       return Boolean.class;
-    }
-
-  }
-
-  public static class NoDiaWordAnnotation implements CoreAnnotation<String> {
-
-    @Override
-    public Class<String> getType() {
-      return String.class;
     }
 
   }
@@ -72,24 +75,6 @@ public class PlagdetAnnotations {
 
   }
 
-  public static class CodeSentencesAnnotation implements CoreAnnotation<List<Integer>> {
-
-    @Override
-    public Class<List<Integer>> getType() {
-      return ErasureUtils.uncheckedCast(List.class);
-    }
-
-  }
-
-  public static class ValidatedSentenceAnnotation implements CoreAnnotation<Boolean> {
-
-    @Override
-    public Class<Boolean> getType() {
-      return Boolean.class;
-    }
-
-  }
-
   public static class MisspelledAnnotation implements CoreAnnotation<Boolean> {
 
     @Override
@@ -99,15 +84,7 @@ public class PlagdetAnnotations {
 
   }
 
-  public static class CorrectedSentencesAnnotation implements CoreAnnotation<List<CoreMap>> {
-
-    @Override
-    public Class<List<CoreMap>> getType() {
-      return ErasureUtils.uncheckedCast(List.class);
-    }
-
-  }
-
+  // TODO: remove
   public static class CorrectedWordAnnotation implements CoreAnnotation<String> {
 
     @Override
@@ -122,15 +99,6 @@ public class PlagdetAnnotations {
     @Override
     public Class<Boolean> getType() {
       return Boolean.class;
-    }
-
-  }
-
-  public static class GuessedSentencesAnnotation implements CoreAnnotation<List<CoreMap>> {
-
-    @Override
-    public Class<List<CoreMap>> getType() {
-      return ErasureUtils.uncheckedCast(List.class);
     }
 
   }

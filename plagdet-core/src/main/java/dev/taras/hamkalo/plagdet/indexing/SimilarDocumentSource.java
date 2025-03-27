@@ -26,9 +26,13 @@ public class SimilarDocumentSource {
 
     public static final int DEFAULT_SIMILAR_DOCUMENTS_LIMIT = 10;
 
+    public static final int DEFAULT_MAX_META_SIMILAR_DOC = 3;
+
     @Builder.Default
     int similarDocumentsLimit = DEFAULT_SIMILAR_DOCUMENTS_LIMIT;
 
+    @Builder.Default
+    int maxMetaSimilarDoc = DEFAULT_MAX_META_SIMILAR_DOC;
   }
 
   private static final Map<String, Function<Metadata, String>> metaFieldExtractor = Map.ofEntries(
@@ -79,7 +83,7 @@ public class SimilarDocumentSource {
       var value = SimilarDocumentSource.metaFieldExtractor.get(field).apply(metadata);
       if (value != null) {
         similarDocs.addAll(
-          this.luceneIndex.retrieveByField(field, value, parameters.getSimilarDocumentsLimit())
+          this.luceneIndex.retrieveByField(field, value, parameters.getMaxMetaSimilarDoc())
         );
       }
     }

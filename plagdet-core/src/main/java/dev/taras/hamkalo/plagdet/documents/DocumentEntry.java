@@ -135,14 +135,12 @@ public class DocumentEntry {
       return this.codeMarking;
     }
 
-    final var sentences = this.coreDocument.annotation()
-      .get(CoreAnnotations.SentencesAnnotation.class);
-    final var codeSentencesIndexes = this.coreDocument.annotation()
+    final var sentences = AnnotationUtils.sentences(coreDocument.annotation());
+    final var codeSentenceBoundaries = this.coreDocument.annotation()
       .get(PlagdetAnnotations.CodeSentencesAnnotation.class);
 
-    this.codeMarking = codeSentencesIndexes.stream()
-      .map(sentences::get)
-      .map(MarkingOffsets::from)
+    this.codeMarking = codeSentenceBoundaries.stream()
+      .map(b -> new MarkingOffsets(b[0], b[1]))
       .map(marking ->
         SpecialMarking.builder()
           .type(SpecialMarkingType.CODE)
@@ -158,7 +156,7 @@ public class DocumentEntry {
     if (coreDocument == null) {
       return Collections.emptyList();
     }
-    return coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
+    return AnnotationUtils.wordTokens(coreDocument.annotation()).stream()
       .filter(AnnotationUtils.isMisspelledToken())
       .map(t ->
         SpecialMarking.builder()
@@ -175,7 +173,7 @@ public class DocumentEntry {
     if (coreDocument == null) {
       return Collections.emptyList();
     }
-    return coreDocument.annotation().get(PlagdetAnnotations.WordsAnnotation.class).stream()
+    return AnnotationUtils.wordTokens(coreDocument.annotation()).stream()
       .filter(AnnotationUtils.isSpoofedToken())
       .map(t ->
         SpecialMarking.builder()

@@ -5,6 +5,7 @@ import cz.cuni.mff.ufal.morphodita.Morpho;
 import cz.cuni.mff.ufal.morphodita.TaggedLemmas;
 import cz.cuni.mff.ufal.morphodita.Tagger;
 import dev.taras.hamkalo.plagdet.io.IoUtils;
+import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
@@ -19,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -65,57 +67,34 @@ public class MorphoditaStanfordAdapter implements Annotator {
   @Override
   public void annotate(Annotation annotation) {
     log.trace("Morpho annotator started");
-
     final var morpho = tagger.getMorpho();
+    for (var sentence : AnnotationUtils.sentences(annotation)) {
+      var coreLabels = AnnotationUtils.wordTokens(sentence);
+      var tokenStrings = new ArrayList<String>();
+      var isAnalyzed = true;
+      for (var coreLabel : coreLabels) {
+        isAnalyzed &= coreLabel.lemma() != null;
+        tokenStrings.add(coreLabel.word());
+      }
 
-    final var guessedSentences = new ArrayList<CoreMap>();
-    final var sentences = getSentencesForTagging(annotation);
-    for (var sentence : sentences) {
-      var tokens = sentence.get(PlagdetAnnotations.WordsAnnotation.class);
-      var texts = extractTokenText(tokens);
+      if (isAnalyzed) {
+        continue;
+      }
 
-      Forms forms = new Forms(texts);
+      Forms forms = new Forms(tokenStrings);
       TaggedLemmas lemmas = new TaggedLemmas();
       tagger.tag(forms, lemmas, Morpho.GUESSER);
-
-      var hasGuessedLemma = false;
-      for (int i = 0; i < tokens.size(); i++) {
-        final var guesserMode = morpho.analyze(forms.get(i), Morpho.GUESSER, new TaggedLemmas());
-        final var isGuessed = guesserMode == Morpho.GUESSER;
-        hasGuessedLemma |= isGuessed;
-
-        var lemma = morpho.rawLemma(lemmas.get(i).getLemma());
-        var tag = remapTag(lemmas.get(i).getTag());
-
-        tokens.get(i).set(PlagdetAnnotations.GuessedLemmaAnnotation.class, isGuessed);
-        tokens.get(i).set(CoreAnnotations.LemmaAnnotation.class, lemma);
-        tokens.get(i).set(CoreAnnotations.PartOfSpeechAnnotation.class, tag);
-      }
-
-      if (hasGuessedLemma) {
-        guessedSentences.add(sentence);
+      for (int i = 0; i < coreLabels.size(); i++) {
+        var isGuessed = isGuessed(morpho, forms.get(i));
+        coreLabels.get(i).set(PlagdetAnnotations.GuessedLemmaAnnotation.class, isGuessed);
+        coreLabels.get(i).setLemma(morpho.rawLemma(lemmas.get(i).getLemma()));
+        coreLabels.get(i).setTag(remapTag(lemmas.get(i).getTag()));
       }
     }
-
-    annotation.set(PlagdetAnnotations.GuessedSentencesAnnotation.class, guessedSentences);
   }
 
-  private @NotNull List<String> extractTokenText(@NotNull List<CoreLabel> tokens) {
-    return tokens.stream()
-      .map(t -> {
-        var corrected = t.get(PlagdetAnnotations.CorrectedWordAnnotation.class);
-        return corrected != null ? corrected : t.get(PlagdetAnnotations.WordAnnotation.class);
-      })
-      .map(String::toLowerCase)
-      .toList();
-  }
-
-  private @NotNull List<CoreMap> getSentencesForTagging(@NotNull Annotation annotation) {
-    if (isMisspelledOnly) {
-      return annotation.get(PlagdetAnnotations.CorrectedSentencesAnnotation.class);
-    }
-
-    return annotation.get(CoreAnnotations.SentencesAnnotation.class);
+  private static boolean isGuessed(Morpho morpho, String word) {
+    return Morpho.GUESSER == morpho.analyze(word, Morpho.GUESSER, new TaggedLemmas());
   }
 
   private String remapTag(String tag) {
@@ -132,8 +111,7 @@ public class MorphoditaStanfordAdapter implements Annotator {
     return Set.of(
       CoreAnnotations.PartOfSpeechAnnotation.class,
       CoreAnnotations.LemmaAnnotation.class,
-      PlagdetAnnotations.GuessedLemmaAnnotation.class,
-      PlagdetAnnotations.GuessedSentencesAnnotation.class
+      PlagdetAnnotations.GuessedLemmaAnnotation.class
     );
   }
 
@@ -142,8 +120,7 @@ public class MorphoditaStanfordAdapter implements Annotator {
     return Set.of(
       CoreAnnotations.TextAnnotation.class,
       CoreAnnotations.TokensAnnotation.class,
-      CoreAnnotations.SentencesAnnotation.class,
-      PlagdetAnnotations.WordAnnotation.class
+      CoreAnnotations.SentencesAnnotation.class
     );
   }
 

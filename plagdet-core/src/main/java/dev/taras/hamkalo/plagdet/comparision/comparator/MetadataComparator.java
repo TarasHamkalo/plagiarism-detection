@@ -107,6 +107,7 @@ public class MetadataComparator implements DocumentComparator {
    * @return value greater than zero if m2 is source
    */
   public double compareAndComment(Metadata m1, Metadata m2, List<String> comments) {
+    //
     double result = 0;
 
     long tmp = compareNullableDates(m1.getCreationDate(), m2.getCreationDate());

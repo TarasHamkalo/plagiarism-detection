@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.preprocessing.annotators;
 
+import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
@@ -8,7 +9,7 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
 import edu.stanford.nlp.util.CoreMap;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class DynamicSentenceSplitter implements Annotator {
+public class SentenceLengthSplitterAnnotator implements Annotator {
 
   private static final int MAX_SENT_LENGTH_WORD = 24;
 
@@ -25,10 +26,9 @@ public class DynamicSentenceSplitter implements Annotator {
     log.trace("Dynamic Sentence splitter annotator started");
     List<CoreMap> newSentences = new ArrayList<>();
     for (var sent : annotation.get(CoreAnnotations.SentencesAnnotation.class)) {
-      long wordTokensCount = countWordTokens(sent.get(CoreAnnotations.TokensAnnotation.class));
+      long wordTokensCount = sent.get(CoreAnnotations.TokensAnnotation.class).size();
       if (wordTokensCount > MAX_SENT_LENGTH_WORD) {
-        log.trace("Resplitting sentence {} words long", wordTokensCount);
-
+        log.trace("Re-splitting sentence {} words long", wordTokensCount);
         List<CoreMap> splitSentences = splitLongSentence(sent.get(CoreAnnotations.TokensAnnotation.class));
         log.trace("Created {} new sentences", splitSentences.size());
 
@@ -41,7 +41,7 @@ public class DynamicSentenceSplitter implements Annotator {
     annotation.set(CoreAnnotations.SentencesAnnotation.class, newSentences);
   }
 
-  private List<CoreMap> splitLongSentence(List<CoreLabel> tokens) {
+  private @NotNull List<CoreMap> splitLongSentence(@NotNull List<CoreLabel> tokens) {
     List<CoreMap> sentences = new ArrayList<>();
     List<CoreLabel> currentSentenceTokens = new ArrayList<>();
 
@@ -61,7 +61,7 @@ public class DynamicSentenceSplitter implements Annotator {
     return sentences;
   }
 
-  private boolean isSentenceBoundary(CoreLabel token) {
+  private boolean isSentenceBoundary(@NotNull CoreLabel token) {
     String afterWhitespace = token.get(CoreAnnotations.AfterAnnotation.class);
     if (afterWhitespace != null && afterWhitespace.contains("\n")) {
       return true;
@@ -70,31 +70,24 @@ public class DynamicSentenceSplitter implements Annotator {
     return token.word().matches("[.!?;]");
   }
 
-  private CoreMap createSentence(List<CoreLabel> tokens) {
-    CoreMap coreMap = new Annotation(tokens.stream().map(CoreLabel::originalText).collect(Collectors.joining(" ")));
+  private @NotNull CoreMap createSentence(@NotNull List<CoreLabel> tokens) {
+    CoreMap coreMap = new Annotation(AnnotationUtils.tokensText(tokens));
     coreMap.set(CoreAnnotations.TokensAnnotation.class, tokens);
     coreMap.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, tokens.get(0).beginPosition());
     coreMap.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, tokens.get(tokens.size() - 1).endPosition());
     return coreMap;
   }
 
-  private static long countWordTokens(List<CoreLabel> tokens) {
-    return tokens.stream()
-      .filter(t -> t.get(PlagdetAnnotations.WordsAnnotation.class) != null)
-      .count();
-  }
-
   @Override
   public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
-    return Set.of(PlagdetAnnotations.ValidatedSentenceAnnotation.class);
+    return Set.of();
   }
 
   @Override
   public Set<Class<? extends CoreAnnotation>> requires() {
     return Set.of(
       CoreAnnotations.TokensAnnotation.class,
-      CoreAnnotations.SentencesAnnotation.class,
-      PlagdetAnnotations.WordAnnotation.class
+      CoreAnnotations.SentencesAnnotation.class
     );
   }
 }
