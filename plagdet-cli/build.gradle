@@ -1,38 +1,45 @@
 plugins {
-  id 'application'
+    id 'application'
 
-  id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 repositories {
-  mavenCentral()
+    mavenCentral()
 
-  flatDir {
-    dirs '../libs'
-  }
+    flatDir {
+        dirs '../libs'
+    }
 }
 
 shadowJar {
-  archiveBaseName.set('plagdet-cli')
-  archiveClassifier.set('')
-  archiveVersion.set('2.1')
-  zip64 true
-//  minimize()
-  mergeServiceFiles()
+    archiveBaseName.set('plagdet-cli')
+    archiveClassifier.set('')
+    archiveVersion.set('2.2')
+    zip64 true
+    mergeServiceFiles()
+    exclude('**/windows-x86/**')
+    exclude('org/bytedeco/**/windows-x86_64/**')
+    exclude('org/bytedeco/**/macosx-x86_64/**')
+    exclude('org/bytedeco/**/android-arm/**')
+    exclude('org/bytedeco/**/android-arm64/**')
+    exclude('org/bytedeco/**/linux-arm/**')
+    exclude('org/bytedeco/**/linux-arm64/**')
 }
 
+
 application {
-  mainClass = 'dev.taras.hamkalo.plagdet.Main'
+    mainClass = 'dev.taras.hamkalo.plagdet.Main'
 }
 
 tasks.withType(JavaExec).configureEach {
-  systemProperty 'java.library.path', '../libs'
+    systemProperty 'java.library.path', '../libs'
 }
 
 dependencies {
 
-  implementation 'commons-cli:commons-cli:1.9.0'
+    implementation 'commons-cli:commons-cli:1.9.0'
 
-  implementation project(':plagdet-core')
+    implementation project(':plagdet-core')
 
 }
