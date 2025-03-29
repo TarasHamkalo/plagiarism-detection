@@ -83,6 +83,8 @@ public class MorphoDiTaAnalysisAnnotator implements Annotator {
         coreLabels.get(i).setLemma(morpho.rawLemma(lemmas.get(i).getLemma()));
         coreLabels.get(i).setTag(remapTag(lemmas.get(i).getTag()));
       }
+      lemmas.delete();
+      forms.delete();
     }
   }
 

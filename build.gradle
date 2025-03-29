@@ -9,14 +9,6 @@ allprojects {
     group = "dev.taras.hamkalo"
     version = "0.0.1"
 
-    repositories {
-        mavenCentral()
-
-        flatDir {
-            dirs 'libs'
-        }
-    }
-
     java {
         withSourcesJar()
         withJavadocJar()

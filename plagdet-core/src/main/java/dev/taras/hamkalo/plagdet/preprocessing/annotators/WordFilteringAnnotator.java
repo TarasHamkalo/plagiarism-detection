@@ -32,7 +32,7 @@ public class WordFilteringAnnotator implements Annotator {
   @Override
   public void annotate(Annotation annotation) {
     log.trace("Word annotator started");
-
+//    log.trace("Tokens before " + AnnotationUtils.wordTokens(annotation).size());
     annotation.get(CoreAnnotations.SentencesAnnotation.class).forEach(sentence -> {
       sentence.get(CoreAnnotations.TokensAnnotation.class)
         .removeIf(token -> {
@@ -52,6 +52,7 @@ public class WordFilteringAnnotator implements Annotator {
         .filter(s -> !AnnotationUtils.wordTokens(s).isEmpty())
         .toList()
     );
+//    log.trace("Tokens after " + AnnotationUtils.wordTokens(annotation).size());
   }
 
   private void transformSpoofed(@NotNull CoreLabel token) {

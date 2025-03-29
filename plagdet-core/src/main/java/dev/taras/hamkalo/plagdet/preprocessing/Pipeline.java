@@ -91,6 +91,7 @@ public abstract class Pipeline {
     coreDocument.sentences();
     firstStagePipeline.annotate(coreDocument);
     secondStagePipeline.annotate(coreDocument);
+
     // spell -> misspelled, tag, pos, code sentences, spoofed
     Annotation dest = new Annotation("");
     dest.set(CoreAnnotations.SentencesAnnotation.class, new ArrayList<>());
