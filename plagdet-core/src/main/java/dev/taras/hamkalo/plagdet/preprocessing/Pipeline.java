@@ -26,7 +26,13 @@ public abstract class Pipeline {
     if (firstStagePipeline == null) {
 
       var props = new Properties();
-      props.put("annotators", "tokenize, ssplit, morpho, spell");//, code, spell");
+      props.put("annotators", "tokenize, ssplit, morpho, code, dynamicssplit, word, stopword, spell");//, code, spell");
+
+
+      props.put(
+        "customAnnotatorClass.code",
+        "dev.taras.hamkalo.plagdet.preprocessing.annotators.CodeSegmentAnnotator"
+      );
 
       props.put("ssplit.eolonly", "false");
       props.put("ssplit.newlineIsSentenceBreak", "two");
@@ -36,37 +42,9 @@ public abstract class Pipeline {
         "dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoditaStanfordAdapter"
       );
 
-
       props.put(
         "customAnnotatorClass.spell",
         "dev.taras.hamkalo.plagdet.preprocessing.annotators.SpellingAnnotator"
-      );
-
-      props.put("enforceRequirements", "false");
-      firstStagePipeline = new StanfordCoreNLP(props);
-    }
-
-    return firstStagePipeline;
-  }
-
-  public static StanfordCoreNLP getSecondStagePipeline() {
-    if (secondStagePipeline == null) {
-      var props = new Properties();
-
-      props.put("annotators", "morpho, code, dynamicssplit, word, stopword");
-      props.put(
-        "customAnnotatorClass.morpho",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoditaStanfordAdapter"
-      );
-
-      props.put(
-        MorphoditaStanfordAdapter.MISSPELLED_ONLY, "true"
-      );
-
-
-      props.put(
-        "customAnnotatorClass.code",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.CodeSegmentAnnotator"
       );
 
       props.put(
@@ -82,6 +60,26 @@ public abstract class Pipeline {
       props.put(
         "customAnnotatorClass.dynamicssplit",
         "dev.taras.hamkalo.plagdet.preprocessing.annotators.SentenceLengthSplitterAnnotator"
+      );
+      props.put("enforceRequirements", "false");
+      firstStagePipeline = new StanfordCoreNLP(props);
+    }
+
+    return firstStagePipeline;
+  }
+
+  public static StanfordCoreNLP getSecondStagePipeline() {
+    if (secondStagePipeline == null) {
+      var props = new Properties();
+
+      props.put("annotators", "morpho");
+      props.put(
+        "customAnnotatorClass.morpho",
+        "dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoditaStanfordAdapter"
+      );
+
+      props.put(
+        MorphoditaStanfordAdapter.MISSPELLED_ONLY, "true"
       );
 
       props.put("enforceRequirements", "false");
