@@ -1,8 +1,6 @@
 package dev.taras.hamkalo.plagdet.preprocessing;
 
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
-import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
-import dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoditaStanfordAdapter;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -19,8 +17,6 @@ public abstract class Pipeline {
   private static StanfordCoreNLP firstStagePipeline;
 
   private static StanfordCoreNLP secondStagePipeline;
-
-  private static StanfordCoreNLP postLemmatizationPipeline;
 
   public static StanfordCoreNLP getFirstStagePipeline() {
     if (firstStagePipeline == null) {
@@ -39,7 +35,7 @@ public abstract class Pipeline {
 
       props.put(
         "customAnnotatorClass.morpho",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoditaStanfordAdapter"
+        "dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoDiTaAnalysisAnnotator"
       );
 
       props.put(
@@ -75,11 +71,7 @@ public abstract class Pipeline {
       props.put("annotators", "morpho");
       props.put(
         "customAnnotatorClass.morpho",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoditaStanfordAdapter"
-      );
-
-      props.put(
-        MorphoditaStanfordAdapter.MISSPELLED_ONLY, "true"
+        "dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoDiTaAnalysisAnnotator"
       );
 
       props.put("enforceRequirements", "false");

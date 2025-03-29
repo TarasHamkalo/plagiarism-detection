@@ -17,15 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class MorphoditaStanfordAdapter implements Annotator {
-
-  public static final String MISSPELLED_ONLY = "morpho.misspelledonly";
+public class MorphoDiTaAnalysisAnnotator implements Annotator {
 
   public static final String TAGGER_RESOURCE_PREFIX = "models/";
 
@@ -47,11 +44,7 @@ public class MorphoditaStanfordAdapter implements Annotator {
 
   private static Tagger tagger;
 
-  boolean isMisspelledOnly;
-
-  public MorphoditaStanfordAdapter(String name, Properties props) {
-    var booleanProperty = props.get(MISSPELLED_ONLY);
-    this.isMisspelledOnly = Boolean.parseBoolean(String.valueOf(booleanProperty));
+  public MorphoDiTaAnalysisAnnotator() {
     loadTagger();
   }
 
@@ -123,6 +116,5 @@ public class MorphoditaStanfordAdapter implements Annotator {
       CoreAnnotations.SentencesAnnotation.class
     );
   }
-
 
 }
