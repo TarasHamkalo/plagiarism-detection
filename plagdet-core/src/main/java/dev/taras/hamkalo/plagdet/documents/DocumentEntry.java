@@ -10,6 +10,7 @@ import dev.taras.hamkalo.plagdet.io.FileData;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -41,6 +42,12 @@ public class DocumentEntry {
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
   CoreDocument coreDocument;
+
+  @Nullable
+  @JsonIgnore
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  Annotation annotation;
 
   @NotNull
   @ToString.Exclude

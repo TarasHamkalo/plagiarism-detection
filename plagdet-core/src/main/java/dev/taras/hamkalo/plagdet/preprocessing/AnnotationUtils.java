@@ -16,6 +16,14 @@ import java.util.stream.Collectors;
 
 public abstract class AnnotationUtils {
 
+  public static <V> void copy(
+    @NotNull Class<? extends edu.stanford.nlp.util.TypesafeMap.Key<V>> clazz,
+    @NotNull Annotation dest,
+    @NotNull Annotation source
+  ) {
+    dest.set(clazz, source.get(clazz));
+  }
+
   public static @NotNull Integer begin(@NotNull CoreMap map) {
     return map.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
   }
@@ -109,7 +117,9 @@ public abstract class AnnotationUtils {
   }
 
   public static @NotNull List<String> getCorrection(@NotNull CoreLabel token) {
-    var correctedWordAnnotation = token.get(PlagdetAnnotations.CorrectedWordAnnotation.class);
-    return correctedWordAnnotation != null ? List.of(correctedWordAnnotation) : Collections.emptyList();
+    // TODO: proper correction suggestion
+    return List.of(token.word());
+//    var correctedWordAnnotation = token.get(PlagdetAnnotations.CorrectedWordAnnotation.class);
+//    return correctedWordAnnotation != null ? List.of(correctedWordAnnotation) : Collections.emptyList();
   }
 }

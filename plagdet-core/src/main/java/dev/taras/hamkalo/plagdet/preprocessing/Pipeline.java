@@ -1,10 +1,17 @@
 package dev.taras.hamkalo.plagdet.preprocessing;
 
+import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
+import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoditaStanfordAdapter;
+import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 public abstract class Pipeline {
@@ -45,6 +52,7 @@ public abstract class Pipeline {
   public static StanfordCoreNLP getSecondStagePipeline() {
     if (secondStagePipeline == null) {
       var props = new Properties();
+
       props.put("annotators", "morpho, code, dynamicssplit, word, stopword");
       props.put(
         "customAnnotatorClass.morpho",
@@ -88,8 +96,31 @@ public abstract class Pipeline {
     secondStagePipeline = getSecondStagePipeline();
   }
 
-  public static void annotate(@NotNull CoreDocument coreDocument) {
+  public static Annotation annotate(@NotNull DocumentEntry documentEntry) {
+    CoreDocument coreDocument = new CoreDocument(documentEntry.getFileData().getContent());
+    coreDocument.sentences();
     firstStagePipeline.annotate(coreDocument);
     secondStagePipeline.annotate(coreDocument);
+    // spell -> misspelled, tag, pos, code sentences, spoofed
+    Annotation dest = new Annotation("");
+    dest.set(CoreAnnotations.SentencesAnnotation.class, new ArrayList<>());
+
+    for (var sentence : AnnotationUtils.sentences(coreDocument.annotation())) {
+      sentence.remove(CoreAnnotations.TextAnnotation.class); // Ensure text is removed
+      List<CoreLabel> compactTokens = new ArrayList<>();
+
+      for (var token : AnnotationUtils.wordTokens(sentence)) {
+        CoreLabel compactToken = new CoreLabel();
+        compactToken.set(CoreAnnotations.LemmaAnnotation.class, token.lemma());
+        compactToken.set(CoreAnnotations.PartOfSpeechAnnotation.class, token.tag());
+        compactToken.set(CoreAnnotations.TextAnnotation.class, token.word());
+        compactTokens.add(compactToken);
+      }
+
+      sentence.set(CoreAnnotations.TokensAnnotation.class, compactTokens);
+      dest.get(CoreAnnotations.SentencesAnnotation.class).add(sentence);
+    }
+    return dest;
   }
+
 }

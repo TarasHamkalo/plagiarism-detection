@@ -77,10 +77,11 @@ public class SpellingAnnotator implements Annotator {
           continue;
         }
 
-        misspelledToken.setWord(best);
-        log.trace(
+        log.warn(
           "[Misspell at {}] [Pick {}] [Options {}]", misspelledToken.word(), best, suggestions
         );
+        misspelledToken.setWord(best);
+        misspelledToken.setLemma(null);
       }
     }
   }
@@ -127,9 +128,7 @@ public class SpellingAnnotator implements Annotator {
   @Override
   public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
     return Set.of(
-      PlagdetAnnotations.MisspelledAnnotation.class,
-      PlagdetAnnotations.CorrectedWordAnnotation.class,
-      PlagdetAnnotations.CorrectedSentencesAnnotation.class
+      PlagdetAnnotations.MisspelledAnnotation.class
     );
   }
 
