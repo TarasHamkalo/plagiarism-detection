@@ -1,6 +1,6 @@
 package dev.taras.hamkalo.plagdet.indexing.lucene;
 
-import dev.taras.hamkalo.plagdet.io.Metadata;
+import dev.taras.hamkalo.plagdet.documents.Metadata;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;

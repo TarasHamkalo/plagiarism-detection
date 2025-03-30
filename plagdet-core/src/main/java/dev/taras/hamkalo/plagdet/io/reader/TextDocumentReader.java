@@ -1,17 +1,16 @@
 package dev.taras.hamkalo.plagdet.io.reader;
 
-import dev.taras.hamkalo.plagdet.io.Metadata;
+import dev.taras.hamkalo.plagdet.documents.Metadata;
 import dev.taras.hamkalo.plagdet.io.exception.ContentReadException;
 import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Date;
 import java.util.Set;
 
-public class TextReader implements ContentReader, MetadataReader {
+public class TextDocumentReader implements DocumentReader {
 
   @Override
   public String getContent(Path path) throws ContentReadException {

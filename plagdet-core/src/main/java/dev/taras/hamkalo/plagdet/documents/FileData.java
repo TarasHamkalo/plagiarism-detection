@@ -1,4 +1,4 @@
-package dev.taras.hamkalo.plagdet.io;
+package dev.taras.hamkalo.plagdet.documents;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -19,8 +19,6 @@ public class FileData {
 
   Path temporaryPath;
 
-  // used to identify documents, when zipped the temp path will be like
-  // /tmp/extracted.../ARCHIVE_NAME, this will be entry name if so
   String persistentPath;
 
   Metadata metadata;

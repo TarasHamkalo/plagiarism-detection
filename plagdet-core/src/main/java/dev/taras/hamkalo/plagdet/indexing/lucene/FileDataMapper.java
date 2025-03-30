@@ -1,14 +1,12 @@
 package dev.taras.hamkalo.plagdet.indexing.lucene;
 
-import dev.taras.hamkalo.plagdet.io.FileData;
+import dev.taras.hamkalo.plagdet.documents.FileData;
 import org.apache.lucene.document.Document;
 
 import static org.apache.lucene.document.Field.Store;
 
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-
-import java.nio.file.Path;
 
 public class FileDataMapper {
 

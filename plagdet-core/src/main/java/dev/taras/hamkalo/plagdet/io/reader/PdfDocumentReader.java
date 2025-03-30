@@ -1,6 +1,6 @@
 package dev.taras.hamkalo.plagdet.io.reader;
 
-import dev.taras.hamkalo.plagdet.io.Metadata;
+import dev.taras.hamkalo.plagdet.documents.Metadata;
 import dev.taras.hamkalo.plagdet.io.exception.ContentReadException;
 import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
 import org.apache.pdfbox.Loader;
@@ -11,7 +11,7 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public class PdfDocumentReader implements ContentReader, MetadataReader {
+public class PdfDocumentReader implements DocumentReader {
 
   @Override
   public String getContent(Path path) throws ContentReadException {

@@ -5,7 +5,7 @@ import dev.taras.hamkalo.plagdet.indexing.exception.IndexingException;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneConstants;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneResult;
-import dev.taras.hamkalo.plagdet.io.Metadata;
+import dev.taras.hamkalo.plagdet.documents.Metadata;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;

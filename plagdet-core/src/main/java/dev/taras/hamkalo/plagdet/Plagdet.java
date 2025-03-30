@@ -73,14 +73,10 @@ public class Plagdet {
   }
 
   private SubmissionsParser initSubmissionsParser() {
-    List<ContentReader> contentReaders = List.of(
-      new DocxDocumentReader(), new DocDocumentReader(), new PdfDocumentReader(), new TextReader()
-    );
-    List<MetadataReader> metadataReaders = List.of(
-      new DocxDocumentReader(), new DocDocumentReader(), new PdfDocumentReader(), new TextReader()
-    );
-
-    return new SubmissionsParser(contentReaders, metadataReaders);
+    return new SubmissionsParser(List.of(
+      new DocxDocumentReader(), new DocDocumentReader(),
+      new PdfDocumentReader(), new TextDocumentReader()
+    ));
   }
 
   private @NotNull ComparisonPipeline initComparisonPipeline(
@@ -126,7 +122,6 @@ public class Plagdet {
     submissions = submissionsParser.parseSubmissions(path);
     Pipeline.init();
     ExecutorServiceSingleton.getExecutorService().init();
-
     comparisonPipeline.compareSubmissions(submissions);
 
     ExecutorServiceSingleton.getExecutorService().deInit();

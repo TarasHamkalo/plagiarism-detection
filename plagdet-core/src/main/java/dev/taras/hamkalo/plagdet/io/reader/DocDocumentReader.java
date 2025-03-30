@@ -1,18 +1,17 @@
 package dev.taras.hamkalo.plagdet.io.reader;
 
-import dev.taras.hamkalo.plagdet.io.Metadata;
+import dev.taras.hamkalo.plagdet.documents.Metadata;
 import dev.taras.hamkalo.plagdet.io.exception.ContentReadException;
 import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
 import org.apache.poi.hpsf.SummaryInformation;
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.extractor.WordExtractor;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public class DocDocumentReader implements ContentReader, MetadataReader {
+public class DocDocumentReader implements DocumentReader {
 
   public static final int NANO_TIME_TO_SEC_PRECISION = 10_000_000;
 

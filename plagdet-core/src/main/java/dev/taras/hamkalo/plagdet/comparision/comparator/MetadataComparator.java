@@ -3,7 +3,7 @@ package dev.taras.hamkalo.plagdet.comparision.comparator;
 import dev.taras.hamkalo.plagdet.comparision.PlagSource;
 import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
-import dev.taras.hamkalo.plagdet.io.Metadata;
+import dev.taras.hamkalo.plagdet.documents.Metadata;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

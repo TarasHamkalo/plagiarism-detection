@@ -1,107 +1,84 @@
 package dev.taras.hamkalo.plagdet.io;
 
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
+import dev.taras.hamkalo.plagdet.documents.FileData;
+import dev.taras.hamkalo.plagdet.documents.Metadata;
 import dev.taras.hamkalo.plagdet.documents.Submission;
 import dev.taras.hamkalo.plagdet.io.exception.ContentReadException;
 import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
 import dev.taras.hamkalo.plagdet.io.exception.ParsingException;
-import dev.taras.hamkalo.plagdet.io.reader.ContentReader;
-import dev.taras.hamkalo.plagdet.io.reader.ContentReaders;
-import dev.taras.hamkalo.plagdet.io.reader.MetadataReader;
-import dev.taras.hamkalo.plagdet.io.reader.MetadataReaders;
+import dev.taras.hamkalo.plagdet.io.reader.DocumentReader;
+import dev.taras.hamkalo.plagdet.io.reader.DocumentReaders;
 import edu.stanford.nlp.util.Sets;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SubmissionsParser {
 
   public static final Pattern SUBMITTER_REGEX = Pattern.compile(
-    "\\d{4}_\\d{4}_([A-Z][a-z]+_[A-Z][a-z]+)_"
+    "\\d{4}_\\d{4}_([A-Z][a-z]+)_([A-Z][a-z]+)_"
   );
 
   public static final Set<String> SUPPORTED_ARCHIVE_EXT = Set.of("zip");
 
   public static final Set<String> SUPPORTED_FILE_FORMATS = Set.of("docx", "doc", "pdf");
 
-  ContentReader contentReader;
+  DocumentReaders documentReaders;
 
-  MetadataReader metadataReader;
-
-  public SubmissionsParser(List<ContentReader> contentReaders,
-                           List<MetadataReader> metaReaders) {
-
-    this.contentReader = new ContentReaders(contentReaders);
-    this.metadataReader = new MetadataReaders(metaReaders);
+  public SubmissionsParser(@NotNull List<DocumentReader> contentReaders) {
+    this.documentReaders = new DocumentReaders(contentReaders);
   }
 
-  public @Nullable DocumentEntry readTemplate(@Nullable String inputPath) throws ParsingException {
-    if (inputPath == null) {
-      return null;
-    }
-
-    var path = Path.of(inputPath);
-    if (!Files.exists(path) || Files.isDirectory(path)) {
-      throw new ParsingException("Path does not exist");
-    }
-
-    var fileData = buildFileData(path.toFile(), "template", "template");
-    fileData.setSubmitter(extractSubmitter(path));
-    return DocumentEntry.builder()
-      .indexed(false)
-      .template(true)
-      .fileData(fileData)
-      .build();
-  }
-
-  public List<Submission> parseSubmissions(String inputPath) throws ParsingException {
+  public @NotNull List<Submission> parseSubmissions(
+    @NotNull String inputPath
+  ) throws ParsingException {
     var path = Path.of(inputPath);
     var file = path.toFile();
     if (!file.exists()) {
       throw new ParsingException("Path does not exist");
     }
 
-    final String persistentPrefix = FilenameUtils.getBaseName(file.getName());
+    String persistentPrefix = FilenameUtils.getBaseName(file.getName());
     if (isSupportedArchive(file)) {
-      final var extractedEntries = extractArchiveSingleLevel(
-        file, Sets.union(SUPPORTED_ARCHIVE_EXT, SUPPORTED_FILE_FORMATS)
-      );
-      return parseSubmissions(extractedEntries, persistentPrefix);
-    }
-
-    if (file.isDirectory()) {
-      // add all paths inside of it, for a file we create a submission directly for it
-      // and for a zip we extract all of them
-      Map<String, File> fileMap = new HashMap<>();
-      File[] childs = file.listFiles();
-      if (childs != null) {
-        for (var child : childs) {
-          fileMap.put(child.getName(), child);
-        }
-
-        return parseSubmissions(fileMap, persistentPrefix);
-      }
-
+      return parseSubmissionsFromArchive(file, persistentPrefix);
+    } else if (file.isDirectory()) {
+      return parseSubmissionsFromDirectory(file, persistentPrefix);
     }
 
     throw new ParsingException("Path does not represent directory or archive");
+  }
+
+  private @NotNull List<Submission> parseSubmissionsFromArchive(
+    @NotNull File file,
+    @NotNull String persistentPrefix
+  ) throws ParsingException {
+    var extractedFiles = ArchiveExtractor.extract(
+      file, Sets.union(SUPPORTED_ARCHIVE_EXT, SUPPORTED_FILE_FORMATS)
+    );
+    return parseSubmissions(extractedFiles, persistentPrefix);
+  }
+
+  private @NotNull List<Submission> parseSubmissionsFromDirectory(
+    @NotNull File directory,
+    @NotNull String persistentPrefix
+  ) {
+    Map<String, File> fileMap = Arrays.stream(Objects.requireNonNull(directory.listFiles()))
+      .collect(Collectors.toMap(File::getName, f -> f));
+    return parseSubmissions(fileMap, persistentPrefix);
   }
 
   private List<Submission> parseSubmissions(
@@ -110,22 +87,20 @@ public class SubmissionsParser {
   ) {
 
     var submissions = new ArrayList<Submission>();
-    for (var submissionSource: submissionFiles.entrySet()) {
+    for (var submissionSource : submissionFiles.entrySet()) {
       var submissionFile = submissionSource.getValue();
       var submitterName = extractSubmitter(submissionFile.toPath());
       var submission = new Submission(submissionFile.toPath(), new ArrayList<>());
-
       log.info("Parsing {}", submissionFile.getAbsolutePath());
-
-
       try {
         if (isSupportedArchive(submissionFile)) {
-          var fileMap = extractArchiveSingleLevel(
+          var fileMap = ArchiveExtractor.extract(
             submissionFile, SubmissionsParser.SUPPORTED_FILE_FORMATS
           );
 
           var extendedPrefix =
             persistentPrefix + File.separator + FilenameUtils.getBaseName(submissionSource.getKey());
+
           var documents = fileMap.entrySet().stream()
             .map((e) ->
               buildFileData(e.getValue(), submitterName, extendedPrefix + File.separator + e.getKey())
@@ -150,6 +125,39 @@ public class SubmissionsParser {
     return submissions;
   }
 
+  public @Nullable DocumentEntry readTemplate(@Nullable String inputPath) throws ParsingException {
+    if (inputPath == null) {
+      return null;
+    }
+
+    var path = Path.of(inputPath);
+    if (!Files.exists(path) || Files.isDirectory(path)) {
+      throw new ParsingException("Path does not exist");
+    }
+
+    var fileData = buildFileData(path.toFile(), "template", "template");
+    fileData.setSubmitter(extractSubmitter(path));
+    return DocumentEntry.builder()
+      .indexed(false)
+      .template(true)
+      .fileData(fileData)
+      .build();
+  }
+
+  private static boolean isSupportedArchive(@NotNull File file) {
+    return SUPPORTED_ARCHIVE_EXT.contains(FilenameUtils.getExtension(file.getName())) &&
+           file.isFile();
+  }
+
+  private String extractSubmitter(Path path) {
+    var matcher = SUBMITTER_REGEX.matcher(path.toString());
+    if (matcher.find()) {
+      return matcher.group(1) + " " + matcher.group(2);
+    }
+
+    return FileNameUtils.getBaseName(path);
+  }
+
   private FileData buildFileData(
     @NotNull File file,
     @NotNull String submitterName,
@@ -157,7 +165,7 @@ public class SubmissionsParser {
   ) {
     Metadata metadata = Metadata.NONE;
     try {
-      metadata = metadataReader.getMetadata(file.toPath());
+      metadata = documentReaders.getMetadata(file.toPath());
     } catch (MetadataReadException e) {
       log.error("Can not extract metadata for submission {}, cause {}", file, e.getMessage());
     }
@@ -166,83 +174,8 @@ public class SubmissionsParser {
       .submitter(submitterName)
       .persistentPath(persistentPath)
       .temporaryPath(file.toPath())
-      .content(contentReader.getContent(file.toPath()))
+      .content(documentReaders.getContent(file.toPath()))
       .metadata(metadata)
       .build();
   }
-
-  /**
-   * @param file             denote archive to be expanded
-   * @param preservedFormats formats which will be preserved, other dropped
-   * @return archive entry name -> file map
-   */
-  private Map<String, File> extractArchiveSingleLevel(
-    @NotNull File file,
-    @Nullable Set<String> preservedFormats
-  ) throws ParsingException {
-
-    var result = new HashMap<String, File>();
-
-    try (InputStream fis = new FileInputStream(file);
-         BufferedInputStream bis = new BufferedInputStream(fis);
-         ArchiveInputStream<ZipArchiveEntry> ais = new ZipArchiveInputStream(bis)) {
-
-      Path tempDir = Files.createTempDirectory("extracted_");
-      tempDir.toFile().deleteOnExit();
-
-      Path extractDest = tempDir.resolve(FilenameUtils.getBaseName(file.getName()));
-      extractDest.toFile().deleteOnExit();
-
-      ArchiveEntry entry;
-      while ((entry = ais.getNextEntry()) != null) {
-        String baseName = FilenameUtils.getBaseName(entry.getName());
-        if (entry.isDirectory() ||
-            entry.getName().contains("../") ||
-            baseName.startsWith(".")) {
-          continue;
-        }
-
-        if (entry.getName().chars().filter(c -> c == '/').count() > 1) {
-          continue;
-        }
-
-        if (preservedFormats != null &&
-            !preservedFormats.contains(FilenameUtils.getExtension(entry.getName()))) {
-          continue;
-        }
-        File newFile = new File(extractDest.toFile(), entry.getName());
-        File parentFile = newFile.getParentFile();
-        parentFile.mkdirs();
-        parentFile.deleteOnExit();
-        newFile.deleteOnExit();
-
-        try (var fos = new FileOutputStream(newFile)) {
-          IOUtils.copy(ais, fos);
-        }
-
-        result.put(entry.getName(), newFile);
-      }
-
-    } catch (IOException e) {
-      throw new ParsingException(e);
-    }
-
-    return result;
-  }
-
-  private String extractSubmitter(Path path) {
-    var matcher = SUBMITTER_REGEX.matcher(path.toString());
-    if (matcher.find()) {
-      return matcher.group(1);
-    }
-
-    return FileNameUtils.getBaseName(path);
-  }
-
-  private static boolean isSupportedArchive(File file) {
-    return file.isFile() &&
-           SUPPORTED_ARCHIVE_EXT.contains(FilenameUtils.getExtension(file.getName()));
-  }
-
-
 }

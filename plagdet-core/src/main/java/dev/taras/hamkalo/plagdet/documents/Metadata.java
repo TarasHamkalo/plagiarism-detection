@@ -1,4 +1,4 @@
-package dev.taras.hamkalo.plagdet.io;
+package dev.taras.hamkalo.plagdet.documents;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
