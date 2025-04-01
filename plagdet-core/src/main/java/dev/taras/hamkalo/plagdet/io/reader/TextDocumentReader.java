@@ -1,8 +1,10 @@
 package dev.taras.hamkalo.plagdet.io.reader;
 
+import dev.taras.hamkalo.plagdet.documents.FileData;
 import dev.taras.hamkalo.plagdet.documents.Metadata;
-import dev.taras.hamkalo.plagdet.io.exception.ContentReadException;
-import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
+import dev.taras.hamkalo.plagdet.io.exception.DocumentReadException;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,20 +12,28 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Date;
 import java.util.Set;
 
+@Slf4j
 public class TextDocumentReader implements DocumentReader {
 
   @Override
-  public String getContent(Path path) throws ContentReadException {
+  public @NotNull FileData getFileData(@NotNull Path path) throws DocumentReadException {
+    Metadata metadata = getMetadata(path);
+    String content = getContent(path);
+    return FileData.builder()
+      .content(content)
+      .metadata(metadata)
+      .build();
+  }
+
+  public @NotNull String getContent(@NotNull Path path) throws DocumentReadException {
     try {
       return Files.readString(path);
     } catch (Exception e) {
-      throw new ContentReadException(e.getMessage());
+      throw new DocumentReadException(path, e);
     }
-
   }
 
-  @Override
-  public Metadata getMetadata(Path path) throws MetadataReadException {
+  public @NotNull Metadata getMetadata(@NotNull Path path) {
     try {
       var attributes = Files.readAttributes(path, BasicFileAttributes.class);
 
@@ -37,7 +47,8 @@ public class TextDocumentReader implements DocumentReader {
         .lastPrinted(null)
         .build();
     } catch (Exception e) {
-      throw new MetadataReadException("Unable to read metadata for file: " + path.toString());
+      log.error("Failed to read metadata for path {}", path);
+      return Metadata.NONE;
     }
   }
 

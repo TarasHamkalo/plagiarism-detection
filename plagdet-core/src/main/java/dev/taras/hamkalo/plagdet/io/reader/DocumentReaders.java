@@ -1,8 +1,7 @@
 package dev.taras.hamkalo.plagdet.io.reader;
 
-import dev.taras.hamkalo.plagdet.documents.Metadata;
-import dev.taras.hamkalo.plagdet.io.exception.ContentReadException;
-import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
+import dev.taras.hamkalo.plagdet.documents.FileData;
+import dev.taras.hamkalo.plagdet.io.exception.DocumentReadException;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -20,30 +19,16 @@ public class DocumentReaders implements DocumentReader {
   List<DocumentReader> readers;
 
   @Override
-  public String getContent(Path path) throws ContentReadException {
-
+  public FileData getFileData(Path path) throws DocumentReadException {
     String extension = FilenameUtils.getExtension(path.getFileName().toString());
 
     for (var reader : readers) {
       if (reader.supports(extension)) {
-        return reader.getContent(path);
+        return reader.getFileData(path);
       }
     }
 
-    throw new ContentReadException("Extension is not supported: " + extension);
-  }
-
-  @Override
-  public Metadata getMetadata(Path path) throws MetadataReadException {
-    String extension = FilenameUtils.getExtension(path.getFileName().toString());
-
-    for (var reader : readers) {
-      if (reader.supports(extension)) {
-        return reader.getMetadata(path);
-      }
-    }
-
-    throw new ContentReadException("Extension is not supported: " + extension);
+    throw new DocumentReadException("Extension is not supported: " + extension);
   }
 
   @Override

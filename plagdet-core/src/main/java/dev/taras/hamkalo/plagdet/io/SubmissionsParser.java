@@ -2,10 +2,8 @@ package dev.taras.hamkalo.plagdet.io;
 
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.FileData;
-import dev.taras.hamkalo.plagdet.documents.Metadata;
 import dev.taras.hamkalo.plagdet.documents.Submission;
-import dev.taras.hamkalo.plagdet.io.exception.ContentReadException;
-import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
+import dev.taras.hamkalo.plagdet.io.exception.DocumentReadException;
 import dev.taras.hamkalo.plagdet.io.exception.ParsingException;
 import dev.taras.hamkalo.plagdet.io.reader.DocumentReader;
 import dev.taras.hamkalo.plagdet.io.reader.DocumentReaders;
@@ -116,7 +114,7 @@ public class SubmissionsParser {
         }
 
         submissions.add(submission);
-      } catch (ParsingException | ContentReadException e) {
+      } catch (ParsingException | DocumentReadException e) {
         log.error("Submission {} was discarded, reason {}", submissionFile, e.getMessage());
       }
 
@@ -163,19 +161,10 @@ public class SubmissionsParser {
     @NotNull String submitterName,
     @NotNull String persistentPath
   ) {
-    Metadata metadata = Metadata.NONE;
-    try {
-      metadata = documentReaders.getMetadata(file.toPath());
-    } catch (MetadataReadException e) {
-      log.error("Can not extract metadata for submission {}, cause {}", file, e.getMessage());
-    }
-
-    return FileData.builder()
-      .submitter(submitterName)
-      .persistentPath(persistentPath)
-      .temporaryPath(file.toPath())
-      .content(documentReaders.getContent(file.toPath()))
-      .metadata(metadata)
-      .build();
+    var fileData = documentReaders.getFileData(file.toPath());
+    fileData.setSubmitter(submitterName);
+    fileData.setPersistentPath(persistentPath);
+    fileData.setTemporaryPath(file.toPath());
+    return fileData;
   }
 }

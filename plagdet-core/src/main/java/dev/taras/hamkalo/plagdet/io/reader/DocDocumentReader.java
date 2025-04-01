@@ -1,35 +1,52 @@
 package dev.taras.hamkalo.plagdet.io.reader;
 
+import dev.taras.hamkalo.plagdet.documents.FileData;
 import dev.taras.hamkalo.plagdet.documents.Metadata;
-import dev.taras.hamkalo.plagdet.io.exception.ContentReadException;
-import dev.taras.hamkalo.plagdet.io.exception.MetadataReadException;
+import dev.taras.hamkalo.plagdet.io.exception.DocumentReadException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hpsf.SummaryInformation;
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.extractor.WordExtractor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
+@Slf4j
 public class DocDocumentReader implements DocumentReader {
-
-  public static final int NANO_TIME_TO_SEC_PRECISION = 10_000_000;
 
   public static final int NANO_TIME_TO_MIN_PRECISION = 60 * 10_000_000;
 
   @Override
-  public String getContent(Path path) throws ContentReadException {
+  public @NotNull FileData getFileData(@NotNull Path path) throws DocumentReadException {
     try (HWPFDocument doc = new HWPFDocument(Files.newInputStream(path))) {
-      WordExtractor extractor = new WordExtractor(doc);
-      return extractor.getText();
+      Metadata metadata = getMetadata(path, doc);
+      String content = getContent(path, doc);
+      return FileData.builder()
+        .content(content)
+        .metadata(metadata)
+        .build();
     } catch (Exception e) {
-      throw new ContentReadException(e.getMessage());
+      throw new DocumentReadException(e.getMessage());
     }
   }
 
-  @Override
-  public Metadata getMetadata(Path path) throws MetadataReadException {
-    try (HWPFDocument doc = new HWPFDocument(Files.newInputStream(path))) {
+  public @Nullable String getContent(
+    @NotNull Path path,
+    @NotNull HWPFDocument doc
+  ) throws DocumentReadException {
+    try {
+      WordExtractor extractor = new WordExtractor(doc);
+      return extractor.getText();
+    } catch (Exception e) {
+      throw new DocumentReadException(path, e);
+    }
+  }
+
+  public @NotNull Metadata getMetadata(@NotNull Path path, @NotNull HWPFDocument doc) {
+    try {
       SummaryInformation summaryInfo = doc.getSummaryInformation();
 
       String author = Optional.ofNullable(summaryInfo.getAuthor())
@@ -52,7 +69,8 @@ public class DocDocumentReader implements DocumentReader {
         .revisionsNumber(revisionsNumber != null ? Integer.parseInt(revisionsNumber) : 0)
         .build();
     } catch (Exception e) {
-      throw new MetadataReadException(e.getMessage());
+      log.error("Failed to read metadata for path {}", path);
+      return Metadata.NONE;
     }
   }
 
