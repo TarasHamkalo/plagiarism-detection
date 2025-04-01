@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.preprocessing;
 
+import dev.taras.hamkalo.plagdet.Plagdet;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations;
@@ -9,6 +10,7 @@ import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.util.CoreMap;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
@@ -38,12 +40,28 @@ public abstract class AnnotationUtils {
       .collect(Collectors.joining(" "));
   }
 
+  public static @NotNull List<int[]> templateSentences(@NotNull CoreMap map) {
+    var sentences = map.get(PlagdetAnnotations.TemplateSentencesAnnotation.class);
+    return sentences == null ? Collections.emptyList() : sentences;
+  }
+
+  public static @NotNull List<int[]> codeSentences(@NotNull CoreMap map) {
+    var sentences = map.get(PlagdetAnnotations.CodeSentencesAnnotation.class);
+    return sentences == null ? Collections.emptyList() : sentences;
+  }
+
   public static @NotNull List<CoreMap> sentences(@NotNull CoreMap map) {
     return map.get(CoreAnnotations.SentencesAnnotation.class);
   }
 
   public static @NotNull List<CoreLabel> wordTokens(@NotNull CoreMap map) {
     return map.get(CoreAnnotations.TokensAnnotation.class);
+  }
+
+  public static @NotNull String lemmasText(@NotNull CoreMap map) {
+    return map.get(CoreAnnotations.TokensAnnotation.class).stream()
+      .map(CoreLabel::lemma)
+      .collect(Collectors.joining(" "));
   }
 
   public static @NotNull List<String> lemmas(@NotNull CoreMap map) {
@@ -68,40 +86,23 @@ public abstract class AnnotationUtils {
     return !isCodeSegment && !isTemplate && !isStopWord;
   }
 
-  public static void addTemplateAnnotation(@NotNull CoreMap sentence) {
-    sentence.set(PlagdetAnnotations.TemplateSentenceAnnotation.class, true);
-    sentence.get(CoreAnnotations.TokensAnnotation.class)
-      .forEach(t -> t.set(PlagdetAnnotations.TemplateSentenceAnnotation.class, true));
-  }
-
   public static void addTemplateAnnotation(
     @NotNull Annotation annotation,
-    @NotNull List<SpecialMarking> markings,
-    int side
+    @NotNull CoreMap sentence,
+    int sentenceIndex
   ) {
-    if (markings.isEmpty()) {
-      return;
+    var templateSentences = annotation.get(PlagdetAnnotations.TemplateSentencesAnnotation.class);
+    if (templateSentences == null) {
+      templateSentences = new ArrayList<>();
+      annotation.set(PlagdetAnnotations.TemplateSentencesAnnotation.class, templateSentences);
     }
 
-    var sorted = markings.stream().sorted().toList();
-    var sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
-    int i = 0;
-    for (var sentence : sentences) {
-      if (i >= sorted.size()) {
-        break;
-      }
+    templateSentences.add(new int[]{
+      AnnotationUtils.begin(sentence),
+      AnnotationUtils.end(sentence),
+    });
 
-      var sentenceStart = sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-      var sentenceEnd = sentence.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
-      var marking = sorted.get(i).getSideMarking(side);
-
-      if (sentenceStart >= marking.getStart() &&
-          sentenceEnd <= marking.getEnd()) {
-        addTemplateAnnotation(sentence);
-      } else {
-        i++;
-      }
-    }
+    AnnotationUtils.sentences(annotation).remove(sentenceIndex);
   }
 
   public static @NotNull Predicate<CoreLabel> isMisspelledToken() {

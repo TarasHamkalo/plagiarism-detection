@@ -39,12 +39,6 @@ public class DocumentEntry {
   @JsonIgnore
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
-  CoreDocument coreDocument;
-
-  @Nullable
-  @JsonIgnore
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
   Annotation annotation;
 
   @NotNull
@@ -82,6 +76,7 @@ public class DocumentEntry {
     return id = getId(this.fileData);
   }
 
+  // TODO: can be derived on frontend
   @JsonGetter("maxSimilarity")
   public double maxSimilarity() {
     return documentPairs.stream()
@@ -127,12 +122,12 @@ public class DocumentEntry {
 
   @JsonIgnore
   public boolean isAnnotated() {
-    return this.coreDocument != null && this.coreDocument.annotation().size() != 0;
+    return this.annotation != null && this.annotation.size() != 0;
   }
 
   @JsonIgnore
   public @NotNull List<SpecialMarking> getCodeMarking() {
-    if (coreDocument == null) {
+    if (!isAnnotated()) {
       return Collections.emptyList();
     }
 
@@ -140,8 +135,7 @@ public class DocumentEntry {
       return this.codeMarking;
     }
 
-    final var sentences = AnnotationUtils.sentences(coreDocument.annotation());
-    final var codeSentenceBoundaries = this.coreDocument.annotation()
+    final var codeSentenceBoundaries = annotation
       .get(PlagdetAnnotations.CodeSentencesAnnotation.class);
 
     this.codeMarking = codeSentenceBoundaries.stream()
@@ -158,10 +152,11 @@ public class DocumentEntry {
 
   @JsonIgnore
   public @NotNull List<SpecialMarking> getMisspelledMarking() {
-    if (coreDocument == null) {
+    if (!isAnnotated()) {
       return Collections.emptyList();
     }
-    return AnnotationUtils.wordTokens(coreDocument.annotation()).stream()
+
+    return AnnotationUtils.wordTokens(annotation).stream()
       .filter(AnnotationUtils.isMisspelledToken())
       .map(t ->
         SpecialMarking.builder()
@@ -175,10 +170,10 @@ public class DocumentEntry {
 
   @JsonIgnore
   public @NotNull List<SpecialMarking> getSpoofMarking() {
-    if (coreDocument == null) {
+    if (!isAnnotated()) {
       return Collections.emptyList();
     }
-    return AnnotationUtils.wordTokens(coreDocument.annotation()).stream()
+    return AnnotationUtils.wordTokens(annotation).stream()
       .filter(AnnotationUtils.isSpoofedToken())
       .map(t ->
         SpecialMarking.builder()

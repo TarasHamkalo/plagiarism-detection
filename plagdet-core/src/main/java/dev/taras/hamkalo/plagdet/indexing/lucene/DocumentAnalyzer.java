@@ -14,19 +14,16 @@ public class DocumentAnalyzer extends Analyzer {
 
   DocumentEntry document;
 
-  boolean removeStopwords;
-
-  public DocumentAnalyzer(DocumentEntry document, boolean removeStopword) {
+  public DocumentAnalyzer(DocumentEntry document) {
     super(PER_FIELD_REUSE_STRATEGY);
     this.document = document;
-    this.removeStopwords = removeStopword;
   }
 
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     log.trace("Tokens for field: {}", fieldName);
     if (fieldName.equals(LuceneConstants.SEARCH_CONTENT)) {
-      var tokenizer = new StanfordAdapterTokenizer(document.getCoreDocument(), removeStopwords);
+      var tokenizer = new StanfordAdapterTokenizer(document.getAnnotation());
       return new TokenStreamComponents(tokenizer);
     }
     return new TokenStreamComponents(new StandardTokenizer());

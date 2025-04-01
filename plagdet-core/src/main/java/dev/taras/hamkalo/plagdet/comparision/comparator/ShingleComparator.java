@@ -7,6 +7,7 @@ import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.util.Sets;
 import lombok.*;
@@ -71,7 +72,7 @@ public class ShingleComparator implements DocumentComparator {
     double score = jaccardSimilarity(firstShingles, secondShingles);
     ComparisonResult result = ComparisonResult.CONTINUE;
     List<String> comments = new ArrayList<>();
-    if(score > parameters.plagiarizedLevel) {
+    if (score > parameters.plagiarizedLevel) {
       result = ComparisonResult.PLAGIARIZED;
       comments.add(
         "[PLAGIARIZED] Jaccard similarity %s greater than %s".formatted(score, parameters.plagiarizedLevel)
@@ -94,18 +95,14 @@ public class ShingleComparator implements DocumentComparator {
 
   private Set<Shingle> getDocumentShingles(@NotNull DocumentEntry documentEntry) {
     return documentToShingle.computeIfAbsent(
-      documentEntry.getId(), (key) -> generateShingles(documentEntry.getCoreDocument())
+      documentEntry.getId(), (key) -> generateShingles(documentEntry.getAnnotation())
     );
   }
 
-  private Set<Shingle> generateShingles(@NotNull CoreDocument coreDocument) {
+  private Set<Shingle> generateShingles(@NotNull Annotation annotation) {
     final int step = parameters.size - parameters.overlap;
 
-    var wordTokens = coreDocument.annotation().get(CoreAnnotations.TokensAnnotation.class).stream()
-      .filter(AnnotationUtils::isInformative)
-      .toList();
-
-
+    var wordTokens = AnnotationUtils.wordTokens(annotation);
     var shingleSet = new HashSet<Shingle>();
     for (int i = 0; i <= wordTokens.size() - parameters.size; i += step) {
       shingleSet.add(Shingle.from(wordTokens.subList(i, i + parameters.size)));

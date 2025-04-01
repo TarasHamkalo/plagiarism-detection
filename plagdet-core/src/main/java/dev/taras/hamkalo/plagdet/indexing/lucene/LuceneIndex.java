@@ -35,7 +35,7 @@ public class LuceneIndex {
   }
 
   public void addToIndex(@NotNull DocumentEntry document) {
-    var conf = new IndexWriterConfig(new DocumentAnalyzer(document, true));
+    var conf = new IndexWriterConfig(new DocumentAnalyzer(document));
     try (IndexWriter writer = new IndexWriter(this.indexDirectory, conf)) {
       Document doc = new Document();
       log.info("Indexing document with path {}", document.getFileData().getPersistentPath());
@@ -65,7 +65,7 @@ public class LuceneIndex {
     try (IndexReader reader = DirectoryReader.open(indexDirectory)) {
       MoreLikeThis mlt = new MoreLikeThis(reader);
       mlt.setFieldNames(new String[]{LuceneConstants.SEARCH_CONTENT});
-      mlt.setAnalyzer(new DocumentAnalyzer(document, true));
+      mlt.setAnalyzer(new DocumentAnalyzer(document));
 
       Query query = mlt.like(LuceneConstants.SEARCH_CONTENT, new StringReader(""));
       return executeSearch(query, reader, limit);

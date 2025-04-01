@@ -1,11 +1,9 @@
 
 package dev.taras.hamkalo.plagdet.indexing.lucene;
 
-import dev.taras.hamkalo.plagdet.comparision.ScoreUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
-import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.pipeline.CoreDocument;
+import edu.stanford.nlp.pipeline.Annotation;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
@@ -21,9 +19,7 @@ import java.util.Iterator;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class StanfordAdapterTokenizer extends Tokenizer {
 
-  CoreDocument coreDocument;
-
-  boolean filterStopwords;
+  Annotation annotation;
 
   @NonFinal
   Iterator<CoreLabel> tokensIterator;
@@ -32,13 +28,11 @@ public class StanfordAdapterTokenizer extends Tokenizer {
 
   OffsetAttribute offsetAttr;
 
-  public StanfordAdapterTokenizer(CoreDocument coreDocument, boolean filterStopwords) {
-    this.coreDocument = coreDocument;
-    this.tokensIterator = createFilteredWordIterator();
-
+  public StanfordAdapterTokenizer(Annotation annotation) {
+    this.annotation = annotation;
+    this.tokensIterator = createTokenIterator();
     this.termAttr = addAttribute(CharTermAttribute.class);
     this.offsetAttr = addAttribute(OffsetAttribute.class);
-    this.filterStopwords = filterStopwords;
   }
 
   @Override
@@ -57,18 +51,10 @@ public class StanfordAdapterTokenizer extends Tokenizer {
   public void reset() throws IOException {
     super.reset();
     this.offsetAttr.setOffset(0, 0);
-    this.tokensIterator = createFilteredWordIterator();
+    this.tokensIterator = createTokenIterator();
   }
 
-  private Iterator<CoreLabel> createFilteredWordIterator() {
-    return coreDocument.sentences().stream()
-      .filter(AnnotationUtils::isInformativeSentence)
-      .flatMap(s -> s.tokens().stream())
-      .filter(t ->
-        !(filterStopwords && t.get(PlagdetAnnotations.StopWordAnnotation.class)) &&
-        !t.get(PlagdetAnnotations.CodeSegmentAnnotation.class)
-      )
-      .toList()
-      .iterator();
+  private Iterator<CoreLabel> createTokenIterator() {
+    return AnnotationUtils.wordTokens(annotation).iterator();
   }
 }
