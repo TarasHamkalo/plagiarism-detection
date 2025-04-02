@@ -138,6 +138,10 @@ public class DocumentEntry {
     final var codeSentenceBoundaries = annotation
       .get(PlagdetAnnotations.CodeSentencesAnnotation.class);
 
+    if (codeSentenceBoundaries == null) {
+      return Collections.emptyList();
+    }
+
     this.codeMarking = codeSentenceBoundaries.stream()
       .map(b -> new MarkingOffsets(b[0], b[1]))
       .map(marking ->
