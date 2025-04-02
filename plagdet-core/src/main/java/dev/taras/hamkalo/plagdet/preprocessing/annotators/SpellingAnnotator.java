@@ -79,7 +79,7 @@ public class SpellingAnnotator implements Annotator {
 
   private void applyCorrection(CoreLabel token, String best) {
     log.info("Correcting '{}' -> '{}'", token.word(), best);
-    token.setWord(best);
+    token.setWord(best); // TODO: verify that position info is not removed
     token.setLemma(null);
   }
 

@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class CodeSegmentAnnotator implements Annotator {
 
-  private static final double GUESSED_RATIO_THRESHOLD = 0.8;
+  private static final double GUESSED_RATIO_THRESHOLD = 0.85;
 
   public static final Pattern CODE_PATTERN = Pattern.compile(
     "(?sm)^(\\s*[\\w\\s]*([()])?.*\\{.*|.*}|.*;.*|#include\\s+[<\"].*[>\"])$"
@@ -37,8 +37,8 @@ public class CodeSegmentAnnotator implements Annotator {
       boolean hasLemmatizationErrors = !isLemmatizedCorrectly(sentence);
       if (codePatternMatches && hasLemmatizationErrors) {
         codeSentenceOffsets.add(new int[]{
-          sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class),
-          sentence.get(CoreAnnotations.CharacterOffsetEndAnnotation.class)
+          AnnotationUtils.begin(sentence),
+          AnnotationUtils.end(sentence),
         });
       } else {
         filteredSentences.add(sentence);

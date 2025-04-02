@@ -20,8 +20,8 @@ public abstract class AnnotationUtils {
 
   public static <V> void copy(
     @NotNull Class<? extends edu.stanford.nlp.util.TypesafeMap.Key<V>> clazz,
-    @NotNull Annotation dest,
-    @NotNull Annotation source
+    @NotNull CoreMap dest,
+    @NotNull CoreMap source
   ) {
     dest.set(clazz, source.get(clazz));
   }
