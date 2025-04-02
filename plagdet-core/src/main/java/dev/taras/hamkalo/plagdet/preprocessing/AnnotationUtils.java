@@ -1,12 +1,9 @@
 package dev.taras.hamkalo.plagdet.preprocessing;
 
-import dev.taras.hamkalo.plagdet.Plagdet;
-import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.util.CoreMap;
 import org.jetbrains.annotations.NotNull;
 
@@ -68,22 +65,6 @@ public abstract class AnnotationUtils {
     return map.get(CoreAnnotations.TokensAnnotation.class).stream()
       .map(CoreLabel::lemma)
       .toList();
-  }
-
-  public static boolean isInformativeSentence(@NotNull CoreSentence sentence) {
-    return isInformative(sentence.coreMap());
-  }
-
-  public static boolean isInformative(@NotNull CoreMap coreMap) {
-    var stopWordAnnotation = coreMap.get(PlagdetAnnotations.StopWordAnnotation.class);
-    var codeSegmentAnnotation = coreMap.get(PlagdetAnnotations.CodeSegmentAnnotation.class);
-    var templateAnnotation = coreMap.get(PlagdetAnnotations.TemplateSentenceAnnotation.class);
-
-    boolean isStopWord = stopWordAnnotation != null && stopWordAnnotation;
-    boolean isCodeSegment = codeSegmentAnnotation != null && codeSegmentAnnotation;
-    boolean isTemplate = templateAnnotation != null && templateAnnotation;
-
-    return !isCodeSegment && !isTemplate && !isStopWord;
   }
 
   public static void addTemplateAnnotation(
