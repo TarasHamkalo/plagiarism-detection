@@ -17,9 +17,8 @@
 
 package dev.taras.hamkalo.plagdet.comparision.blocks;
 
-import dev.taras.hamkalo.plagdet.comparision.util.SeedUtils;
 import dev.taras.hamkalo.plagdet.comparision.model.Fragment;
-import edu.stanford.nlp.pipeline.Annotation;
+import dev.taras.hamkalo.plagdet.comparision.util.SeedUtils;
 import edu.stanford.nlp.util.CoreMap;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -48,6 +47,9 @@ public class ExtensionStrategy {
     @NotNull List<int[]> seeds,
     int sentMaxGap
   ) {
+    if (seeds.isEmpty()) {
+      return Collections.emptyList();
+    }
     Fragment root = new Fragment(seeds);
     return extend(documents, root, sentMaxGap);
   }
@@ -119,7 +121,9 @@ public class ExtensionStrategy {
       if (SeedUtils.isAdjacent(seeds.get(clusterEnd), seeds.get(i), side % 2, sentMaxGap)) {
         clusterEnd++;
       } else if (clusterEnd - clusterStart >= minClusterSize) {
-        clusters.add(new Fragment(cluster, clusterStart, clusterEnd, side % 2));
+        if (clusterEnd - clusterStart > 0) {
+          clusters.add(new Fragment(cluster, clusterStart, clusterEnd, side % 2));
+        }
         clusterStart = i;
         clusterEnd = clusterStart;
       }
