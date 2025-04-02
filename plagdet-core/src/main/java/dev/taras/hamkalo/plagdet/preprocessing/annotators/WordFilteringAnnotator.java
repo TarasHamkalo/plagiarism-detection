@@ -8,12 +8,15 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
+import edu.stanford.nlp.util.CoreMap;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -22,7 +25,7 @@ public class WordFilteringAnnotator implements Annotator {
 
   private static final int MIN_WORD_PER_SENTENCE = 3;
 
-  public static final int MIN_WORD_LENGTH = 4;
+  public static final int MIN_WORD_LENGTH = 3;
 
   SpoofChecker spoofChecker;
 
@@ -56,11 +59,25 @@ public class WordFilteringAnnotator implements Annotator {
     );
 
     annotation.set(CoreAnnotations.SentencesAnnotation.class,
-      AnnotationUtils.sentences(annotation).stream()
-        .filter(s -> AnnotationUtils.wordTokens(s).size() >= MIN_WORD_PER_SENTENCE)
-        .toList()
+      mergeToMinLength(AnnotationUtils.sentences(annotation))
     );
 //    log.trace("Tokens after " + AnnotationUtils.wordTokens(annotation).size());
+  }
+
+  private @NotNull List<CoreMap> mergeToMinLength(@NotNull List<CoreMap> sentences) {
+    var sentencesCopy = new ArrayList<>(sentences);
+    int sentencesSize = sentencesCopy.size();
+    for (int i = 0; i < sentencesSize - 1; i++) {
+      var tokens = AnnotationUtils.wordTokens(sentencesCopy.get(i));
+      if (tokens.size() < MIN_WORD_PER_SENTENCE) {
+        AnnotationUtils.wordTokens(sentencesCopy.get(i + 1)).addAll(tokens);
+        sentencesCopy.remove(i);
+        i--;
+        sentencesSize--;
+      }
+    }
+
+    return sentencesCopy;
   }
 
   private void transformSpoofed(@NotNull CoreLabel token) {
