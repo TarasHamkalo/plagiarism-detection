@@ -20,6 +20,10 @@ import java.util.Set;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class WordFilteringAnnotator implements Annotator {
 
+  private static final int MIN_WORD_PER_SENTENCE = 3;
+
+  public static final int MIN_WORD_LENGTH = 4;
+
   SpoofChecker spoofChecker;
 
   public WordFilteringAnnotator() {
@@ -33,10 +37,14 @@ public class WordFilteringAnnotator implements Annotator {
   public void annotate(Annotation annotation) {
     log.trace("Word annotator started");
 //    log.trace("Tokens before " + AnnotationUtils.wordTokens(annotation).size());
-    annotation.get(CoreAnnotations.SentencesAnnotation.class).forEach(sentence -> {
+    AnnotationUtils.sentences(annotation).forEach(sentence -> {
       sentence.get(CoreAnnotations.TokensAnnotation.class)
         .removeIf(token -> {
           transformSpoofed(token); // icu4j -> replace with something simpler
+          if (token.word().length() < MIN_WORD_LENGTH) {
+            return true;
+          }
+
           return !StringUtils.stripAccents(token.word()).matches("[a-zA-Z]+");
         });
     });
@@ -49,7 +57,7 @@ public class WordFilteringAnnotator implements Annotator {
 
     annotation.set(CoreAnnotations.SentencesAnnotation.class,
       AnnotationUtils.sentences(annotation).stream()
-        .filter(s -> !AnnotationUtils.wordTokens(s).isEmpty())
+        .filter(s -> AnnotationUtils.wordTokens(s).size() >= MIN_WORD_PER_SENTENCE)
         .toList()
     );
 //    log.trace("Tokens after " + AnnotationUtils.wordTokens(annotation).size());
