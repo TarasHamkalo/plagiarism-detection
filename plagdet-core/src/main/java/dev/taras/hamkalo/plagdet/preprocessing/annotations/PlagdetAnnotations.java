@@ -16,6 +16,15 @@ public class PlagdetAnnotations {
 
   }
 
+  public static class TemplateSentencesAnnotation implements CoreAnnotation<List<int[]>> {
+
+    @Override
+    public Class<List<int[]>> getType() {
+      return ErasureUtils.uncheckedCast(List.class);
+    }
+
+  }
+
   public static class SpoofedWordAnnotation implements CoreAnnotation<Boolean> {
 
     @Override
@@ -26,15 +35,6 @@ public class PlagdetAnnotations {
   }
 
   public static class StopWordAnnotation implements CoreAnnotation<Boolean> {
-
-    @Override
-    public Class<Boolean> getType() {
-      return Boolean.class;
-    }
-
-  }
-
-  public static class TemplateSentenceAnnotation implements CoreAnnotation<Boolean> {
 
     @Override
     public Class<Boolean> getType() {
