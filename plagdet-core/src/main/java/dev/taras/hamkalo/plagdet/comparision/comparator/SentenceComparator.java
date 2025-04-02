@@ -42,7 +42,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     public static final double DEFAULT_DICE_SIMILARITY_THRESHOLD = 0.4;
 
-    public static final int DEFAULT_MIN_CLUSTER_SIZE = 3;
+    public static final int DEFAULT_MIN_CLUSTER_SIZE = 5;
 
     public static final double DEFAULT_MIN_FRAGMENT_SIDE_SIM = 0.5;
 
@@ -114,6 +114,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
     @NotNull DocumentEntry target,
     @NotNull DocumentEntry template
   ) {
+    log.error("Comparing to template " + target.getFileData().getPersistentPath());
     List<List<CoreMap>> documents = new ArrayList<>(List.of(
       AnnotationUtils.sentences(target.getAnnotation()),
       AnnotationUtils.sentences(template.getAnnotation())
@@ -121,17 +122,13 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     var fragments = doCompare(documents);
     log.trace("Template fragments size {}", fragments.size());
-
-    fragments.stream().flatMap(f -> f.getSeeds(0).stream())
-      .forEach(seed ->
-        AnnotationUtils.addTemplateAnnotation(
-          target.getAnnotation(), documents.get(0).get(seed[0]), seed[0]
-        )
-      );
-
+    var seeds = fragments.stream().flatMap(f -> f.getSeeds(0).stream()).map(s -> s[0]).toList();
     var markings = fragments.stream()
       .map(f -> f.toMarkingWithType(documents, SpecialMarkingType.TEMPLATE))
       .toList();
+
+    AnnotationUtils.removeTemplateSentences(target.getAnnotation(), seeds);
+
 
     target.setComparedToTemplate(true);
     target.setTemplateMarking(markings);

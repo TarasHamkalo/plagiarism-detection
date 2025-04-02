@@ -67,23 +67,26 @@ public abstract class AnnotationUtils {
       .toList();
   }
 
-  public static void addTemplateAnnotation(
+  public static void removeTemplateSentences(
     @NotNull Annotation annotation,
-    @NotNull CoreMap sentence,
-    int sentenceIndex
+    List<Integer> templateSentenceIndexes
   ) {
-    var templateSentences = annotation.get(PlagdetAnnotations.TemplateSentencesAnnotation.class);
-    if (templateSentences == null) {
-      templateSentences = new ArrayList<>();
-      annotation.set(PlagdetAnnotations.TemplateSentencesAnnotation.class, templateSentences);
+
+    List<int[]> templateSentences = new ArrayList<>();
+    var sentences = AnnotationUtils.sentences(annotation);
+    for (int i = templateSentenceIndexes.size() - 1; i >= 0; i--) {
+      int index = templateSentenceIndexes.get(i);
+      if (index >= 0 && index < sentences.size()) {
+        var sentence = sentences.remove(index);
+        templateSentences.add(new int[]{
+          AnnotationUtils.begin(sentence),
+          AnnotationUtils.end(sentence)
+        });
+      }
     }
 
-    templateSentences.add(new int[]{
-      AnnotationUtils.begin(sentence),
-      AnnotationUtils.end(sentence),
-    });
+    annotation.set(PlagdetAnnotations.TemplateSentencesAnnotation.class, templateSentences);
 
-    AnnotationUtils.sentences(annotation).remove(sentenceIndex);
   }
 
   public static @NotNull Predicate<CoreLabel> isMisspelledToken() {
