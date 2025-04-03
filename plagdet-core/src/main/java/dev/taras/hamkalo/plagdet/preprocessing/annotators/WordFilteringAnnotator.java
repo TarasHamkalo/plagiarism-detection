@@ -59,7 +59,7 @@ public class WordFilteringAnnotator implements Annotator {
     );
 
     annotation.set(CoreAnnotations.SentencesAnnotation.class,
-      mergeToMinLength(AnnotationUtils.sentences(annotation))
+      mergeToMinLength(AnnotationUtils.sentences(annotation).stream().filter(s -> !AnnotationUtils.wordTokens(s).isEmpty()).toList())
     );
 //    log.trace("Tokens after " + AnnotationUtils.wordTokens(annotation).size());
   }
@@ -70,7 +70,9 @@ public class WordFilteringAnnotator implements Annotator {
     for (int i = 0; i < sentencesSize - 1; i++) {
       var tokens = AnnotationUtils.wordTokens(sentencesCopy.get(i));
       if (tokens.size() < MIN_WORD_PER_SENTENCE) {
-        AnnotationUtils.wordTokens(sentencesCopy.get(i + 1)).addAll(tokens);
+        var nextSentence = sentencesCopy.get(i + 1);
+        AnnotationUtils.wordTokens(nextSentence).addAll(tokens);
+        nextSentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, AnnotationUtils.begin(sentences.get(i)));
         sentencesCopy.remove(i);
         i--;
         sentencesSize--;

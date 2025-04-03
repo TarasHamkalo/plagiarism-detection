@@ -69,8 +69,13 @@ public class SentenceLengthSplitterAnnotator implements Annotator {
     for (int i = sentences.size() - 1; i > 0; i--) {
       var sentence = sentences.get(i);
       if (countWordTokens(AnnotationUtils.wordTokens(sentence)) < MIN_SENT_LENGTH_WORD) {
-        AnnotationUtils.wordTokens(sentences.get(i - 1)).addAll(AnnotationUtils.wordTokens(sentence));
+        var previousSentence = sentences.get(i - 1);
+        AnnotationUtils.wordTokens(previousSentence).addAll(AnnotationUtils.wordTokens(sentence));
+        previousSentence.set(
+          CoreAnnotations.CharacterOffsetEndAnnotation.class, AnnotationUtils.end(sentence)
+        );
         sentences.remove(i);
+
       }
     }
 
