@@ -45,7 +45,7 @@ public abstract class ScoreUtils {
       int fragEnd = fragments.get(i).getSideEnds()[side];
       int j = i + 1;
       while (j < fragments.size()) {
-        if (fragments.get(j).getSideStarts()[side] < fragEnd) {
+        if (fragments.get(j).getSideStarts()[side] <= fragEnd) {
           fragEnd = Math.max(fragments.get(j).getSideEnds()[side], fragEnd);
           j++;
         } else {
