@@ -4,7 +4,10 @@ import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
 import dev.taras.hamkalo.plagdet.comparision.blocks.Embeddings;
 import dev.taras.hamkalo.plagdet.comparision.blocks.ExtensionStrategy;
-import dev.taras.hamkalo.plagdet.comparision.blocks.SeedingStrategy;
+import dev.taras.hamkalo.plagdet.comparision.blocks.seeding.SeedingStrategy;
+import dev.taras.hamkalo.plagdet.comparision.blocks.seeding.Word2vecCosineDiceSeeding;
+import dev.taras.hamkalo.plagdet.comparision.blocks.seeding.Word2vecCosinePosNgramDiceStrategy;
+import dev.taras.hamkalo.plagdet.comparision.blocks.seeding.WordAlignmentLcs;
 import dev.taras.hamkalo.plagdet.comparision.model.Fragment;
 import dev.taras.hamkalo.plagdet.comparision.util.ScoreUtils;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
@@ -39,9 +42,9 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     public static final double DEFAULT_DICE_SIMILARITY_THRESHOLD = 0.5;
 
-    public static final int DEFAULT_MIN_CLUSTER_SIZE = 4;
+    public static final int DEFAULT_MIN_CLUSTER_SIZE = 3;
 
-    public static final double DEFAULT_MIN_FRAGMENT_SIDE_SIM = 0.5;
+    public static final double DEFAULT_MIN_FRAGMENT_SIDE_SIM = 0.7;
 
     public static final int DEFAULT_MIN_FRAGMENT_CHAR_LENGTH = 150;
 
@@ -80,7 +83,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
       embeddings, parameters.minFragmentSideSim, parameters.minClusterSize
     );
 
-    this.seedingStrategy = new SeedingStrategy(
+    this.seedingStrategy = new Word2vecCosineDiceSeeding(
       embeddings, parameters.getDiceSimilarityThreshold(), parameters.getSentenceVectorSimilarityThreshold()
     );
   }

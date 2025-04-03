@@ -4,19 +4,19 @@ import dev.taras.hamkalo.plagdet.indexing.exception.IndexingException;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.io.IoUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
-import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
-import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -82,6 +82,17 @@ public class Embeddings {
     return null;
   }
 
+  public WordVectors wordVectors() {
+    if (word2Vec == null) {
+      synchronized (Embeddings.class) {
+        if (word2Vec == null) {
+          word2Vec = loadWordVectors();
+        }
+      }
+    }
+    return word2Vec;
+  }
+
   public @NotNull INDArray getAccVector(@NotNull List<CoreMap> sentences, int from, int to) {
     var sideAccVector = Nd4j.zeros(WORD_VECTOR_SIZE);
     var subSentences = sentences.subList(from, to + 1);
@@ -125,4 +136,16 @@ public class Embeddings {
     return word2vec;
   }
 
+  public @NotNull List<INDArray> getWordVectors(@NotNull CoreMap first) {
+    var tokens = AnnotationUtils.wordTokens(first);
+    var wordVectors = new ArrayList<INDArray>();
+    for (var token : tokens) {
+      INDArray vector = getWordVector(token.tag() + token.lemma());
+      if (vector != null) {
+        wordVectors.add(vector);
+      }
+    }
+
+    return wordVectors;
+  }
 }

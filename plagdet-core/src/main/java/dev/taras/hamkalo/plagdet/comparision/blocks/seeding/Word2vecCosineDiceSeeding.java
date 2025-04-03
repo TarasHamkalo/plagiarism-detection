@@ -1,10 +1,12 @@
-package dev.taras.hamkalo.plagdet.comparision.blocks;
+package dev.taras.hamkalo.plagdet.comparision.blocks.seeding;
 
+import dev.taras.hamkalo.plagdet.comparision.blocks.Embeddings;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.similarity.LongestCommonSubsequence;
 import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -12,7 +14,7 @@ import java.util.*;
 
 @Slf4j
 @AllArgsConstructor
-public class SeedingStrategy {
+public class Word2vecCosineDiceSeeding implements SeedingStrategy {
 
   Embeddings embeddings;
 
@@ -42,10 +44,12 @@ public class SeedingStrategy {
 
     for (int i = 0; i < firstSize; i++) {
       var firstSent = firstSents.get(i);
+      double firstSentLength = AnnotationUtils.wordTokens(firstSent).size();
       var firstSentAccVector = firstSentVectors.get(i);
 
       for (int j = 0; j < secondSize; j++) {
         var secondSent = secondSents.get(j);
+        double secondSentLength = AnnotationUtils.wordTokens(secondSent).size() * 1.0;
 
         var diceSim = diceCoefficient(firstSent, secondSent);
         if (diceSim < diceSimilarityThreshold) {
@@ -54,6 +58,7 @@ public class SeedingStrategy {
 
         var secondSentAccVector = secondSentVectors.get(j);
         var cosineSim = Transforms.cosineSim(firstSentAccVector, secondSentAccVector);
+        cosineSim *= Math.min(firstSentLength / secondSentLength, secondSentLength / firstSentLength);
 
         if (!Double.isNaN(cosineSim) && cosineSim > sentenceVectorSimilarityThreshold) {
           log.trace(
