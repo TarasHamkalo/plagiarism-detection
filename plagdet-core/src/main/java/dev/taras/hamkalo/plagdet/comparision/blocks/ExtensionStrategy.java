@@ -120,14 +120,18 @@ public class ExtensionStrategy {
     for (int i = 1; i < seedsSize; i++) {
       if (SeedUtils.isAdjacent(seeds.get(clusterEnd), seeds.get(i), side % 2, sentMaxGap)) {
         clusterEnd++;
-      } else if ((clusterEnd - clusterStart + 1) >= minClusterSize) {
-        clusters.add(new Fragment(cluster, clusterStart, clusterEnd, side % 2));
-        clusterStart = i;
-        clusterEnd = clusterStart;
+        continue;
       }
+
+      if ((clusterEnd - clusterStart + 1) >= minClusterSize) {
+        clusters.add(new Fragment(cluster, clusterStart, clusterEnd, side % 2));
+      }
+
+      clusterStart = i;
+      clusterEnd = clusterStart;
     }
 
-    if (clusterEnd - clusterStart >= minClusterSize) {
+    if ((clusterEnd - clusterStart + 1) >= minClusterSize) {
       clusters.add(new Fragment(cluster, clusterStart, clusterEnd, side % 2));
     }
     return clusters;
