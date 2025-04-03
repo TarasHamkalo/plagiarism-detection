@@ -4,13 +4,13 @@ import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
 import dev.taras.hamkalo.plagdet.comparision.blocks.Embeddings;
 import dev.taras.hamkalo.plagdet.comparision.blocks.ExtensionStrategy;
+import dev.taras.hamkalo.plagdet.comparision.blocks.SeedingStrategy;
 import dev.taras.hamkalo.plagdet.comparision.model.Fragment;
 import dev.taras.hamkalo.plagdet.comparision.util.ScoreUtils;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import edu.stanford.nlp.util.CoreMap;
-import edu.stanford.nlp.util.Sets;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,11 +18,8 @@ import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,11 +35,11 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
     public static final int DEFAULT_MAX_GAP = 3;
 
-    public static final double DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD = 0.65;
+    public static final double DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD = 0.75;
 
-    public static final double DEFAULT_DICE_SIMILARITY_THRESHOLD = 0.4;
+    public static final double DEFAULT_DICE_SIMILARITY_THRESHOLD = 0.5;
 
-    public static final int DEFAULT_MIN_CLUSTER_SIZE = 5;
+    public static final int DEFAULT_MIN_CLUSTER_SIZE = 4;
 
     public static final double DEFAULT_MIN_FRAGMENT_SIDE_SIM = 0.5;
 
@@ -74,11 +71,17 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
 
   ExtensionStrategy extensionStrategy;
 
+  SeedingStrategy seedingStrategy;
+
   public SentenceComparator(SentenceComparatorParameters parameters, Embeddings embeddings) {
     this.parameters = parameters;
     this.embeddings = embeddings;
     this.extensionStrategy = new ExtensionStrategy(
       embeddings, parameters.minFragmentSideSim, parameters.minClusterSize
+    );
+
+    this.seedingStrategy = new SeedingStrategy(
+      embeddings, parameters.getDiceSimilarityThreshold(), parameters.getSentenceVectorSimilarityThreshold()
     );
   }
 
@@ -135,7 +138,7 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
   }
 
   private @NotNull List<Fragment> doCompare(@NotNull List<List<CoreMap>> documents) {
-    var seeds = seed(documents);
+    var seeds = this.seedingStrategy.seed(documents);
     log.trace("Seeds count: {}", seeds.size());
     var fragments = extensionStrategy.extend(documents, seeds, this.parameters.getMaxGap());
     log.trace("Fragments count: {}", fragments.size());
@@ -145,60 +148,5 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
     return filtered;
   }
 
-  private @NotNull List<int[]> seed(@NotNull List<List<CoreMap>> documents) {
-    var seeds = new LinkedList<int[]>();
-    var firstSents = documents.get(0);
-    var secondSents = documents.get(1);
-    log.trace("First document contains {} sentences", firstSents.size());
-    log.trace("Second document contains {} sentences", secondSents.size());
-    log.trace("Possible seeds count {}", documents.get(0).size() * firstSents.size());
 
-    var firstSentVectors = firstSents.stream()
-      .map(embeddings::getAccVector)
-      .toList();
-
-    var secondSentVectors = secondSents.stream()
-      .map(embeddings::getAccVector)
-      .toList();
-
-    int firstSize = firstSents.size();
-    int secondSize = secondSents.size();
-
-    for (int i = 0; i < firstSize; i++) {
-      var firstSent = firstSents.get(i);
-      var firstSentAccVector = firstSentVectors.get(i);
-
-      for (int j = 0; j < secondSize; j++) {
-        var secondSent = secondSents.get(j);
-
-        var diceSim = diceCoefficient(firstSent, secondSent);
-        if (diceSim < parameters.getDiceSimilarityThreshold()) {
-          continue;
-        }
-
-        var secondSentAccVector = secondSentVectors.get(j);
-        var cosineSim = Transforms.cosineSim(firstSentAccVector, secondSentAccVector);
-
-        if (!Double.isNaN(cosineSim) && cosineSim > parameters.getSentenceVectorSimilarityThreshold()) {
-          log.trace(
-            "Seed:\n\tS1 {}\n\tS2 {}\n\tCosine {}\n\tDice {}\n\n",
-            firstSent, secondSent, cosineSim, diceSim
-          );
-          seeds.add(new int[]{i, j});
-        }
-      }
-    }
-
-    return seeds;
-  }
-
-  public static double diceCoefficient(
-    @NotNull CoreMap firstSentence,
-    @NotNull CoreMap secondSentence
-  ) {
-    var firstLemmaSet = new HashSet<>(AnnotationUtils.lemmas(firstSentence));
-    var secondLemmaSet = new HashSet<>(AnnotationUtils.lemmas(secondSentence));
-    double intersectionSize = Sets.intersection(firstLemmaSet, secondLemmaSet).size() * 1.0;
-    return 2 * intersectionSize / (firstLemmaSet.size() + secondLemmaSet.size());
-  }
 }
