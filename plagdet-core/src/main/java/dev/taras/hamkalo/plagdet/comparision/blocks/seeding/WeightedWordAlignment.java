@@ -66,18 +66,19 @@ public class WeightedWordAlignment implements SeedingStrategy {
                             weightAndCosineSecondSum.getDouble(0) / secondWeights.sumNumber().doubleValue());
 
         sim *= Math.min((double) firstWeights.size(0) / secondWeights.size(0), (double) secondWeights.size(0) / firstWeights.size(0));
-        if (sim > th) {
-          log.trace(
-            "Seed:\n\tS1 [{}] {}\n\tS2 [{}] {}\n\tSim [{}]\n\n",
-            i, AnnotationUtils.tokensText(firstSents.get(i)), j, AnnotationUtils.tokensText(secondSents.get(j)),
-            sim
-          );
+        log.trace(
+          "Seed:\n\tS1 [{}] {}\n\tS2 [{}] {}\n\tSim [{}]\n\n",
+          i, AnnotationUtils.tokensText(firstSents.get(i)), j, AnnotationUtils.tokensText(secondSents.get(j)),
+          sim
+        );
 
+        if (sim > th) {
           seeds.add(new int[]{i, j});
         }
       }
     }
 
+    log.trace("Seeds count {}", seeds.size());
     return seeds;
   }
 
@@ -88,7 +89,7 @@ public class WeightedWordAlignment implements SeedingStrategy {
 //      var frequency = idfMap.get(firstTokens.get(i).word());
 //    }
 //  }
-
+//
   public INDArray cosineMatrix(INDArray A, INDArray B) {
 
     if (A.isEmpty() || B.isEmpty()) {

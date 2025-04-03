@@ -5,6 +5,7 @@ import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.io.IoUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.util.Pair;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -136,7 +138,7 @@ public class Embeddings {
     return word2vec;
   }
 
-  public @NotNull List<INDArray> getWordVectors(@NotNull CoreMap first) {
+  public @NotNull List<INDArray> getWordVectorsList(@NotNull CoreMap first) {
     var tokens = AnnotationUtils.wordTokens(first);
     var wordVectors = new ArrayList<INDArray>();
     for (var token : tokens) {
@@ -147,5 +149,48 @@ public class Embeddings {
     }
 
     return wordVectors;
+  }
+
+  public @NotNull INDArray getWordVectorsMatrix(@NotNull CoreMap sentence) {
+    var tokens = AnnotationUtils.wordTokens(sentence);
+    var validVectors = tokens.stream()
+      .map(token -> getWordVector(token.tag() + token.lemma()))
+      .filter(Objects::nonNull)
+      .toList();
+
+    if (validVectors.isEmpty()) {
+      return Nd4j.empty();
+    }
+
+    // (rows = words, cols = embedding dimensions)
+    return Nd4j.vstack(validVectors);
+  }
+
+  public Pair<INDArray, INDArray> getWordVectorsWithWeights(@NotNull CoreMap sentence) {
+    var tokens = AnnotationUtils.wordTokens(sentence);
+
+    List<INDArray> validVectors = new ArrayList<>();
+    List<Double> validWeights = new ArrayList<>();
+    for (var token : tokens) {
+      INDArray vector = getWordVector(token.tag() + token.lemma());
+
+      if (vector != null) {
+        validVectors.add(vector);
+        double posWeight = posWeights.getOrDefault(token.tag(), 0.0);
+        double idf = 1;
+        try {
+          idf = luceneIndex.inverseTermFrequency(token.lemma());
+        } catch (IndexingException ignoreEmptyIndex) {
+        }
+
+        validWeights.add(posWeight * idf);
+      }
+    }
+
+    if (validVectors.isEmpty()) {
+      return new Pair<>(Nd4j.empty(), Nd4j.empty());
+    }
+
+    return new Pair<>(Nd4j.vstack(validVectors), Nd4j.create(validWeights.stream().mapToDouble(value -> value).toArray()));
   }
 }
