@@ -1,7 +1,9 @@
 package dev.taras.hamkalo.plagdet;
 
+import dev.taras.hamkalo.plagdet.comparision.blocks.Embeddings;
 import dev.taras.hamkalo.plagdet.comparision.comparator.ComparisonResult;
 import dev.taras.hamkalo.plagdet.comparision.comparator.DocumentComparator;
+import dev.taras.hamkalo.plagdet.comparision.comparator.IndexBasedSentenceComparator;
 import dev.taras.hamkalo.plagdet.comparision.comparator.TemplateComparator;
 import dev.taras.hamkalo.plagdet.concurrency.ExecutorServiceSingleton;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
@@ -9,6 +11,7 @@ import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.documents.Submission;
 import dev.taras.hamkalo.plagdet.exception.PlagdetInterruptedException;
 import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource;
+import dev.taras.hamkalo.plagdet.indexing.jvector.SentenceIndex;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import edu.stanford.nlp.pipeline.CoreDocument;
@@ -59,11 +62,14 @@ public class ComparisonPipeline {
   @Getter
   AtomicBoolean isRunning = new AtomicBoolean(true);
 
+  @NotNull Embeddings embeddings;
+
   @Getter
   @NonFinal
   int comparisonsCount;
 
   public ComparisonPipeline(
+    @NotNull Embeddings embeddings,
     @NotNull SimilarDocumentSource similarDocumentSource,
     @NotNull TemplateComparator templateComparator,
     @NotNull ResultsFilter resultsFilter,
@@ -75,7 +81,8 @@ public class ComparisonPipeline {
       similarDocumentSource,
       resultsFilter,
       templateComparator,
-      template
+      template,
+      embeddings
     );
   }
 
@@ -99,10 +106,25 @@ public class ComparisonPipeline {
 
     System.out.println("Preprocessed [" + documents.size() + "] documents with uptime " + ManagementFactory.getRuntimeMXBean().getUptime() / 1000);
 
-    doCompare(); // -> comparison results
-
-//    try {
+    IndexBasedSentenceComparator indexBasedSentenceComparator =
+      new IndexBasedSentenceComparator(embeddings);
+    var documentPairs = indexBasedSentenceComparator.compare(documents);
     System.out.println("Compared with uptime " + ManagementFactory.getRuntimeMXBean().getUptime() / 1000);
+
+    for (var pair : documentPairs) {
+      for (DocumentComparator comparator : comparators) {
+        comparator.compare(pair);
+      }
+
+      System.out.printf("Pair results:\n\tFirst document %s\n\tSecond document %s\n\tPair scores %s\n",
+        pair.getFirst().getFileData().getPersistentPath(),
+        pair.getSecond().getFileData().getPersistentPath(),
+        pair.getPlagScores()
+      );
+
+      addComparisonResults(pair);
+    }
+//    try {
 //      System.out.println("sleeping ... [" + ProcessHandle.current().pid() + "]");
 //      while (!Thread.interrupted()) {
 //        System.gc();

@@ -83,13 +83,13 @@ public class Plagdet {
     @Nullable DocumentEntry template
   ) {
     return new ComparisonPipeline(
+      embeddings,
       similarDocumentSource,
       new SentenceComparator(parameters.getTemplateComparatorParameters(), embeddings),
       new ResultsFilter(parameters.getResultsFilterParameters()),
       template,
       new MetadataComparator(parameters.getMetadataComparatorParameters()),
-      new ShingleComparator(parameters.getShingleComparatorParameters()),
-      new SentenceComparator(parameters.getSentenceComparatorParameters(), embeddings)
+      new ShingleComparator(parameters.getShingleComparatorParameters())
     );
   }
 

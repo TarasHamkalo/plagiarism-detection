@@ -60,10 +60,10 @@ public class CosineWord2vecWordAlignment implements SeedingStrategy {
         var secondSentAccVector = accSecondSentVectors.get(j);
         var cosineSim = Transforms.cosineSim(firstSentAccVector, secondSentAccVector);
 
-//        if (!Double.isNaN(cosineSim) && cosineSim > sentenceVectorSimilarityThreshold) {
-//          cosineDiscard++;
-//          continue;
-//        }
+        if (Double.isNaN(cosineSim) || cosineSim < sentenceVectorSimilarityThreshold) {
+          cosineDiscard++;
+          continue;
+        }
         var secondSent = secondSentVectors.get(j);
         var secondWeights = secondSent.second().reshape(secondSent.second().size(0), 1);
         var cosineMatrix = cosineMatrix(firstSent.first(), secondSent.first());
@@ -91,7 +91,7 @@ public class CosineWord2vecWordAlignment implements SeedingStrategy {
 //        );
 
         if (sim > th) {
-          log.trace("Accepted alignment {}, cosine {}", sim, cosineSim);
+//          log.trace("Accepted alignment {}, cosine {}", sim, cosineSim);
           seeds.add(new int[]{i, j});
         } else {
           discarded++;
