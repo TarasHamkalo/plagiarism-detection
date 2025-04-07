@@ -61,7 +61,7 @@ public class MorphoDiTaAnalysisAnnotator implements Annotator {
     log.trace("Morpho annotator started");
     final var morpho = tagger.getMorpho();
     for (var sentence : AnnotationUtils.sentences(annotation)) {
-      var coreLabels = AnnotationUtils.wordTokens(sentence);
+      var coreLabels = AnnotationUtils.tokens(sentence);
       var tokenStrings = new ArrayList<String>();
       var isAnalyzed = true;
       for (var coreLabel : coreLabels) {

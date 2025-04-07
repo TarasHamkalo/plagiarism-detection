@@ -5,6 +5,7 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -31,6 +32,10 @@ public abstract class AnnotationUtils {
     return map.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
   }
 
+  public static @NotNull String tokensText(@NotNull CoreMap coreMap) {
+    return tokensText(AnnotationUtils.tokens(coreMap));
+  }
+
   public static @NotNull String tokensText(@NotNull List<? extends CoreMap> coreMaps) {
     return coreMaps.stream()
       .map(c -> c.get(CoreAnnotations.TextAnnotation.class))
@@ -52,6 +57,12 @@ public abstract class AnnotationUtils {
   }
 
   public static @NotNull List<CoreLabel> wordTokens(@NotNull CoreMap map) {
+    return AnnotationUtils.tokens(map).stream()
+      .filter(t -> StringUtils.stripAccents(t.word()).matches("[a-zA-Z]+"))
+      .toList();
+  }
+
+  public static @NotNull List<CoreLabel> tokens(@NotNull CoreMap map) {
     return map.get(CoreAnnotations.TokensAnnotation.class);
   }
 
@@ -65,6 +76,20 @@ public abstract class AnnotationUtils {
     return map.get(CoreAnnotations.TokensAnnotation.class).stream()
       .map(CoreLabel::lemma)
       .toList();
+  }
+
+  public static @NotNull List<String> tags(@NotNull CoreMap map) {
+    return map.get(CoreAnnotations.TokensAnnotation.class).stream()
+      .map(CoreLabel::tag)
+      .toList();
+  }
+
+  public static @NotNull CoreMap createSentence(@NotNull List<CoreLabel> tokens) {
+    CoreMap coreMap = new Annotation(AnnotationUtils.tokensText(tokens));
+    coreMap.set(CoreAnnotations.TokensAnnotation.class, tokens);
+    coreMap.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, tokens.get(0).beginPosition());
+    coreMap.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, tokens.get(tokens.size() - 1).endPosition());
+    return coreMap;
   }
 
   public static void removeTemplateSentences(

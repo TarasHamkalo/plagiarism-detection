@@ -109,7 +109,7 @@ public class Embeddings {
 
   private @NotNull INDArray computeAccVector(@NotNull CoreMap sentence) {
     INDArray accVector = Nd4j.zeros(Embeddings.WORD_VECTOR_SIZE);
-    for (var wordToken : AnnotationUtils.wordTokens(sentence)) {
+    for (var wordToken : AnnotationUtils.tokens(sentence)) {
       INDArray other = getWordVector(wordToken.tag() + wordToken.lemma());
       if (other != null) {
         log.trace("Word vector is of shape {}", other.shapeInfoToString());
@@ -139,7 +139,7 @@ public class Embeddings {
   }
 
   public @NotNull List<INDArray> getWordVectorsList(@NotNull CoreMap first) {
-    var tokens = AnnotationUtils.wordTokens(first);
+    var tokens = AnnotationUtils.tokens(first);
     var wordVectors = new ArrayList<INDArray>();
     for (var token : tokens) {
       INDArray vector = getWordVector(token.tag() + token.lemma());
@@ -152,7 +152,7 @@ public class Embeddings {
   }
 
   public @NotNull INDArray getWordVectorsMatrix(@NotNull CoreMap sentence) {
-    var tokens = AnnotationUtils.wordTokens(sentence);
+    var tokens = AnnotationUtils.tokens(sentence);
     var validVectors = tokens.stream()
       .map(token -> getWordVector(token.tag() + token.lemma()))
       .filter(Objects::nonNull)
@@ -167,7 +167,7 @@ public class Embeddings {
   }
 
   public Pair<INDArray, INDArray> getWordVectorsWithWeights(@NotNull CoreMap sentence) {
-    var tokens = AnnotationUtils.wordTokens(sentence);
+    var tokens = AnnotationUtils.tokens(sentence);
 
     List<INDArray> validVectors = new ArrayList<>();
     List<Double> validWeights = new ArrayList<>();

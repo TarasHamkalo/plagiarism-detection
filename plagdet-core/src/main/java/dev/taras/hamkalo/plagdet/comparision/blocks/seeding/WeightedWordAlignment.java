@@ -7,10 +7,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @AllArgsConstructor
@@ -28,10 +28,10 @@ public class WeightedWordAlignment implements SeedingStrategy {
     int firstSize = firstSents.size();
     int secondSize = secondSents.size();
 
-    log.trace("First document contains {} sentences", firstSents.size());
-    log.trace("Second document contains {} sentences", secondSents.size());
-    log.trace("Possible seeds count {}", documents.get(0).size() * firstSents.size());
-
+//    log.trace("First document contains {} sentences", firstSents.size());
+//    log.trace("Second document contains {} sentences", secondSents.size());
+//    log.trace("Possible seeds count {}", firstSents.size() * secondSents.size());
+//
     var firstSentVectors = firstSents.stream()
       .map(embeddings::getWordVectorsWithWeights)
       .toList();
@@ -40,21 +40,20 @@ public class WeightedWordAlignment implements SeedingStrategy {
       .map(embeddings::getWordVectorsWithWeights)
       .toList();
 
+    int discarded = 0;
     for (int i = 0; i < firstSize; i++) {
       var firstSent = firstSentVectors.get(i);
-//      var firstWeights = firstSent.second().transpose();
       INDArray firstWeights = firstSent.second().reshape(firstSent.second().size(0), 1);
-
       for (int j = 0; j < secondSize; j++) {
         var secondSent = secondSentVectors.get(j);
         var secondWeights = secondSent.second().reshape(secondSent.second().size(0), 1);
         var cosineMatrix = cosineMatrix(firstSent.first(), secondSent.first());
         if (cosineMatrix == null) {
-//          log.trace(
-//            "Skipped, null best match cosines:\n\tS1 [{}] {}\n\tS2 [{}] {}\n\n",
-//            i, AnnotationUtils.tokensText(firstSents.get(i)), j, AnnotationUtils.tokensText(secondSents.get(j))
-//          );
-
+          log.trace(
+            "Skipped, null best match cosines:\n\tS1 [{}] {}\n\tS2 [{}] {}\n\n",
+            i, AnnotationUtils.tokensText(firstSents.get(i)), j, AnnotationUtils.tokensText(secondSents.get(j))
+          );
+          discarded++;
           continue;
         }
         var firstMatches = cosineMatrix.max(1);
@@ -74,23 +73,17 @@ public class WeightedWordAlignment implements SeedingStrategy {
 
         if (sim > th) {
           seeds.add(new int[]{i, j});
+        } else {
+          discarded++;
         }
       }
     }
 
-    log.trace("Seeds count {}", seeds.size());
+    log.trace("All {}, Discarded count {}, Ratio aligned/all [{}]", firstSents.size() * secondSents.size(), discarded, seeds.size() / (firstSize * secondSize));
     return seeds;
   }
 
-//  private Map<String, Double> computeFrequencies(Map<String, Double> frequencyMap, CoreMap first, CoreMap second) {
-//    var idfMap = new HashMap<String, Double>();
-//    var firstTokens = AnnotationUtils.wordTokens(first);
-//    for (int i = 0; i < firstTokens.size(); i++) {
-//      var frequency = idfMap.get(firstTokens.get(i).word());
-//    }
-//  }
-//
-  public INDArray cosineMatrix(INDArray A, INDArray B) {
+  public static INDArray cosineMatrix(INDArray A, INDArray B) {
 
     if (A.isEmpty() || B.isEmpty()) {
       return null;

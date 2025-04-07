@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.management.ManagementFactory;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -96,20 +97,40 @@ public class ComparisonPipeline {
 
     preprocessDocuments(SimilarDocumentSource.getRetrievedDocumentsCache().values()); // -> retrieved documents
 
+    System.out.println("Preprocessed [" + documents.size() + "] documents with uptime " + ManagementFactory.getRuntimeMXBean().getUptime() / 1000);
+
     doCompare(); // -> comparison results
+
+//    try {
+    System.out.println("Compared with uptime " + ManagementFactory.getRuntimeMXBean().getUptime() / 1000);
+//      System.out.println("sleeping ... [" + ProcessHandle.current().pid() + "]");
+//      while (!Thread.interrupted()) {
+//        System.gc();
+//        Thread.sleep(20 * 1000);
+//      }
+//    } catch (InterruptedException ignore) {
+//    }
   }
 
   public void preprocessDocuments(@NotNull Collection<DocumentEntry> documentEntries) {
-    try {
-      ExecutorServiceSingleton.getExecutorService().invokeAll(
-        documentEntries.stream()
-          .map(this::toPreprocessingTask)
-          .toList()
-      );
-    } catch (InterruptedException e) {
-      log.warn("Was not able to preprocess all documents");
-    }
+    for (var documentEntry : documentEntries) {
+      var annotation = Pipeline.annotate(documentEntry);
+      documentEntry.setAnnotation(annotation);
+      System.gc();
+      if (template != null) {
+        templateComparator.compareWithTemplate(documentEntry, template);
+      }
 
+    }
+//    try {
+//      ExecutorServiceSingleton.getExecutorService().invokeAll(
+//        documentEntries.stream()
+//          .map(this::toPreprocessingTask)
+//          .toList()
+//      );
+//    } catch (InterruptedException e) {
+//      log.warn("Was not able to preprocess all documents");
+//    }
   }
 
   private void preprocessTemplate() {
@@ -119,28 +140,30 @@ public class ComparisonPipeline {
     }
 
     if (!template.isAnnotated()) {
-      CoreDocument coreDocument = new CoreDocument(template.getFileData().getContent());
-      Pipeline.annotate(coreDocument);
-      template.setCoreDocument(coreDocument);
+      template.setAnnotation(Pipeline.annotate(template));
     }
   }
 
   private @NotNull Callable<Void> toPreprocessingTask(@NotNull DocumentEntry d) {
     return () -> {
-      CoreDocument coreDocument = new CoreDocument(d.getFileData().getContent());
-      Pipeline.annotate(coreDocument);
-      d.setCoreDocument(coreDocument);
-      if (d.isComparedToTemplate()) {
-        log.debug("Found document with template marking, adding");
-        AnnotationUtils.addTemplateAnnotation(
-          d.getCoreDocument().annotation(), d.getTemplateMarking(), 0
-        );
-
-      } else if (template != null) {
+//      CoreDocument coreDocument = new CoreDocument(d.getFileData().getContent());
+      var annotation = Pipeline.annotate(d);
+      d.setAnnotation(annotation);
+//      if (d.isComparedToTemplate()) {
+//        log.debug("Found document with template marking, adding");
+//        // TODO: consider removing
+//        AnnotationUtils.addTemplateAnnotation(
+//          d.getAnnotation(), d.getTemplateMarking(), 0
+//        );
+//
+//      } else if (template != null) {
+//        log.debug("Comparing to template");
+//        templateComparator.compareWithTemplate(d, template);
+//      }
+      if (template != null) {
         log.debug("Comparing to template");
         templateComparator.compareWithTemplate(d, template);
       }
-
       return null;
     };
   }
@@ -149,43 +172,48 @@ public class ComparisonPipeline {
 
     log.info("Comparisons count is {}", comparisonTasks.size());
 
-    List<Future<DocumentPair>> futures = new ArrayList<>();
-    var executor = ExecutorServiceSingleton.getExecutorService();
+//    List<Future<DocumentPair>> futures = new ArrayList<>();
+//    var executor = ExecutorServiceSingleton.getExecutorService();
     while (!comparisonTasks.isEmpty() && isRunning.get()) {
       var comparisonTask = comparisonTasks.poll();
-      if (comparisonIgnore.contains(comparisonTask.getId())) {
-        continue;
+//      if (comparisonIgnore.contains(comparisonTask.getId())) {
+//        continue;
+//      }
+//
+//      futures.add(executor.submit(() -> {
+      System.out.printf("Comparing pair:\n\tFirst document %s\n\tSecond document %s\n",
+        comparisonTask.getFirst().getFileData().getPersistentPath(),
+        comparisonTask.getSecond().getFileData().getPersistentPath()
+      );
+
+      for (DocumentComparator comparator : comparators) {
+        ComparisonResult result = comparator.compare(comparisonTask);
+        if (!ComparisonResult.CONTINUE.equals(result)) {
+          break;
+        }
       }
 
-      futures.add(executor.submit(() -> {
-        for (DocumentComparator comparator : comparators) {
-          ComparisonResult result = comparator.compare(comparisonTask);
-          if (!ComparisonResult.CONTINUE.equals(result)) {
-            break;
-          }
-        }
-
-        log.info("Comparing pair:\n\tFirst document {}\n\tSecond document {}\n\tPair scores {}\n",
-          comparisonTask.getFirst().getFileData().getPersistentPath(),
-          comparisonTask.getSecond().getFileData().getPersistentPath(),
-          comparisonTask.getPlagScores()
-        );
-
-        return comparisonTask;
-      }));
+      System.out.printf("Pair results:\n\tFirst document %s\n\tSecond document %s\n\tPair scores %s\n",
+        comparisonTask.getFirst().getFileData().getPersistentPath(),
+        comparisonTask.getSecond().getFileData().getPersistentPath(),
+        comparisonTask.getPlagScores()
+      );
+      addComparisonResults(comparisonTask);
     }
-
-    for (Future<DocumentPair> future : futures) {
-      try {
-        if (isRunning.get()) {
-          addComparisonResults(future.get());
-        }
-      } catch (ExecutionException e) {
-        log.error("Comparison task failed", e);
-      } catch (InterruptedException e) {
-        throw new PlagdetInterruptedException("Interrupt during comparison execution", e);
-      }
-    }
+//        return comparisonTask;
+//      }));
+//
+//    for (Future<DocumentPair> future : futures) {
+//      try {
+//        if (isRunning.get()) {
+//          addComparisonResults(future.get());
+//        }
+//      } catch (ExecutionException e) {
+//        log.error("Comparison task failed", e);
+//      } catch (InterruptedException e) {
+//        throw new PlagdetInterruptedException("Interrupt during comparison execution", e);
+//      }
+//    }
   }
 
   private void addComparisonResults(@NotNull DocumentPair comparisonTask) {

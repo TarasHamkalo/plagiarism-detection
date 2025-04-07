@@ -74,6 +74,9 @@ dependencies {
 
     implementation platform('com.fasterxml.jackson:jackson-bom:2.18.3')
 
+// https://mvnrepository.com/artifact/io.github.jbellis/jvector
+    implementation 'io.github.jbellis:jvector:3.0.6'
+
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     implementation 'com.fasterxml.jackson.core:jackson-annotations'

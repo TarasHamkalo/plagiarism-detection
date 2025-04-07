@@ -27,9 +27,9 @@ public class Word2vecCosineDiceSeeding implements SeedingStrategy {
     var seeds = new ArrayList<int[]>();
     var firstSents = documents.get(0);
     var secondSents = documents.get(1);
-    log.trace("First document contains {} sentences", firstSents.size());
-    log.trace("Second document contains {} sentences", secondSents.size());
-    log.trace("Possible seeds count {}", documents.get(0).size() * firstSents.size());
+//    log.trace("First document contains {} sentences", firstSents.size());
+//    log.trace("Second document contains {} sentences", secondSents.size());
+//    log.trace("Possible seeds count {}", firstSents.size() * secondSents.size());
 
     var firstSentVectors = firstSents.stream()
       .map(embeddings::getAccVector)
@@ -41,6 +41,7 @@ public class Word2vecCosineDiceSeeding implements SeedingStrategy {
 
     int firstSize = firstSents.size();
     int secondSize = secondSents.size();
+    int cosineDiscarded = 0;
 
     for (int i = 0; i < firstSize; i++) {
       var firstSent = firstSents.get(i);
@@ -51,25 +52,28 @@ public class Word2vecCosineDiceSeeding implements SeedingStrategy {
         var secondSent = secondSents.get(j);
         double secondSentLength = AnnotationUtils.wordTokens(secondSent).size() * 1.0;
 
-        var diceSim = diceCoefficient(firstSent, secondSent);
-        if (diceSim < diceSimilarityThreshold) {
-          continue;
-        }
+//        var diceSim = diceCoefficient(firstSent, secondSent);
+//        if (diceSim < diceSimilarityThreshold) {
+//          continue;
+//        }
 
         var secondSentAccVector = secondSentVectors.get(j);
         var cosineSim = Transforms.cosineSim(firstSentAccVector, secondSentAccVector);
         cosineSim *= Math.min(firstSentLength / secondSentLength, secondSentLength / firstSentLength);
 
         if (!Double.isNaN(cosineSim) && cosineSim > sentenceVectorSimilarityThreshold) {
-          log.trace(
-            "Seed:\n\tS1 [{}] {}\n\tS2 [{}] {}\n\tCosine {}\n\tDice {}\n\n",
-            i, AnnotationUtils.tokensText(firstSent), j, AnnotationUtils.tokensText(secondSent), cosineSim, diceSim
-          );
+          //
+//          log.trace(
+//            "Seed:\n\tS1 [{}] {}\n\tS2 [{}] {}\n\tCosine {}\n\tDice {}\n\n",
+//            i, AnnotationUtils.tokensText(firstSent), j, AnnotationUtils.tokensText(secondSent), cosineSim, diceSim
+//          );
           seeds.add(new int[]{i, j});
+        } else {
+          cosineDiscarded++;
         }
       }
     }
-
+    log.trace("All {}, Discarded count {}, Ratio aligned/all", firstSents.size() * secondSents.size(), cosineDiscarded);
     return seeds;
   }
 

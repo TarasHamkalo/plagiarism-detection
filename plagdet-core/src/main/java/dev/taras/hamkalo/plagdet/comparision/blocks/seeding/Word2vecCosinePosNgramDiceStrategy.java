@@ -91,7 +91,7 @@ public class Word2vecCosinePosNgramDiceStrategy implements SeedingStrategy {
   }
 
   private Set<Shingle> generateShingles(@NotNull CoreMap sentences, int size) {
-    var wordTokens = AnnotationUtils.wordTokens(sentences);
+    var wordTokens = AnnotationUtils.tokens(sentences);
     var shingleSet = new HashSet<Shingle>();
     for (int i = 0; i <= wordTokens.size() - size; i++) {
       shingleSet.add(Shingle.from(wordTokens.subList(i, i + size), Shingle::tokensToPosString));

@@ -9,7 +9,6 @@ import dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.pipeline.CoreDocument;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
@@ -160,7 +159,7 @@ public class DocumentEntry {
       return Collections.emptyList();
     }
 
-    return AnnotationUtils.wordTokens(annotation).stream()
+    return AnnotationUtils.tokens(annotation).stream()
       .filter(AnnotationUtils.isMisspelledToken())
       .map(t ->
         SpecialMarking.builder()
@@ -177,7 +176,7 @@ public class DocumentEntry {
     if (!isAnnotated()) {
       return Collections.emptyList();
     }
-    return AnnotationUtils.wordTokens(annotation).stream()
+    return AnnotationUtils.tokens(annotation).stream()
       .filter(AnnotationUtils.isSpoofedToken())
       .map(t ->
         SpecialMarking.builder()

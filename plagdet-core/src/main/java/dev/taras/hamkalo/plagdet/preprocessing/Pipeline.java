@@ -22,9 +22,14 @@ public abstract class Pipeline {
     if (firstStagePipeline == null) {
 
       var props = new Properties();
-      props.put("annotators", "tokenize, ssplit, morpho, code, dynamicssplit, word, stopword, spell");//, code, spell");
+      props.put("annotators", "tokenize, ssplit, listssplit, morpho, code, word, stopword");//, code, spell");
       props.put("ssplit.eolonly", "false");
-      props.put("ssplit.newlineIsSentenceBreak", "two");
+//      props.put("ssplit.newlineIsSentenceBreak", "two");
+      props.put(
+        "customAnnotatorClass.listssplit",
+        "dev.taras.hamkalo.plagdet.preprocessing.annotators.ListSentenceSplitter"
+      );
+
 
       props.put(
         "customAnnotatorClass.code",
@@ -52,7 +57,7 @@ public abstract class Pipeline {
       );
 
       props.put(
-        "customAnnotatorClass.dynamicssplit",
+        "customAnnotatorClass.dssplit",
         "dev.taras.hamkalo.plagdet.preprocessing.annotators.SentenceLengthSplitterAnnotator"
       );
       props.put("enforceRequirements", "false");
@@ -99,7 +104,7 @@ public abstract class Pipeline {
     dest.set(CoreAnnotations.TokensAnnotation.class, new ArrayList<>());
     for (var sentence : AnnotationUtils.sentences(source)) {
       sentence.remove(CoreAnnotations.TextAnnotation.class);
-      var tokens = AnnotationUtils.wordTokens(sentence);
+      var tokens = AnnotationUtils.tokens(sentence);
       var compactTokens = new ArrayList<CoreLabel>();
       for (var token : tokens) {
         CoreLabel compactToken = new CoreLabel();

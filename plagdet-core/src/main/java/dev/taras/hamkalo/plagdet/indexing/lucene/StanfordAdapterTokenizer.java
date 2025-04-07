@@ -55,6 +55,6 @@ public class StanfordAdapterTokenizer extends Tokenizer {
   }
 
   private Iterator<CoreLabel> createTokenIterator() {
-    return AnnotationUtils.wordTokens(annotation).iterator();
+    return AnnotationUtils.tokens(annotation).iterator();
   }
 }

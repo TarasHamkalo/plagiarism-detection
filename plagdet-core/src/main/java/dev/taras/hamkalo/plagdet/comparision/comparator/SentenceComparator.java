@@ -4,10 +4,8 @@ import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
 import dev.taras.hamkalo.plagdet.comparision.blocks.Embeddings;
 import dev.taras.hamkalo.plagdet.comparision.blocks.ExtensionStrategy;
-import dev.taras.hamkalo.plagdet.comparision.blocks.seeding.SeedingStrategy;
-import dev.taras.hamkalo.plagdet.comparision.blocks.seeding.Word2vecCosineDiceSeeding;
-import dev.taras.hamkalo.plagdet.comparision.blocks.seeding.Word2vecCosinePosNgramDiceStrategy;
-import dev.taras.hamkalo.plagdet.comparision.blocks.seeding.WordAlignmentLcs;
+import dev.taras.hamkalo.plagdet.comparision.blocks.NopExtensionStrategy;
+import dev.taras.hamkalo.plagdet.comparision.blocks.seeding.*;
 import dev.taras.hamkalo.plagdet.comparision.model.Fragment;
 import dev.taras.hamkalo.plagdet.comparision.util.ScoreUtils;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
@@ -36,13 +34,13 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
   @AllArgsConstructor
   public static class SentenceComparatorParameters {
 
-    public static final int DEFAULT_MAX_GAP = 3;
+    public static final int DEFAULT_MAX_GAP = 0;
 
-    public static final double DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD = 0.75;
+    public static final double DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD = 0.65;
 
     public static final double DEFAULT_DICE_SIMILARITY_THRESHOLD = 0.5;
 
-    public static final int DEFAULT_MIN_CLUSTER_SIZE = 3;
+    public static final int DEFAULT_MIN_CLUSTER_SIZE = 1;
 
     public static final double DEFAULT_MIN_FRAGMENT_SIDE_SIM = 0.7;
 
@@ -79,13 +77,24 @@ public class SentenceComparator implements DocumentComparator, TemplateComparato
   public SentenceComparator(SentenceComparatorParameters parameters, Embeddings embeddings) {
     this.parameters = parameters;
     this.embeddings = embeddings;
-    this.extensionStrategy = new ExtensionStrategy(
+    this.extensionStrategy = new NopExtensionStrategy(
       embeddings, parameters.minFragmentSideSim, parameters.minClusterSize
     );
 
-    this.seedingStrategy = new Word2vecCosineDiceSeeding(
-      embeddings, parameters.getDiceSimilarityThreshold(), parameters.getSentenceVectorSimilarityThreshold()
+//    this.seedingStrategy = new Word2vecCosineDiceSeeding(
+//      embeddings, parameters.getDiceSimilarityThreshold(), parameters.getSentenceVectorSimilarityThreshold()
+//    );
+//
+    this.seedingStrategy = new WeightedWordAlignment(
+      embeddings, parameters.getSentenceVectorSimilarityThreshold()
     );
+
+//    this.seedingStrategy = new HybridSeedingStrategy(
+//      embeddings, parameters.getSentenceVectorSimilarityThreshold()
+//    );
+//    this.seedingStrategy = new CosineWord2vecWordAlignment(
+//      embeddings, parameters.getSentenceVectorSimilarityThreshold(), 0.7
+//    );
   }
 
   public @NotNull ComparisonResult compare(@NotNull DocumentPair documentPair) {

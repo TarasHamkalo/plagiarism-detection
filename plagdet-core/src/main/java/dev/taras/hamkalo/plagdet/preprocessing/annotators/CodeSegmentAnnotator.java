@@ -18,14 +18,16 @@ import java.util.regex.Pattern;
 @Slf4j
 public class CodeSegmentAnnotator implements Annotator {
 
-  private static final double GUESSED_RATIO_THRESHOLD = 0.85;
+  private static final double GUESSED_RATIO_THRESHOLD = 0.90;
 
   public static final Pattern CODE_PATTERN = Pattern.compile(
-    "(?sm)^(\\s*[\\w\\s]*([()])?.*\\{.*|.*}|.*;.*|#include\\s+[<\"].*[>\"])$"
+//    "(?sm)^(\\s*[\\w\\s]*([()])?.*\\{.*|.*}|.*;.*|#include\\s+[<\"].*[>\"])$"
+    "(?sm)^\\s*((.*\\{.*}.*)|(\\s*/\\/.*)|(.*#include.*)|(.*#define.*)|(.*;.*))\\s*$"
   );
 
   @Override
   public void annotate(Annotation annotation) {
+    CODE_PATTERN.matcher("").results();
     log.trace("Code segment annotator started");
     var sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
     List<CoreMap> filteredSentences = new ArrayList<>();
@@ -48,14 +50,14 @@ public class CodeSegmentAnnotator implements Annotator {
     annotation.set(CoreAnnotations.SentencesAnnotation.class, filteredSentences);
     annotation.set(CoreAnnotations.TokensAnnotation.class,
       AnnotationUtils.sentences(annotation).stream()
-        .flatMap(sentence -> AnnotationUtils.wordTokens(sentence).stream())
+        .flatMap(sentence -> AnnotationUtils.tokens(sentence).stream())
         .toList()
     );
     annotation.set(PlagdetAnnotations.CodeSentencesAnnotation.class, codeSentenceOffsets);
   }
 
   private boolean isLemmatizedCorrectly(@NotNull CoreMap sentence) {
-    var tokens = AnnotationUtils.wordTokens(sentence);
+    var tokens = AnnotationUtils.tokens(sentence);
     long guessedLemmaCount = tokens.stream().filter(AnnotationUtils.isGuessed()).count();
     return (1 - ((double) guessedLemmaCount / tokens.size())) >= GUESSED_RATIO_THRESHOLD;
   }

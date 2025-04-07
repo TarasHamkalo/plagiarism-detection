@@ -3,6 +3,7 @@ package dev.taras.hamkalo.plagdet;
 import dev.taras.hamkalo.plagdet.comparision.comparator.MetadataComparator.MetadataComparatorParameters;
 import dev.taras.hamkalo.plagdet.comparision.comparator.SentenceComparator.SentenceComparatorParameters;
 import dev.taras.hamkalo.plagdet.comparision.comparator.ShingleComparator.ShingleComparatorParameters;
+import dev.taras.hamkalo.plagdet.comparision.comparator.TemplateComparator;
 import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource.SimilarDocumentSourceParameters;
 import lombok.Builder;
 import lombok.Value;
@@ -31,4 +32,12 @@ public class PlagdetParameters {
 
   @NotNull ResultsFilterParameters resultsFilterParameters;
 
+  @NotNull
+  @Builder.Default
+  SentenceComparatorParameters templateComparatorParameters =
+    SentenceComparatorParameters.builder()
+      .minClusterSize(4)
+      .diceSimilarityThreshold(0.55)
+//      .sentenceVectorSimilarityThreshold(0.8)
+      .build();
 }

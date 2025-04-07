@@ -4,11 +4,8 @@ import dev.taras.hamkalo.plagdet.comparision.PlagScore;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.DocumentPair;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
-import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
-import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.util.Sets;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -16,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -102,10 +100,10 @@ public class ShingleComparator implements DocumentComparator {
   private Set<Shingle> generateShingles(@NotNull Annotation annotation) {
     final int step = parameters.size - parameters.overlap;
 
-    var wordTokens = AnnotationUtils.wordTokens(annotation);
+    var wordTokens = AnnotationUtils.tokens(annotation);
     var shingleSet = new HashSet<Shingle>();
     for (int i = 0; i <= wordTokens.size() - parameters.size; i += step) {
-      shingleSet.add(Shingle.from(wordTokens.subList(i, i + parameters.size)));
+      shingleSet.add(Shingle.from(wordTokens.subList(i, i + parameters.size), Shingle::tokensToLemmaString));
     }
 
     return shingleSet;
@@ -134,18 +132,24 @@ public class ShingleComparator implements DocumentComparator {
     @EqualsAndHashCode.Exclude
     Integer end;
 
-    public static Shingle from(List<CoreLabel> tokens) {
+    public static Shingle from(
+      List<CoreLabel> tokens,
+      Function<List<CoreLabel>, String> tokenMapper
+    ) {
       return Shingle.builder()
         .start(tokens.get(0).beginPosition())
         .end(tokens.get(tokens.size() - 1).endPosition())
-        .content(tokensToLemmaString(tokens))
+        .content(tokenMapper.apply(tokens))
         .build();
     }
 
-    private static @NotNull String tokensToLemmaString(List<CoreLabel> tokens) {
+    public static @NotNull String tokensToLemmaString(List<CoreLabel> tokens) {
       return tokens.stream().map(CoreLabel::lemma).collect(Collectors.joining(" "));
     }
 
+    public static @NotNull String tokensToPosString(List<CoreLabel> tokens) {
+      return tokens.stream().map(CoreLabel::tag).collect(Collectors.joining(" "));
+    }
   }
 
 }

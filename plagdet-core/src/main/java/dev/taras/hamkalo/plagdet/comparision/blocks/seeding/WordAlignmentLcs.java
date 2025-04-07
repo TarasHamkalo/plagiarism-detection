@@ -27,11 +27,11 @@ public class WordAlignmentLcs implements SeedingStrategy {
 
     for (int i = 0; i < firstSents.size(); i++) {
       var firstSentence = firstSents.get(i);
-      var firstWordVectors = embeddings.getWordVectors(firstSentence);
+      var firstWordVectors = embeddings.getWordVectorsList(firstSentence);
 
       for (int j = 0; j < secondSents.size(); j++) {
         var secondSentence = secondSents.get(j);
-        var secondWordVectors = embeddings.getWordVectors(secondSentence);
+        var secondWordVectors = embeddings.getWordVectorsList(secondSentence);
 
         int lcsLength = longestCommonSubsequence(firstWordVectors, secondWordVectors);
 

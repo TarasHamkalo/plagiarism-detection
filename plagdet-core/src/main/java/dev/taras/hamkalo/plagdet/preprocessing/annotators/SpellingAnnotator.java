@@ -45,7 +45,7 @@ public class SpellingAnnotator implements Annotator {
   }
 
   private void processSentence(CoreMap sentence) {
-    if (AnnotationUtils.wordTokens(sentence).stream().noneMatch(AnnotationUtils.isGuessed())) {
+    if (AnnotationUtils.tokens(sentence).stream().noneMatch(AnnotationUtils.isGuessed())) {
       return;
     }
     markSpellingWithLanguageTool(sentence);
@@ -54,7 +54,7 @@ public class SpellingAnnotator implements Annotator {
   @SneakyThrows
   private void markSpellingWithLanguageTool(CoreMap sentence) {
     var languageTool = languageToolThreadLocal.get();
-    for (var token : AnnotationUtils.wordTokens(sentence)) {
+    for (var token : AnnotationUtils.tokens(sentence)) {
       if (!AnnotationUtils.isGuessed().test(token)) {
         continue;
       }

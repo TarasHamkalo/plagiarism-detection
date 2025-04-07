@@ -116,10 +116,10 @@ public class LuceneIndex {
       double totalDocs = reader.numDocs() * 1.0;
       int docFreq = reader.docFreq(new Term(LuceneConstants.SEARCH_CONTENT, term));
       if (docFreq == 0) {
-        return Math.log(totalDocs + 1);
+        return 1 + Math.log(totalDocs + 1);
       }
 
-      return Math.log((totalDocs) / (docFreq + 1));
+      return 1 + Math.log((totalDocs) / (docFreq + 1));
     } catch (IOException e) {
       throw new IndexingException("Failed to retrieve term frequency", e);
     }

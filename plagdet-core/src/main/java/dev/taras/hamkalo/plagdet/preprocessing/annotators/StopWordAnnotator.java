@@ -42,7 +42,7 @@ public class StopWordAnnotator implements Annotator {
 
     annotation.set(CoreAnnotations.TokensAnnotation.class,
       AnnotationUtils.sentences(annotation).stream()
-        .flatMap(sentence -> AnnotationUtils.wordTokens(sentence).stream())
+        .flatMap(sentence -> AnnotationUtils.tokens(sentence).stream())
         .toList());
   }
 

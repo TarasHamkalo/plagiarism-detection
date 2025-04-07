@@ -1,7 +1,7 @@
 package dev.taras.hamkalo.plagdet;
 
 import dev.taras.hamkalo.plagdet.comparision.comparator.*;
-import dev.taras.hamkalo.plagdet.comparision.comparator.blocks.Embeddings;
+import dev.taras.hamkalo.plagdet.comparision.blocks.Embeddings;
 import dev.taras.hamkalo.plagdet.concurrency.ExecutorServiceSingleton;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.Submission;
@@ -10,7 +10,6 @@ import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
 import dev.taras.hamkalo.plagdet.io.SubmissionsParser;
 import dev.taras.hamkalo.plagdet.io.reader.*;
-import dev.taras.hamkalo.plagdet.io.session.SessionManager;
 import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -21,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -52,8 +52,6 @@ public class Plagdet {
   @NonFinal
   @Nullable String currentInputPath;
 
-  @NotNull SessionManager sessionManager;
-
   public Plagdet(@NotNull PlagdetParameters parameters) {
     this.parameters = parameters;
     this.luceneIndex = this.initLucene(parameters.getLuceneIndexDirectoryPath());
@@ -68,7 +66,6 @@ public class Plagdet {
       parameters, embeddings, similarDocumentSource, template
     );
 
-    this.sessionManager = new SessionManager();
     ExecutorServiceSingleton.setNumberOfProcessors(parameters.getNumberOfProcessors());
   }
 
@@ -85,19 +82,14 @@ public class Plagdet {
     @NotNull SimilarDocumentSource similarDocumentSource,
     @Nullable DocumentEntry template
   ) {
-
-    DocumentComparator sentenceComparator = new SentenceComparator(
-      parameters.getSentenceComparatorParameters(), embeddings
-    );
-
     return new ComparisonPipeline(
       similarDocumentSource,
-      (TemplateComparator) sentenceComparator,
+      new SentenceComparator(parameters.getTemplateComparatorParameters(), embeddings),
       new ResultsFilter(parameters.getResultsFilterParameters()),
       template,
       new MetadataComparator(parameters.getMetadataComparatorParameters()),
       new ShingleComparator(parameters.getShingleComparatorParameters()),
-      sentenceComparator
+      new SentenceComparator(parameters.getSentenceComparatorParameters(), embeddings)
     );
   }
 
@@ -118,12 +110,12 @@ public class Plagdet {
 
   public Report compare(@NotNull String path) {
     currentInputPath = path;
-
+    System.gc();
     submissions = submissionsParser.parseSubmissions(path);
+    System.out.println("Parsed with uptime " + ManagementFactory.getRuntimeMXBean().getUptime() / 1000);
     Pipeline.init();
     ExecutorServiceSingleton.getExecutorService().init();
     comparisonPipeline.compareSubmissions(submissions);
-
     ExecutorServiceSingleton.getExecutorService().deInit();
     return Report.from(this, false);
   }
