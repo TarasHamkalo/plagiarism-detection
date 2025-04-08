@@ -27,11 +27,6 @@ public class WeightedWordAlignment implements SeedingStrategy {
     var secondSents = documents.get(1);
     int firstSize = firstSents.size();
     int secondSize = secondSents.size();
-
-//    log.trace("First document contains {} sentences", firstSents.size());
-//    log.trace("Second document contains {} sentences", secondSents.size());
-//    log.trace("Possible seeds count {}", firstSents.size() * secondSents.size());
-//
     var firstSentVectors = firstSents.stream()
       .map(embeddings::getWordVectorsWithWeights)
       .toList();
@@ -49,10 +44,6 @@ public class WeightedWordAlignment implements SeedingStrategy {
         var secondWeights = secondSent.second().reshape(secondSent.second().size(0), 1);
         var cosineMatrix = cosineMatrix(firstSent.first(), secondSent.first());
         if (cosineMatrix == null) {
-          log.trace(
-            "Skipped, null best match cosines:\n\tS1 [{}] {}\n\tS2 [{}] {}\n\n",
-            i, AnnotationUtils.tokensText(firstSents.get(i)), j, AnnotationUtils.tokensText(secondSents.get(j))
-          );
           discarded++;
           continue;
         }
@@ -60,17 +51,10 @@ public class WeightedWordAlignment implements SeedingStrategy {
         var secondMatches = cosineMatrix.max(0);
         var weightAndCosineFirstSum = firstMatches.mmul(firstWeights);
         var weightAndCosineSecondSum = secondMatches.mmul(secondWeights);
-//        double sim = 0.5 * (weightAndCosineFirstSum.get(0) / firstWeights.sum(0) + weightAndCosineSecondSum.get(0) / secondWeights.sum(0));
         double sim = 0.5 * (weightAndCosineFirstSum.getDouble(0) / firstWeights.sumNumber().doubleValue() +
                             weightAndCosineSecondSum.getDouble(0) / secondWeights.sumNumber().doubleValue());
 
         sim *= Math.min((double) firstWeights.size(0) / secondWeights.size(0), (double) secondWeights.size(0) / firstWeights.size(0));
-        log.trace(
-          "Seed:\n\tS1 [{}] {}\n\tS2 [{}] {}\n\tSim [{}]\n\n",
-          i, AnnotationUtils.tokensText(firstSents.get(i)), j, AnnotationUtils.tokensText(secondSents.get(j)),
-          sim
-        );
-
         if (sim > th) {
           seeds.add(new int[]{i, j});
         } else {
@@ -79,7 +63,7 @@ public class WeightedWordAlignment implements SeedingStrategy {
       }
     }
 
-    log.trace("All {}, Discarded count {}, Ratio aligned/all [{}]", firstSents.size() * secondSents.size(), discarded, seeds.size() / (firstSize * secondSize));
+    log.trace("All {}, Discarded count {}, Ratio aligned/all [{}]", firstSents.size() * secondSents.size(), discarded, (double) seeds.size() / (firstSize * secondSize));
     return seeds;
   }
 

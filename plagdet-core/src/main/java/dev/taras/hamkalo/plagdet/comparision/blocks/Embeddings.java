@@ -62,6 +62,11 @@ public class Embeddings {
     this.luceneIndex = luceneIndex;
   }
 
+  public void clearSentenceVectorCache() {
+    this.sentenceToWeightedAccVector.clear();
+    System.gc();
+  }
+
   public @NotNull INDArray getAccVector(@NotNull CoreMap sentence) {
     return sentenceToWeightedAccVector.computeIfAbsent(
       AnnotationUtils.lemmasText(sentence), (key) -> computeAccVector(sentence));
@@ -166,6 +171,7 @@ public class Embeddings {
     return Nd4j.vstack(validVectors);
   }
 
+  // TODO: cache that
   public Pair<INDArray, INDArray> getWordVectorsWithWeights(@NotNull CoreMap sentence) {
     var tokens = AnnotationUtils.tokens(sentence);
 
@@ -191,6 +197,8 @@ public class Embeddings {
       return new Pair<>(Nd4j.empty(), Nd4j.empty());
     }
 
-    return new Pair<>(Nd4j.vstack(validVectors), Nd4j.create(validWeights.stream().mapToDouble(value -> value).toArray()));
+    double[] doubleWeights = validWeights.stream().mapToDouble(value -> value).toArray();
+    INDArray weights = Nd4j.create(doubleWeights, doubleWeights.length, 1);
+    return new Pair<>(Nd4j.vstack(validVectors), weights);
   }
 }

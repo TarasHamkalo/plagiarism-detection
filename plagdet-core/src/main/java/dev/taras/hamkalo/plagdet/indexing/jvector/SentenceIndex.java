@@ -15,7 +15,7 @@ import io.github.jbellis.jvector.vector.VectorizationProvider;
 import io.github.jbellis.jvector.vector.types.VectorFloat;
 import io.github.jbellis.jvector.vector.types.VectorTypeSupport;
 import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -26,45 +26,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-@RequiredArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class SentenceIndex {
+public class SentenceIndex implements AutoCloseable {
 
   private static final VectorTypeSupport vectorTypeSupport = VectorizationProvider.getInstance().getVectorTypeSupport();
 
   @NotNull Embeddings embeddings;
 
-  @Nullable OnHeapGraphIndex index;
+  @NotNull List<VectorFloat<?>> baseVectors;
 
-  @Nullable GraphSearcher graphSearcher;
+  @NotNull List<int[]> sentenceDocumentPairs;
 
-  @Nullable List<int[]> sentenceDocumentPairs;
+  @NotNull List<CoreMap> globalSentencesList;
 
-  @Nullable ListRandomAccessVectorValues listRandomAccess;
+  @NotNull OnHeapGraphIndex index;
 
-  public void buildFromDocuments(List<DocumentEntry> documents) {
-    List<VectorFloat<?>> baseVectors = new ArrayList<>();
-    sentenceDocumentPairs = new ArrayList<>();
+  @NotNull GraphSearcher graphSearcher;
 
-    log.trace("Querying embeddings");
-    for (DocumentEntry doc : documents) {
-      if (!doc.isAnnotated()) continue;
+  @NotNull ListRandomAccessVectorValues listRandomAccess;
 
-      List<CoreMap> sentences = AnnotationUtils.sentences(doc.getAnnotation());
-      int sentencesSize = sentences.size();
-      for (int i = 0; i < sentencesSize; i++) {
-        baseVectors.add(vectorTypeSupport.createFloatVector(
-          embeddings.getAccVector(sentences.get(i)).toFloatVector())
-        );
-        sentenceDocumentPairs.add(new int[]{doc.getId(), i});
-
-      }
-    }
-
-    log.trace("Querying embeddings done, their count is [{}]", baseVectors.size());
+  private SentenceIndex(
+    @NotNull Embeddings embeddings,
+    @Nullable List<VectorFloat<?>> baseVectors,
+    @Nullable List<int[]> sentenceDocumentPairs,
+    @NotNull List<CoreMap> globalSentencesList
+  ) {
     int originalDimension = baseVectors.get(0).length();
-    RandomAccessVectorValues ravv = new ListRandomAccessVectorValues(baseVectors, originalDimension);
-    BuildScoreProvider bsp = BuildScoreProvider.randomAccessScoreProvider(ravv, VectorSimilarityFunction.COSINE);
+    var ravv = new ListRandomAccessVectorValues(baseVectors, originalDimension);
+    var bsp = BuildScoreProvider.randomAccessScoreProvider(ravv, VectorSimilarityFunction.COSINE);
     log.trace("Building index");
     try (var builder = new GraphIndexBuilder(bsp, ravv.dimension(), 16, 100, 1.2f, 1.2f)) {
       this.index = builder.build(ravv);
@@ -72,16 +62,66 @@ public class SentenceIndex {
       this.listRandomAccess = new ListRandomAccessVectorValues(
         baseVectors, baseVectors.get(0).length()
       );
-      log.trace("Index was created");
+      this.baseVectors = baseVectors;
+      this.embeddings = embeddings;
+      this.sentenceDocumentPairs = sentenceDocumentPairs;
+      this.globalSentencesList = globalSentencesList;
+      log.trace("Building index done");
     } catch (IOException e) {
-      throw new PlagdetException("Failed to build index", e);
+      throw new PlagdetException("Failed to build sentence index", e);
     }
+  }
+
+  public static @NotNull SentenceIndex from(
+    @NotNull Embeddings embeddings,
+    @NotNull List<DocumentEntry> documents
+  ) throws PlagdetException {
+    List<VectorFloat<?>> baseVectors = new ArrayList<>();
+    List<int[]> sentenceDocumentPairs = new ArrayList<>();
+    List<CoreMap> globalSentencesList = new ArrayList<>();
+
+    log.trace("Querying embeddings");
+    int documentsSize = documents.size();
+    int globalSentenceIndex = 0;
+    for (int i = 0; i < documentsSize; i++) {
+      var doc = documents.get(i);
+      var sentences = AnnotationUtils.sentences(doc.getAnnotation());
+      int sentencesSize = sentences.size();
+      for (int j = 0; j < sentencesSize; j++) {
+        baseVectors.add(vectorTypeSupport.createFloatVector(
+          embeddings.getAccVector(sentences.get(j)).toFloatVector())
+        );
+        sentenceDocumentPairs.add(new int[]{i, j, globalSentenceIndex});
+        globalSentencesList.add(sentences.get(j));
+        globalSentenceIndex++;
+      }
+    }
+
+    log.trace("Querying embeddings done");
+    embeddings.clearSentenceVectorCache();
+
+    return new SentenceIndex(embeddings, baseVectors, sentenceDocumentPairs, globalSentencesList);
+  }
+
+  public void clearGlobalSentenceList() {
+    this.globalSentencesList.clear();
+  }
+
+  public @NotNull CoreMap findSentenceByGlobalIndex(int globalSentenceIndex) {
+    return globalSentencesList.get(globalSentenceIndex);
+  }
+
+  public List<int[]> findSimilar(int globalSentenceIndex, float th) {
+    return findSimilar(baseVectors.get(globalSentenceIndex), th);
   }
 
   public List<int[]> findSimilar(CoreMap querySentence, float th) {
     var queryVec = embeddings.getAccVector(querySentence).toFloatVector();
     var query = vectorTypeSupport.createFloatVector(queryVec);
+    return findSimilar(query, th);
+  }
 
+  public List<int[]> findSimilar(VectorFloat<?> query, float th) {
     var search = SearchScoreProvider.exact(
       query, VectorSimilarityFunction.COSINE, listRandomAccess
     );
@@ -93,6 +133,14 @@ public class SentenceIndex {
     return matches;
   }
 
+  @Override
+  public void close() throws Exception {
+    if (this.graphSearcher != null) {
+      this.graphSearcher.close();
+    }
+
+    this.clearGlobalSentenceList();
+  }
 }
 
 //  public List<int[]> inMemoryIndexLookup(
