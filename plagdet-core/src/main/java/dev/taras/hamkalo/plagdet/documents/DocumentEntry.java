@@ -1,191 +1,32 @@
 package dev.taras.hamkalo.plagdet.documents;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonSetter;
-import dev.taras.hamkalo.plagdet.comparision.MarkingOffsets;
-import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
-import dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
-import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
-import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
+
 import edu.stanford.nlp.pipeline.Annotation;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-
-@Data
+@Value
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor // used for json to object mapping
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class DocumentEntry {
 
-  boolean indexed;
+  boolean isIndexed;
 
-  boolean template;
+  @NotNull Annotation annotation;
 
-  boolean comparedToTemplate;
+  @NotNull FileData fileData;
 
-  Integer id;
-
-  @NotNull
-  FileData fileData;
-
-  @Nullable
-  @JsonIgnore
-  @ToString.Exclude
-  @EqualsAndHashCode.Exclude
-  Annotation annotation;
-
-  @NotNull
-  @ToString.Exclude
-  @Builder.Default
-  @EqualsAndHashCode.Exclude
-  List<String> pairIds = new ArrayList<>();
-
-  @NotNull
-  @ToString.Exclude
-  @Builder.Default
-  @JsonIgnore
-  @EqualsAndHashCode.Exclude
-  Queue<DocumentPair> documentPairs = new PriorityQueue<>();
-
-  @NotNull
-  @JsonIgnore
-  @Builder.Default
-  @EqualsAndHashCode.Exclude
-  List<SpecialMarking> templateMarking = new ArrayList<>();
-
-  @Nullable
-  @JsonIgnore
-  @ToString.Exclude
-  @Builder.Default
-  @EqualsAndHashCode.Exclude
-  List<SpecialMarking> codeMarking = null;
-
-  @JsonGetter("id")
-  public Integer getId() {
-    if (id != null) {
-      return id;
-    }
-
-    return id = getId(this.fileData);
+  public int getId() {
+    return DocumentEntry.getId(fileData);
   }
-
-  // TODO: can be derived on frontend
-  @JsonGetter("maxSimilarity")
-  public double maxSimilarity() {
-    return documentPairs.stream()
-      .mapToDouble(p -> p.getMaxScore())
-      .max()
-      .orElse(0);
-  }
-
-  @JsonGetter("pairIds")
-  public List<String> getDocumentPairIds() {
-    if (!pairIds.isEmpty()) {
-      var copy = new ArrayList<>(pairIds);
-      pairIds.clear();
-      return copy;
-    }
-
-    return documentPairs.stream()
-      .map(p -> p.getId())
-      .toList();
-  }
-
-
-  @JsonGetter("markings")
-  public @NotNull List<SpecialMarking> getMarkings() {
-    var markings = new ArrayList<>(getTemplateMarking());
-    markings.addAll(getCodeMarking());
-    markings.addAll(getMisspelledMarking());
-    markings.addAll(getSpoofMarking());
-    return markings;
-  }
-
-  @JsonSetter("markings")
-  public void setMarkings(List<SpecialMarking> markings) {
-    this.templateMarking = markings.stream()
-      .filter(m -> SpecialMarkingType.TEMPLATE.equals(m.getType()))
-      .toList();
-  }
-
 
   public static int getId(@NotNull FileData fileData) {
     return 31 * fileData.getContent().hashCode() + fileData.getPersistentPath().hashCode();
-  }
-
-  @JsonIgnore
-  public boolean isAnnotated() {
-    return this.annotation != null && this.annotation.size() != 0;
-  }
-
-  @JsonIgnore
-  public @NotNull List<SpecialMarking> getCodeMarking() {
-    if (!isAnnotated()) {
-      return Collections.emptyList();
-    }
-
-    if (this.codeMarking != null) {
-      return this.codeMarking;
-    }
-
-    final var codeSentenceBoundaries = annotation
-      .get(PlagdetAnnotations.CodeSentencesAnnotation.class);
-
-    if (codeSentenceBoundaries == null) {
-      return Collections.emptyList();
-    }
-
-    this.codeMarking = codeSentenceBoundaries.stream()
-      .map(b -> new MarkingOffsets(b[0], b[1]))
-      .map(marking ->
-        SpecialMarking.builder()
-          .type(SpecialMarkingType.CODE)
-          .first(marking)
-          .build()
-      ).toList();
-
-    return codeMarking;
-  }
-
-  @JsonIgnore
-  public @NotNull List<SpecialMarking> getMisspelledMarking() {
-    if (!isAnnotated()) {
-      return Collections.emptyList();
-    }
-
-    return AnnotationUtils.tokens(annotation).stream()
-      .filter(AnnotationUtils.isMisspelledToken())
-      .map(t ->
-        SpecialMarking.builder()
-          .type(SpecialMarkingType.MISSPELLED)
-          .first(MarkingOffsets.from(t))
-          .comments(AnnotationUtils.getCorrection(t))
-          .build()
-      )
-      .toList();
-  }
-
-  @JsonIgnore
-  public @NotNull List<SpecialMarking> getSpoofMarking() {
-    if (!isAnnotated()) {
-      return Collections.emptyList();
-    }
-    return AnnotationUtils.tokens(annotation).stream()
-      .filter(AnnotationUtils.isSpoofedToken())
-      .map(t ->
-        SpecialMarking.builder()
-          .type(SpecialMarkingType.SPOOF)
-          .first(MarkingOffsets.from(t))
-          .comments(AnnotationUtils.getCorrection(t))
-          .build()
-      )
-      .toList();
   }
 
 }

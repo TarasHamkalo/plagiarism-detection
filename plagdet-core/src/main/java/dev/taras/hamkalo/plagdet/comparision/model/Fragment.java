@@ -1,8 +1,8 @@
 package dev.taras.hamkalo.plagdet.comparision.model;
 
-import dev.taras.hamkalo.plagdet.comparision.MarkingOffsets;
+import dev.taras.hamkalo.plagdet.documents.markings.MarkingOffsets;
 import dev.taras.hamkalo.plagdet.comparision.util.SeedUtils;
-import dev.taras.hamkalo.plagdet.comparision.SpecialMarking;
+import dev.taras.hamkalo.plagdet.documents.markings.SpecialMarking;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import edu.stanford.nlp.util.CoreMap;
 import lombok.Value;
@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collection;
 import java.util.List;
 
-import static dev.taras.hamkalo.plagdet.comparision.SpecialMarking.SpecialMarkingType;
+import static dev.taras.hamkalo.plagdet.documents.markings.SpecialMarking.SpecialMarkingType;
 
 @Value
 public class Fragment {

@@ -1,7 +1,10 @@
 package dev.taras.hamkalo.plagdet.io;
 
+import org.apache.commons.compress.utils.FileNameUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -9,8 +12,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 public abstract class IoUtils {
+
+
+  public static final Pattern SUBMITTER_REGEX = Pattern.compile(
+    "\\d{4}_\\d{4}_([A-Z][a-z]+)_([A-Z][a-z]+)_"
+  );
 
   public static List<Path> expand(String dirString) throws IOException {
     // Convert wildcard path to absolute and parse parent directory
@@ -66,6 +76,23 @@ public abstract class IoUtils {
       directoryPath.toFile().deleteOnExit();
     }
     return directoryPath;
+  }
+
+  public static boolean isExtensionSupported(
+    @NotNull File file,
+    @NotNull Set<String> supportedExtensions
+  ) {
+    String extension = FilenameUtils.getExtension(file.getName());
+    return supportedExtensions.contains(extension) && file.isFile();
+  }
+
+  public static @NotNull String extractSubmitter(@NotNull Path path) {
+    var matcher = SUBMITTER_REGEX.matcher(path.toString());
+    if (matcher.find()) {
+      return matcher.group(1) + " " + matcher.group(2);
+    }
+
+    return FileNameUtils.getBaseName(path);
   }
 
 

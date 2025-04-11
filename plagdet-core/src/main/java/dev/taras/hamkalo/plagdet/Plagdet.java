@@ -1,29 +1,29 @@
 package dev.taras.hamkalo.plagdet;
 
-import dev.taras.hamkalo.plagdet.comparision.comparator.*;
-import dev.taras.hamkalo.plagdet.comparision.blocks.Embeddings;
+import dev.taras.hamkalo.plagdet.comparision.*;
+import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedingStrategy;
+import dev.taras.hamkalo.plagdet.comparision.blocks.NopExtensionStrategy;
 import dev.taras.hamkalo.plagdet.concurrency.ExecutorServiceSingleton;
-import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
-import dev.taras.hamkalo.plagdet.documents.Submission;
+import dev.taras.hamkalo.plagdet.documents.corpus.BaseCorpus;
+import dev.taras.hamkalo.plagdet.documents.corpus.Corpus;
+import dev.taras.hamkalo.plagdet.documents.pool.BaseDocumentPool;
+import dev.taras.hamkalo.plagdet.documents.pool.DocumentPool;
 import dev.taras.hamkalo.plagdet.exception.PlagdetException;
-import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneIndex;
-import dev.taras.hamkalo.plagdet.io.SubmissionsParser;
-import dev.taras.hamkalo.plagdet.io.reader.*;
+import dev.taras.hamkalo.plagdet.io.filedata.EagerFileDataSource;
+import dev.taras.hamkalo.plagdet.io.filedata.FileDataSource;
+import dev.taras.hamkalo.plagdet.io.filedata.reader.*;
 import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
-import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -35,62 +35,21 @@ public class Plagdet {
 
   @NotNull LuceneIndex luceneIndex;
 
-  @NotNull SimilarDocumentSource similarDocumentSource;
-
-  @NotNull SubmissionsParser submissionsParser;
-
-  @Nullable DocumentEntry template;
-
-  @NotNull ComparisonPipeline comparisonPipeline;
-
   @NotNull PlagdetParameters parameters;
 
-  @NotNull
-  @NonFinal
-  List<Submission> submissions = new ArrayList<>();
-
-  @NonFinal
-  @Nullable String currentInputPath;
+  @NotNull List<FileDataReader> registeredFileDataReaders;
 
   public Plagdet(@NotNull PlagdetParameters parameters) {
     this.parameters = parameters;
-    this.luceneIndex = this.initLucene(parameters.getLuceneIndexDirectoryPath());
-    this.similarDocumentSource = new SimilarDocumentSource(
-      parameters.getSimilarDocumentSourceParameters(), this.luceneIndex
+    this.registeredFileDataReaders = List.of(
+      new DocxFileDataReader(), new PdfFileDataReader(),
+      new DocFileDataReader(), new TextFileDataReader()
     );
 
-    this.submissionsParser = this.initSubmissionsParser();
-    this.template = submissionsParser.readTemplate(parameters.getTemplateDocumentPath());
+    this.luceneIndex = initLucene(parameters.getLuceneIndexDirectoryPath());
     this.embeddings = new Embeddings(luceneIndex);
-    this.comparisonPipeline = this.initComparisonPipeline(
-      parameters, embeddings, similarDocumentSource, template
-    );
 
     ExecutorServiceSingleton.setNumberOfProcessors(parameters.getNumberOfProcessors());
-  }
-
-  private SubmissionsParser initSubmissionsParser() {
-    return new SubmissionsParser(List.of(
-      new DocxDocumentReader(), new DocDocumentReader(),
-      new PdfDocumentReader(), new TextDocumentReader()
-    ));
-  }
-
-  private @NotNull ComparisonPipeline initComparisonPipeline(
-    @NotNull PlagdetParameters parameters,
-    @NotNull Embeddings embeddings,
-    @NotNull SimilarDocumentSource similarDocumentSource,
-    @Nullable DocumentEntry template
-  ) {
-    return new ComparisonPipeline(
-      embeddings,
-      similarDocumentSource,
-      new SentenceComparator(parameters.getTemplateComparatorParameters(), embeddings),
-      new ResultsFilter(parameters.getResultsFilterParameters()),
-      template,
-      new MetadataComparator(parameters.getMetadataComparatorParameters()),
-      new ShingleComparator(parameters.getShingleComparatorParameters())
-    );
   }
 
   private @NotNull LuceneIndex initLucene(@Nullable String luceneIndexDirectoryPath) {
@@ -108,39 +67,52 @@ public class Plagdet {
     }
   }
 
-  public Report compare(@NotNull String path) {
-    currentInputPath = path;
-    System.gc();
-    submissions = submissionsParser.parseSubmissions(path);
-    System.out.println("Parsed with uptime " + ManagementFactory.getRuntimeMXBean().getUptime() / 1000);
+  public void compare(@NotNull String path) {
     Pipeline.init();
-    ExecutorServiceSingleton.getExecutorService().init();
-    comparisonPipeline.compareSubmissions(submissions);
-    ExecutorServiceSingleton.getExecutorService().deInit();
-    return Report.from(this, false);
-  }
-
-
-  public void index(@NotNull List<Submission> submissions) {
-    for (var submission : submissions) {
-      for (var document : submission.getDocuments()) {
-        luceneIndex.addToIndex(document);
+    FileDataSource fileDataSource = new EagerFileDataSource(registeredFileDataReaders, path);
+    Corpus corpus = new BaseCorpus(fileDataSource);
+    DocumentPool documentPool = new BaseDocumentPool(corpus, embeddings);
+    List<ComparisonFilter> filters = List.of(
+      new LengthComparisonFilter(parameters.getLengthComparisonFilterParameters()),
+      new ShingleOverlapComparisonFilter(parameters.getShingleOverlapComparisonFilterParameters())
+    );
+    Comparator comparator = new Comparator(
+      new NopExtensionStrategy(),
+      new IndexBasedWordAlignmentSeedingStrategy(embeddings),
+      new MetadataComparator(parameters.getMetadataComparatorParameters()),
+      filters
+    );
+    int i = 0;
+    int comparisonsCount = 0;
+    while (documentPool.hasAnySuspiciousDocument()) {
+      log.trace("Source document index [{}]\n\n", i);
+      var susp = documentPool.nextSuspiciousDocument();
+      System.gc();
+      documentPool.prepareSuspiciousDocument();
+      while (documentPool.hasAnySourceDocument()) {
+        var src = documentPool.nextSourceDocument();
+        var comparison = comparator.comparePair(documentPool);
+//        log.trace("Comparing:\n\t1: {}\n\t2: {}", susp.getFileData(), src.getFileData());
+        log.trace("Comparison {}:\n\t {}\n", comparisonsCount++, comparison);
       }
+
+      i++;
     }
+
   }
 
-  public void index(@NotNull String path) {
-    Pipeline.init();
-    ExecutorServiceSingleton.getExecutorService().init();
-    final var submissions = submissionsParser.parseSubmissions(path);
-    final var documents = submissions.stream()
-      .flatMap(s -> s.getDocuments().stream())
-      .toList();
 
-    comparisonPipeline.preprocessDocuments(documents);
-    index(submissions);
+//  public void index(@NotNull List<DocumentEntry> documentEntries) {
+//    for (var document : documentEntries) {
+//      luceneIndex.addToIndex(document);
+//    }
+//  }
 
-    ExecutorServiceSingleton.getExecutorService().deInit();
-  }
-
+//  public void index(@NotNull String path) {
+//    Pipeline.init();
+//    ExecutorServiceSingleton.getExecutorService().init();
+//
+//    ExecutorServiceSingleton.getExecutorService().deInit();
+//  }
 }
+

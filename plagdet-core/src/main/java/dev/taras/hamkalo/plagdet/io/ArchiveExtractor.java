@@ -1,6 +1,6 @@
 package dev.taras.hamkalo.plagdet.io;
 
-import dev.taras.hamkalo.plagdet.io.exception.ParsingException;
+import dev.taras.hamkalo.plagdet.io.exception.FileDataSourceException;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -22,7 +22,7 @@ public class ArchiveExtractor {
   public static Map<String, File> extract(
     @NotNull File file,
     @Nullable Set<String> allowedFormats
-  ) throws ParsingException {
+  ) throws FileDataSourceException {
 
     var result = new HashMap<String, File>();
     try (InputStream fis = new FileInputStream(file);
@@ -51,7 +51,7 @@ public class ArchiveExtractor {
       }
 
     } catch (IOException e) {
-      throw new ParsingException(e);
+      throw new FileDataSourceException(e);
     }
 
     return result;

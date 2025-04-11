@@ -1,7 +1,7 @@
 package dev.taras.hamkalo.plagdet.indexing.jvector;
 
 
-import dev.taras.hamkalo.plagdet.comparision.blocks.Embeddings;
+import dev.taras.hamkalo.plagdet.comparision.Embeddings;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.exception.PlagdetException;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
@@ -111,21 +111,21 @@ public class SentenceIndex implements AutoCloseable {
     return globalSentencesList.get(globalSentenceIndex);
   }
 
-  public List<int[]> findSimilar(int globalSentenceIndex, float th) {
-    return findSimilar(baseVectors.get(globalSentenceIndex), th);
+  public List<int[]> findSimilar(int globalSentenceIndex, int topK, float th) {
+    return findSimilar(baseVectors.get(globalSentenceIndex), topK, th);
   }
 
-  public List<int[]> findSimilar(CoreMap querySentence, float th) {
+  public List<int[]> findSimilar(CoreMap querySentence, int topK, float th) {
     var queryVec = embeddings.getAccVector(querySentence).toFloatVector();
     var query = vectorTypeSupport.createFloatVector(queryVec);
-    return findSimilar(query, th);
+    return findSimilar(query, topK, th);
   }
 
-  public List<int[]> findSimilar(VectorFloat<?> query, float th) {
+  public List<int[]> findSimilar(VectorFloat<?> query, int topK, float th) {
     var search = SearchScoreProvider.exact(
       query, VectorSimilarityFunction.COSINE, listRandomAccess
     );
-    SearchResult sr = graphSearcher.search(search, 20000, th, Bits.ALL);
+    SearchResult sr = graphSearcher.search(search, topK, th, Bits.ALL);
     List<int[]> matches = new ArrayList<>();
     for (SearchResult.NodeScore ns : sr.getNodes()) {
       matches.add(sentenceDocumentPairs.get(ns.node));
@@ -134,11 +134,8 @@ public class SentenceIndex implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
-    if (this.graphSearcher != null) {
-      this.graphSearcher.close();
-    }
-
+  public void close() throws IOException {
+    this.graphSearcher.close();
     this.clearGlobalSentenceList();
   }
 }

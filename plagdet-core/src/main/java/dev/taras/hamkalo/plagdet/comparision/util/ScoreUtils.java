@@ -1,8 +1,7 @@
 package dev.taras.hamkalo.plagdet.comparision.util;
 
 import dev.taras.hamkalo.plagdet.comparision.model.Fragment;
-import dev.taras.hamkalo.plagdet.documents.DocumentPair;
-import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
+import edu.stanford.nlp.util.CoreMap;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
@@ -13,16 +12,17 @@ import java.util.List;
 public abstract class ScoreUtils {
 
   public static double plagScoreAsSentenceCoverage(
-    @NotNull DocumentPair documentPair,
+    @NotNull List<List<CoreMap>> documents,
     @NotNull List<Fragment> plagiarizedFragments
   ) {
-    var firstAnnotation = documentPair.getFirst().getAnnotation();
-    var secondAnnotation = documentPair.getSecond().getAnnotation();
+    if (plagiarizedFragments.isEmpty()) {
+      return 0;
+    }
 
     double totalCoverage = sideSentenceCoverage(plagiarizedFragments, 0) +
                            sideSentenceCoverage(plagiarizedFragments, 1);
-    long firstSentencesCount = AnnotationUtils.sentences(firstAnnotation).size();
-    long secondSentencesCount = AnnotationUtils.sentences(secondAnnotation).size();
+    long firstSentencesCount = documents.get(0).size();
+    long secondSentencesCount = documents.get(1).size();
     long total = firstSentencesCount + secondSentencesCount;
     if (total == 0) {
       return 0;
@@ -32,7 +32,7 @@ public abstract class ScoreUtils {
   }
 
 
-  public static int sideSentenceCoverage(List<Fragment> fragments, int side) {
+  public static int sideSentenceCoverage(@NotNull List<Fragment> fragments, int side) {
     fragments.sort(
       Comparator.comparingInt((Fragment f) -> f.getSideStarts()[side])
         .thenComparingInt((Fragment f) -> f.getSideEnds()[side])
