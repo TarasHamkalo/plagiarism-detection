@@ -1,13 +1,14 @@
 package dev.taras.hamkalo.plagdet;
 
 import dev.taras.hamkalo.plagdet.comparision.MetadataComparator.MetadataComparatorParameters;
-import dev.taras.hamkalo.plagdet.comparision.ShingleOverlapComparisonFilter.ShingleOverlapComparisonFilterParameters;
+import dev.taras.hamkalo.plagdet.comparision.filter.ShingleOverlapComparisonFilter.ShingleOverlapComparisonFilterParameters;
 import lombok.Builder;
 import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static dev.taras.hamkalo.plagdet.comparision.LengthComparisonFilter.LengthComparisonFilterParameters;
+import static dev.taras.hamkalo.plagdet.ComparisonsStore.*;
+import static dev.taras.hamkalo.plagdet.comparision.filter.LengthComparisonFilter.LengthComparisonFilterParameters;
 
 
 @Value
@@ -25,4 +26,7 @@ public class PlagdetParameters {
   @NotNull ShingleOverlapComparisonFilterParameters shingleOverlapComparisonFilterParameters;
 
   @NotNull LengthComparisonFilterParameters lengthComparisonFilterParameters;
+
+  @NotNull ComparisonsStoreParameters comparisonsStoreParameters;
+
 }
