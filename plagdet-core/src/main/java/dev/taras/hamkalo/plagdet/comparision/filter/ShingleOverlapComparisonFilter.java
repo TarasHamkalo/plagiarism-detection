@@ -1,4 +1,4 @@
-package dev.taras.hamkalo.plagdet.comparision;
+package dev.taras.hamkalo.plagdet.comparision.filter;
 
 import dev.taras.hamkalo.plagdet.comparision.model.FilteringResult;
 import dev.taras.hamkalo.plagdet.comparision.model.PlagScore;
@@ -87,9 +87,10 @@ public class ShingleOverlapComparisonFilter implements ComparisonFilter {
   }
 
   private Set<Shingle> getDocumentShingles(@NotNull DocumentEntry documentEntry) {
-    return documentToShingle.computeIfAbsent(
-      documentEntry.getId(), (key) -> generateShingles(documentEntry.getAnnotation())
-    );
+    return generateShingles(documentEntry.getAnnotation());
+//    return documentToShingle.computeIfAbsent(
+//      documentEntry.getId(), (key) -> generateShingles(documentEntry.getAnnotation())
+//    );
   }
 
   private Set<Shingle> generateShingles(@NotNull Annotation annotation) {

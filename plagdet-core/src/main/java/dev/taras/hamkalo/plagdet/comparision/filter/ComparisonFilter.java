@@ -1,4 +1,4 @@
-package dev.taras.hamkalo.plagdet.comparision;
+package dev.taras.hamkalo.plagdet.comparision.filter;
 
 import dev.taras.hamkalo.plagdet.comparision.model.FilteringResult;
 import dev.taras.hamkalo.plagdet.documents.pool.DocumentPool;

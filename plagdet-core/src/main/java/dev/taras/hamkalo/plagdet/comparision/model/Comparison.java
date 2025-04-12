@@ -20,4 +20,11 @@ public class Comparison {
 
   List<SpecialMarking> plagCases;
 
+  public String getId() {
+    return Comparison.getId(firstId, secondId);
+  }
+
+  public static String getId(int firstId, int secondId) {
+    return String.format("%d_%d", firstId, secondId);
+  }
 }

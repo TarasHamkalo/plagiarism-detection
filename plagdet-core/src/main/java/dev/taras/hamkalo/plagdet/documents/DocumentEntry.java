@@ -2,17 +2,12 @@ package dev.taras.hamkalo.plagdet.documents;
 
 
 import edu.stanford.nlp.pipeline.Annotation;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
-import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
 @Value
 @Builder
-@AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class DocumentEntry {
 
   boolean isIndexed;

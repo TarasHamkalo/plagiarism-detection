@@ -36,7 +36,7 @@ public class WeightedWordAlignmentScorer {
     double sim1 = max1.mmul(w1).getDouble(0) / w1.sum(0).getDouble(0);
     double sim2 = max2.mmul(w2).getDouble(0) / w2.sum(0).getDouble(0);
 
-    double similarity = 0.5 * (sim1 + sim2) * sizeRatio;
+    double similarity = 0.5 * (sim1 + sim2);
     return similarity > similarityThreshold;
   }
 

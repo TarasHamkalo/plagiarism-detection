@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.comparision;
 
+import dev.taras.hamkalo.plagdet.comparision.filter.ComparisonFilter;
 import dev.taras.hamkalo.plagdet.comparision.model.FilteringResult;
 import dev.taras.hamkalo.plagdet.comparision.model.PlagScore;
 import dev.taras.hamkalo.plagdet.comparision.model.PlagScoreType;

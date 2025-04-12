@@ -2,6 +2,7 @@ package dev.taras.hamkalo.plagdet.comparision;
 
 import dev.taras.hamkalo.plagdet.comparision.blocks.ExtensionStrategy;
 import dev.taras.hamkalo.plagdet.comparision.blocks.SeedingStrategy;
+import dev.taras.hamkalo.plagdet.comparision.filter.ComparisonFilter;
 import dev.taras.hamkalo.plagdet.comparision.model.Comparison;
 import dev.taras.hamkalo.plagdet.comparision.model.Fragment;
 import dev.taras.hamkalo.plagdet.comparision.model.PlagScore;
@@ -49,8 +50,8 @@ public class Comparator {
 
       if (filteringResult.isShouldFilter()) {
         return Comparison.builder()
-          .firstId(documentPool.getSourceDocument().getId())
-          .secondId(documentPool.getSuspiciousDocument().getId())
+          .firstId(documentPool.getSuspiciousDocument().getId())
+          .secondId(documentPool.getSourceDocument().getId())
           .plagCases(Collections.emptyList())
           .plagScores(plagScores)
           .plagSource(metadataComparator.inferPlagiarismSource(documentPool))
@@ -71,8 +72,8 @@ public class Comparator {
     );
 
     return Comparison.builder()
-      .firstId(documentPool.getSourceDocument().getId())
-      .secondId(documentPool.getSuspiciousDocument().getId())
+      .firstId(documentPool.getSuspiciousDocument().getId())
+      .secondId(documentPool.getSourceDocument().getId())
       .plagCases(plagCases)
       .plagScores(plagScores)
       .plagSource(metadataComparator.inferPlagiarismSource(documentPool))
