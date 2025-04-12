@@ -15,6 +15,8 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 
 import static dev.taras.hamkalo.plagdet.io.report.FileReportWriter.FILES_DIR;
 
@@ -28,9 +30,15 @@ public class BufferedReportWriter {
   @NotNull Path outputDirectory;
 
   /**
+   * Stores comparison ids which were already written to disk, to prevent multiple writes
+   */
+  @NotNull Set<String> flushedComparisonIds;
+
+  /**
    * Serves as cache and filter for comparisons
    */
   @NotNull ComparisonsStore resultsStore;
+
 
   @NotNull FileReportWriter fileReportWriter;
 
@@ -38,6 +46,7 @@ public class BufferedReportWriter {
     @NotNull ComparisonsStore comparisonsStore
   ) throws IOException {
     this.resultsStore = comparisonsStore;
+    this.flushedComparisonIds = new HashSet<>();
     this.fileReportWriter = new FileReportWriter(true);
     this.outputDirectory = Files.createTempDirectory("plagdet_report_files_");
     outputDirectory.toFile().deleteOnExit();
@@ -52,8 +61,8 @@ public class BufferedReportWriter {
     }
   }
 
-  public void writeComparison(@NotNull Comparison comparison) {
-    resultsStore.recordComparison(comparison);
+  public void writeComparison(@NotNull Comparison comparison, boolean isSecondIndexed) {
+    resultsStore.recordComparison(comparison, isSecondIndexed);
   }
 
   public void flushDocument(@NotNull DocumentEntry documentEntry) throws ReportWriteException {
@@ -66,12 +75,18 @@ public class BufferedReportWriter {
       Path submitterDirectory =
         IoUtils.resolveDirectory(filesDir, submitterDirectoryName, true);
 
-      var comparisons = resultsStore.removeComparisonsByDocumentId(documentEntry.getId());
-      if (!comparisons.isEmpty()) {
-        fileReportWriter.writeComparisons(comparisons, outputDirectory);
+      var deduplicatedComparisons =
+        resultsStore.removeComparisonsByDocumentId(documentEntry.getId()).stream()
+          .filter(c -> !this.flushedComparisonIds.contains(c.getId()))
+          .toList();
+
+      if (!deduplicatedComparisons.isEmpty()) {
+        fileReportWriter.writeComparisons(deduplicatedComparisons, outputDirectory);
       }
 
-      fileReportWriter.writeDocument(documentEntry, comparisons, submitterDirectory);
+      fileReportWriter.writeDocument(documentEntry, deduplicatedComparisons, submitterDirectory);
+      deduplicatedComparisons.forEach(c -> this.flushedComparisonIds.add(c.getId()));
+
     } catch (IOException e) {
       throw new ReportWriteException("Could not write document entry", e);
     }

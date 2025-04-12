@@ -66,14 +66,16 @@ public class ComparisonsStore {
     this.documentToComparisons = new HashMap<>();
   }
 
-  public void recordComparison(@NotNull Comparison comparison) {
+  public void recordComparison(@NotNull Comparison comparison, boolean shouldAssignToFirstOnly) {
     if (!parameters.canBypassResultFiltering &&
         !hasAnyScoreExceedingThreshold(comparison)) {
       return;
     }
 
     safeAddComparison(comparison, comparison.getFirstId());
-    safeAddComparison(comparison, comparison.getSecondId());
+    if (!shouldAssignToFirstOnly) {
+      safeAddComparison(comparison, comparison.getSecondId());
+    }
   }
 
   public @NotNull List<Comparison> removeComparisonsByDocumentId(int id) {
