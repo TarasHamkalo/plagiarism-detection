@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+// TODO: remove unused vars
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ShingleOverlapComparisonFilter implements ComparisonFilter {
@@ -61,7 +62,9 @@ public class ShingleOverlapComparisonFilter implements ComparisonFilter {
 
   @NotNull Map<Integer, Set<Shingle>> documentToShingle;
 
-  public ShingleOverlapComparisonFilter(@NotNull ShingleOverlapComparisonFilter.ShingleOverlapComparisonFilterParameters parameters) {
+  public ShingleOverlapComparisonFilter(
+    @NotNull ShingleOverlapComparisonFilterParameters parameters
+  ) {
     if (parameters.overlap > parameters.size - 1) {
       throw new IllegalArgumentException("Overlap should be less than size");
     }
@@ -71,9 +74,12 @@ public class ShingleOverlapComparisonFilter implements ComparisonFilter {
   }
 
   @Override
-  public @NotNull FilteringResult doFilter(@NotNull DocumentPool documentPool) {
-    var firstShingles = getDocumentShingles(documentPool.getSuspiciousDocument());
-    var secondShingles = getDocumentShingles(documentPool.getSourceDocument());
+  public @NotNull FilteringResult doFilter(
+    @NotNull DocumentEntry suspiciousDocument,
+    @NotNull DocumentEntry sourceDocument
+  ) {
+    var firstShingles = getDocumentShingles(suspiciousDocument);
+    var secondShingles = getDocumentShingles(sourceDocument);
     double score = jaccardSimilarity(firstShingles, secondShingles);
     return FilteringResult.builder()
       .shouldFilter(score > parameters.plagiarizedLevel || score < parameters.discardLevel)
@@ -86,26 +92,36 @@ public class ShingleOverlapComparisonFilter implements ComparisonFilter {
       .build();
   }
 
-  private Set<Shingle> getDocumentShingles(@NotNull DocumentEntry documentEntry) {
+  @Override
+  public @NotNull FilteringResult doFilter(@NotNull DocumentPool documentPool) {
+    return doFilter(documentPool.getSuspiciousDocument(), documentPool.getSourceDocument());
+  }
+
+  private @NotNull Set<Shingle> getDocumentShingles(@NotNull DocumentEntry documentEntry) {
     return generateShingles(documentEntry.getAnnotation());
 //    return documentToShingle.computeIfAbsent(
 //      documentEntry.getId(), (key) -> generateShingles(documentEntry.getAnnotation())
 //    );
   }
 
-  private Set<Shingle> generateShingles(@NotNull Annotation annotation) {
+  private @NotNull Set<Shingle> generateShingles(@NotNull Annotation annotation) {
     final int step = parameters.size - parameters.overlap;
 
     var wordTokens = AnnotationUtils.tokens(annotation);
     var shingleSet = new HashSet<Shingle>();
     for (int i = 0; i <= wordTokens.size() - parameters.size; i += step) {
-      shingleSet.add(Shingle.from(wordTokens.subList(i, i + parameters.size), Shingle::tokensToLemmaString));
+      shingleSet.add(
+        Shingle.from(wordTokens.subList(i, i + parameters.size), Shingle::tokensToLemmaString)
+      );
     }
 
     return shingleSet;
   }
 
-  public static double jaccardSimilarity(Set<Shingle> first, Set<Shingle> second) {
+  public static double jaccardSimilarity(
+    @NotNull Set<Shingle> first,
+    @NotNull Set<Shingle> second
+  ) {
     double unionSize = Sets.union(first, second).size() * 1.0;
     double intersectionSize = Sets.intersection(first, second).size() * 1.0;
 

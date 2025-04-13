@@ -3,6 +3,7 @@ package dev.taras.hamkalo.plagdet.comparision.filter;
 import dev.taras.hamkalo.plagdet.comparision.model.FilteringResult;
 import dev.taras.hamkalo.plagdet.comparision.model.PlagScore;
 import dev.taras.hamkalo.plagdet.comparision.model.PlagScoreType;
+import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.pool.DocumentPool;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import lombok.AccessLevel;
@@ -36,11 +37,16 @@ public class LengthComparisonFilter implements ComparisonFilter {
 
   @Override
   public @NotNull FilteringResult doFilter(@NotNull DocumentPool documentPool) {
-    double firstSize =
-      1.0 * AnnotationUtils.sentences(documentPool.getSuspiciousDocument().getAnnotation()).size();
-    double secondSize =
-      1.0 * AnnotationUtils.sentences(documentPool.getSourceDocument().getAnnotation()).size();
+    return doFilter(documentPool.getSuspiciousDocument(), documentPool.getSourceDocument());
+  }
 
+  @Override
+  public @NotNull FilteringResult doFilter(
+    @NotNull DocumentEntry suspiciousDocument,
+    @NotNull DocumentEntry sourceDocument
+  ) {
+    double firstSize = 1.0 * AnnotationUtils.sentences(suspiciousDocument.getAnnotation()).size();
+    double secondSize = 1.0 * AnnotationUtils.sentences(sourceDocument.getAnnotation()).size();
     double sizeRatio = Math.min(firstSize / secondSize, secondSize / firstSize);
     return FilteringResult.builder()
       .shouldFilter(!parameters.bypassFiltering && sizeRatio < parameters.sentenceSizeRatioThreshold)

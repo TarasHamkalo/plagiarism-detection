@@ -5,6 +5,7 @@ import dev.taras.hamkalo.plagdet.comparision.model.FilteringResult;
 import dev.taras.hamkalo.plagdet.comparision.model.PlagScore;
 import dev.taras.hamkalo.plagdet.comparision.model.PlagScoreType;
 import dev.taras.hamkalo.plagdet.comparision.model.PlagSource;
+import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.Metadata;
 import dev.taras.hamkalo.plagdet.documents.pool.DocumentPool;
 import lombok.AccessLevel;
@@ -45,9 +46,17 @@ public class MetadataComparator implements ComparisonFilter {
 
   @Override
   public @NotNull FilteringResult doFilter(@NotNull DocumentPool documentPool) {
-    var first = documentPool.getSuspiciousDocument().getFileData().getMetadata();
-    var second = documentPool.getSourceDocument().getFileData().getMetadata();
+    var first = documentPool.getSuspiciousDocument();
+    var second = documentPool.getSourceDocument();
+    return doFilter(first, second);
+  }
 
+  public @NotNull FilteringResult doFilter(
+    @NotNull DocumentEntry firstDocument,
+    @NotNull DocumentEntry secondDocument
+  ) {
+    var first = firstDocument.getFileData().getMetadata();
+    var second = secondDocument.getFileData().getMetadata();
     var score = 0;
     var comments = new ArrayList<String>();
     if (nullableEquals(first.getCreator(), second.getCreator())) {
@@ -82,11 +91,18 @@ public class MetadataComparator implements ComparisonFilter {
   public @NotNull PlagSource inferPlagiarismSource(@NotNull DocumentPool documentPool) {
     var first = documentPool.getSuspiciousDocument();
     var second = documentPool.getSourceDocument();
-    if (first.isIndexed()) {
+    return inferPlagiarismSource(first, second);
+  }
+
+  public @NotNull PlagSource inferPlagiarismSource(
+    @NotNull DocumentEntry first,
+    @NotNull DocumentEntry second
+  ) {
+    if (first.getFileData().isIndexed()) {
       return PlagSource.FIRST;
     }
 
-    if (second.isIndexed()) {
+    if (second.getFileData().isIndexed()) {
       return PlagSource.SECOND;
     }
 
