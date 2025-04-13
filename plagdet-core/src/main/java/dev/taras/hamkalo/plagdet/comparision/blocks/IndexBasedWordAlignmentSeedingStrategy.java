@@ -5,10 +5,12 @@ import dev.taras.hamkalo.plagdet.comparision.scorer.WeightedWordAlignmentScorer;
 import dev.taras.hamkalo.plagdet.documents.pool.DocumentPool;
 import dev.taras.hamkalo.plagdet.indexing.jvector.SentenceIndex;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
+import edu.stanford.nlp.util.Pair;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,7 +24,7 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
   /**
    * Query HNSW for top 10 sentences above that threshold
    */
-  public static final float VECTOR_SIMILARITY_THRESHOLD = 0.7f;
+  public static final float VECTOR_SIMILARITY_THRESHOLD = 0.6f;
 
   /**
    * Drop every sentence match below that similarity
@@ -45,6 +47,16 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
    * but would like to know if that single could a source document inside that corpus
    */
   private static final int SIMILAR_SENTENCES_TO_CONSIDER_MULTI_SEARCH = 250;
+
+  /**
+   * Caches sentence word matrices for each document in collection
+   * Sentence global list, cached in sentence index is flat sentence collection for fast lookup
+   * The representation stored here, is matrix and weights for each sentence,
+   * goal is to free it aftere document was compared, so it will be more
+   * efficient to store organized
+   */
+  @NotNull
+  Map<Integer, Map<Integer, Pair<INDArray, INDArray>>> docToSentenceVectors = new HashMap<>();
 
   @NotNull Embeddings embeddings;
 
@@ -101,9 +113,7 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
       int matchesSize = matches.size();
       for (int j = 0; j < matchesSize; j++) {
         var match = matches.get(j);
-        var similarSentence = corpusSentencesIndex.findSentenceByGlobalIndex(match[2]);
-        // TODO: profile embeddings get word vectors
-        var similarSentenceMatrix = embeddings.getWordVectorsWithWeights(similarSentence);
+        var similarSentenceMatrix = retrieveSentenceRepresentationForMatch(corpusSentencesIndex, match);
         if (WeightedWordAlignmentScorer.areSimilar(
           similarSentenceMatrix, suspiciousSentenceMatrix, SIZE_RATIO_TRESHOLD, ALIGNMENT_SIMILARITY_THRESHOLD
         )) {
@@ -113,7 +123,20 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
       }
     }
 
+    docToSentenceVectors.clear();
     return documentToSeeds;
   }
 
+  private @NotNull Pair<INDArray, INDArray> retrieveSentenceRepresentationForMatch(
+    @NotNull SentenceIndex sentenceIndex,
+    int[] match
+  ) {
+    var sentence = sentenceIndex.findSentenceByGlobalIndex(match[2]);
+    var sentenceCache =
+      docToSentenceVectors.computeIfAbsent(match[0], (key) -> new HashMap<>());
+
+    return sentenceCache.computeIfAbsent(
+      match[1], (key) -> embeddings.getWordVectorsWithWeights(sentence)
+    );
+  }
 }
