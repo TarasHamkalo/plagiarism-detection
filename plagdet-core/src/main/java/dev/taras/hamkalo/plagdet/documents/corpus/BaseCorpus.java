@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldDefaults(level = AccessLevel.PROTECTED)
 public class BaseCorpus implements Corpus {
 
   @NotNull FileDataSource fileDataSource;
