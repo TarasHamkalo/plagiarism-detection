@@ -35,6 +35,14 @@ public class BaseDocumentPool implements DocumentPool {
 
   @Nullable DocumentEntry cachedNextSource;
 
+  @Getter
+  @Nullable
+  SentenceIndex suspiciousDocumentSentenceIndex;
+
+  @Getter
+  @Nullable
+  List<Pair<INDArray, INDArray>> suspiciousDocumentSentenceMatrices;
+
   @Override
   public @NotNull DocumentEntry getSuspiciousDocument() throws DocumentPoolAccessException {
     if (suspiciousDocument != null) {
@@ -46,20 +54,12 @@ public class BaseDocumentPool implements DocumentPool {
 
   @Override
   public @NotNull DocumentEntry getSourceDocument() throws DocumentPoolAccessException {
-    if (suspiciousDocument != null) {
+    if (sourceDocument != null) {
       return sourceDocument;
     }
 
     throw new DocumentPoolAccessException("Suspicous document was not queried yet");
   }
-
-  @Getter
-  @Nullable
-  SentenceIndex suspiciousDocumentSentenceIndex;
-
-  @Getter
-  @Nullable
-  List<Pair<INDArray, INDArray>> suspiciousDocumentSentenceMatrices;
 
   @Override
   public @NotNull DocumentEntry nextSuspiciousDocument() throws DocumentPoolAccessException {
