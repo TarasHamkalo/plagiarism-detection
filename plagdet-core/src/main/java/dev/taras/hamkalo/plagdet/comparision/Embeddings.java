@@ -66,7 +66,6 @@ public class Embeddings {
 
   public void clearSentenceVectorCache() {
     this.sentenceToWeightedAccVector.clear();
-//    System.gc();
   }
 
   public @NotNull INDArray getAccVector(@NotNull CoreMap sentence) {

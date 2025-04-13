@@ -57,6 +57,11 @@ public class ComparisonsStore {
    */
   @NotNull Map<Integer, PriorityQueue<Comparison>> documentToComparisons;
 
+  /**
+   * Stores sorted comparisons, between suspicious document and indexed
+   */
+  @NotNull Map<Integer, PriorityQueue<Comparison>> documentToIndexBasedComparison;
+
   @NotNull ComparisonsStoreParameters parameters;
 
   public ComparisonsStore(
@@ -64,18 +69,25 @@ public class ComparisonsStore {
   ) {
     this.parameters = parameters;
     this.documentToComparisons = new HashMap<>();
+    this.documentToIndexBasedComparison = new HashMap<>();
   }
 
-  public void recordComparison(@NotNull Comparison comparison, boolean shouldAssignToFirstOnly) {
+  public void recordIndexBasedComparison(@NotNull Comparison comparison) {
+    if (!parameters.canBypassResultFiltering &&
+        !hasAnyScoreExceedingThreshold(comparison)) {
+      return;
+    }
+    safeAddComparison(documentToIndexBasedComparison, comparison, comparison.getFirstId());
+  }
+
+  public void recordComparison(@NotNull Comparison comparison) {
     if (!parameters.canBypassResultFiltering &&
         !hasAnyScoreExceedingThreshold(comparison)) {
       return;
     }
 
-    safeAddComparison(comparison, comparison.getFirstId());
-    if (!shouldAssignToFirstOnly) {
-      safeAddComparison(comparison, comparison.getSecondId());
-    }
+    safeAddComparison(documentToComparisons, comparison, comparison.getFirstId());
+    safeAddComparison(documentToComparisons, comparison, comparison.getSecondId());
   }
 
   public @NotNull List<Comparison> removeComparisonsByDocumentId(int id) {
@@ -86,8 +98,20 @@ public class ComparisonsStore {
     return new ArrayList<>(comparisons);
   }
 
-  private void safeAddComparison(@NotNull Comparison comparison, int documentId) {
-    var comparisons = this.documentToComparisons.computeIfAbsent(
+  public @NotNull List<Comparison> removeIndexBasedComparisonsByDocumentId(int id) {
+    var comparisons = this.documentToIndexBasedComparison.remove(id);
+    if (comparisons == null) {
+      return Collections.emptyList();
+    }
+    return new ArrayList<>(comparisons);
+  }
+
+  private void safeAddComparison(
+    @NotNull Map<Integer, PriorityQueue<Comparison>> documentToComparisons,
+    @NotNull Comparison comparison,
+    int documentId
+  ) {
+    var comparisons = documentToComparisons.computeIfAbsent(
       documentId, (key) -> new PriorityQueue<>(this::prioritizeComparisons)
     );
 
