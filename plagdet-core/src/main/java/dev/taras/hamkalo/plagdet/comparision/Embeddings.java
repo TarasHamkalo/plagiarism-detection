@@ -16,10 +16,10 @@ import org.jetbrains.annotations.Nullable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.IntStream;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -151,31 +151,33 @@ public class Embeddings {
   // TODO: cache that
   public Pair<INDArray, INDArray> getWordVectorsWithWeights(@NotNull CoreMap sentence) {
     var tokens = AnnotationUtils.tokens(sentence);
+    INDArray matrix = Nd4j.create(tokens.size(), WORD_VECTOR_SIZE);
+    INDArray weights = Nd4j.create(tokens.size(), 1);
 
-    List<INDArray> validVectors = new ArrayList<>();
-    List<Double> validWeights = new ArrayList<>();
+    int validCount = 0;
     for (var token : tokens) {
       INDArray vector = getWordVector(token.tag() + token.lemma());
 
       if (vector != null) {
-        validVectors.add(vector);
+        matrix.putRow(validCount, vector);
+
         double posWeight = posWeights.getOrDefault(token.tag(), 0.0);
-        double idf = 1;
+        double idf = 1.0;
         try {
           idf = luceneIndex.inverseDocumentFrequency(token.lemma());
-        } catch (LuceneException ignoreEmptyIndex) {
-        }
+        } catch (LuceneException ignoreEmptyIndex) {}
 
-        validWeights.add(posWeight * idf);
+        weights.putScalar(validCount, 0, posWeight * idf);
+        validCount++;
       }
     }
 
-    if (validVectors.isEmpty()) {
+    if (validCount == 0) {
       return new Pair<>(Nd4j.empty(), Nd4j.empty());
     }
 
-    double[] doubleWeights = validWeights.stream().mapToDouble(value -> value).toArray();
-    INDArray weights = Nd4j.create(doubleWeights, doubleWeights.length, 1);
-    return new Pair<>(Nd4j.vstack(validVectors), weights);
+    INDArray validMatrix = matrix.getRows(IntStream.range(0, validCount).toArray());
+    INDArray validWeights = weights.getRows(IntStream.range(0, validCount).toArray());
+    return new Pair<>(validMatrix, validWeights);
   }
 }
