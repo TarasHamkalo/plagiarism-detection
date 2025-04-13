@@ -18,16 +18,19 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class WordFilteringAnnotator implements Annotator {
 
+  private static final Pattern VALID_WORD_PATTERN = Pattern.compile("[a-zA-Z]+");
+
   private static final int MIN_WORD_PER_SENTENCE = 3;
 
   public static final int MIN_WORD_LENGTH = 3;
 
-  SpoofChecker spoofChecker;
+  @NotNull SpoofChecker spoofChecker;
 
   public WordFilteringAnnotator() {
     this.spoofChecker = new SpoofChecker.Builder()
@@ -39,16 +42,12 @@ public class WordFilteringAnnotator implements Annotator {
   @Override
   public void annotate(Annotation annotation) {
     log.trace("Word annotator started");
-//    log.trace("Tokens before " + AnnotationUtils.wordTokens(annotation).size());
     AnnotationUtils.sentences(annotation).forEach(sentence -> {
       sentence.get(CoreAnnotations.TokensAnnotation.class)
         .removeIf(token -> {
           transformSpoofed(token); // icu4j -> replace with something simpler
-          if (token.word().length() < MIN_WORD_LENGTH) {
-            return true;
-          }
-
-          return !StringUtils.stripAccents(token.word()).matches("[a-zA-Z]+");
+          var word = StringUtils.stripAccents(token.word());
+          return word.length() < MIN_WORD_LENGTH || !VALID_WORD_PATTERN.matcher(word).matches();
         });
     });
 
@@ -57,11 +56,9 @@ public class WordFilteringAnnotator implements Annotator {
         .flatMap(sentence -> AnnotationUtils.tokens(sentence).stream())
         .toList()
     );
-//
     annotation.set(CoreAnnotations.SentencesAnnotation.class,
-      mergeToMinLength(AnnotationUtils.sentences(annotation).stream().filter(s -> !AnnotationUtils.tokens(s).isEmpty()).toList())
+      mergeToMinLength(AnnotationUtils.sentences(annotation))
     );
-//    log.trace("Tokens after " + AnnotationUtils.wordTokens(annotation).size());
   }
 
   private @NotNull List<CoreMap> mergeToMinLength(@NotNull List<CoreMap> sentences) {
@@ -72,7 +69,10 @@ public class WordFilteringAnnotator implements Annotator {
       if (tokens.size() < MIN_WORD_PER_SENTENCE) {
         var nextSentence = sentencesCopy.get(i + 1);
         AnnotationUtils.tokens(nextSentence).addAll(tokens);
-        nextSentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, AnnotationUtils.begin(sentences.get(i)));
+        nextSentence.set(
+          CoreAnnotations.CharacterOffsetBeginAnnotation.class,
+          AnnotationUtils.begin(sentences.get(i))
+        );
         sentencesCopy.remove(i);
         i--;
         sentencesSize--;
@@ -84,11 +84,10 @@ public class WordFilteringAnnotator implements Annotator {
 
   private void transformSpoofed(@NotNull CoreLabel token) {
     var isSpoof = spoofChecker.failsChecks(token.word());
-    token.set(PlagdetAnnotations.SpoofedWordAnnotation.class, isSpoof);
     if (isSpoof) {
+      token.set(PlagdetAnnotations.SpoofedWordAnnotation.class, true);
       String skeleton = spoofChecker.getSkeleton(token.word());
       log.trace("Spoof detected at [{}] with skeleton of [{}]", token.word(), skeleton);
-
       token.setWord(skeleton);
     }
   }
