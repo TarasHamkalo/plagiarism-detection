@@ -10,7 +10,6 @@ import static org.apache.lucene.document.Field.Store;
 
 public class FileDataMapper {
 
-
   public static void addId(int id, Document doc) {
     doc.add(new StringField(LuceneConstants.ID, String.valueOf(id), Store.NO));
   }
@@ -28,6 +27,7 @@ public class FileDataMapper {
       .submitter(doc.get(LuceneConstants.SUBMITTER))
       .persistentPath(doc.get(LuceneConstants.PATH))
       .content(doc.get(LuceneConstants.CONTENT))
+      .preprocessedContent(doc.get(LuceneConstants.PREPROCESSED_CONTENT))
       .metadata(MetadataMapper.parseMetadata(doc))
       .build();
   }

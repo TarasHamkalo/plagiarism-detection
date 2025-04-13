@@ -29,6 +29,10 @@ public class FileData {
   @ToString.Exclude
   String content;
 
+  @JsonIgnore
+  @ToString.Exclude
+  String preprocessedContent;
+
   @JsonGetter
   public String getFilename() {
     return FilenameUtils.getBaseName(persistentPath);

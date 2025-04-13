@@ -4,6 +4,7 @@ public class LuceneConstants {
   public static final String ID = "id";
   public static final String PATH = "path";
   public static final String CONTENT = "content";
+  public static final String PREPROCESSED_CONTENT = "preprocessed_content";
   public static final String SEARCH_CONTENT = "search_content";
   public static final String SUBMITTER = "submitter";
   public static final String CREATOR = "creator";

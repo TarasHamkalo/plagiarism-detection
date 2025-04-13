@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 @Slf4j
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class StanfordAdapterTokenizer extends Tokenizer {
 
   Annotation annotation;
@@ -41,6 +41,7 @@ public class StanfordAdapterTokenizer extends Tokenizer {
       return false;
     }
 
+    clearAttributes();
     var token = tokensIterator.next();
     termAttr.setEmpty().append(token.lemma());
     offsetAttr.setOffset(token.beginPosition(), token.endPosition());

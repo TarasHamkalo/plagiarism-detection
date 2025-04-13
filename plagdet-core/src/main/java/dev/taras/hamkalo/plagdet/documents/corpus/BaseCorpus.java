@@ -1,10 +1,12 @@
 package dev.taras.hamkalo.plagdet.documents.corpus;
 
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
+import dev.taras.hamkalo.plagdet.documents.FileData;
 import dev.taras.hamkalo.plagdet.documents.exceptions.CorpusAccessException;
 import dev.taras.hamkalo.plagdet.io.exception.FileDataSourceException;
 import dev.taras.hamkalo.plagdet.io.filedata.FileDataSource;
 import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
+import edu.stanford.nlp.pipeline.Annotation;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -71,7 +73,7 @@ public class BaseCorpus implements Corpus {
     try {
       if (cursor >= corpusDocuments.size() && fileDataSource.hasNext()) {
         var next = fileDataSource.next();
-        var annotation = Pipeline.annotate(next.getContent());
+        var annotation = createAnnotation(next);
         corpusDocuments.add(
           DocumentEntry.builder()
             .fileData(next)
@@ -84,6 +86,10 @@ public class BaseCorpus implements Corpus {
     } catch (IndexOutOfBoundsException | FileDataSourceException e) {
       throw new CorpusAccessException(e);
     }
+  }
+
+  protected @NotNull Annotation createAnnotation(@NotNull FileData next) {
+    return Pipeline.annotate(next.getContent());
   }
 
   @Override
