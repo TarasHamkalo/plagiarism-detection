@@ -3,6 +3,7 @@ package dev.taras.hamkalo.plagdet.io.report;
 import dev.taras.hamkalo.plagdet.ComparisonsStore;
 import dev.taras.hamkalo.plagdet.comparision.model.Comparison;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
+import dev.taras.hamkalo.plagdet.documents.corpus.Corpus;
 import dev.taras.hamkalo.plagdet.io.IoUtils;
 import dev.taras.hamkalo.plagdet.io.ZipArchiver;
 import dev.taras.hamkalo.plagdet.io.exception.ReportWriteException;
@@ -15,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -62,31 +64,48 @@ public class BufferedReportWriter {
   }
 
   public void writeComparison(@NotNull Comparison comparison, boolean isSecondIndexed) {
-    resultsStore.recordComparison(comparison, isSecondIndexed);
+    if (isSecondIndexed) {
+      resultsStore.recordIndexBasedComparison(comparison);
+    } else {
+      resultsStore.recordComparison(comparison);
+    }
   }
 
-  public void flushDocument(@NotNull DocumentEntry documentEntry) throws ReportWriteException {
+  public void flushDocument(
+    @NotNull DocumentEntry documentEntry,
+    @NotNull Corpus indexedDocumentsCorpus
+  ) throws ReportWriteException {
     String submitterDirectoryName = documentEntry.getFileData().getPersistentPath().split("/")[1]; // :)
-
     try {
-
       Path filesDir = IoUtils.resolveDirectory(outputDirectory, FILES_DIR, true);
-
       Path submitterDirectory =
         IoUtils.resolveDirectory(filesDir, submitterDirectoryName, true);
 
+      var indexBasedComparisons =
+        resultsStore.removeIndexBasedComparisonsByDocumentId(documentEntry.getId());
+
       var deduplicatedComparisons =
-        resultsStore.removeComparisonsByDocumentId(documentEntry.getId()).stream()
-          .filter(c -> !this.flushedComparisonIds.contains(c.getId()))
-          .toList();
+        new ArrayList<>(
+          resultsStore.removeComparisonsByDocumentId(documentEntry.getId()).stream()
+            .filter(c -> !this.flushedComparisonIds.contains(c.getId()))
+            .toList()
+        );
+
+      deduplicatedComparisons.addAll(indexBasedComparisons);
 
       if (!deduplicatedComparisons.isEmpty()) {
         fileReportWriter.writeComparisons(deduplicatedComparisons, outputDirectory);
       }
 
       fileReportWriter.writeDocument(documentEntry, deduplicatedComparisons, submitterDirectory);
-      deduplicatedComparisons.forEach(c -> this.flushedComparisonIds.add(c.getId()));
+      var indexedDocumentsMap = indexedDocumentsCorpus.getDocumentsMap();
+      var indexedDocuments = new ArrayList<DocumentEntry>();
+      for (var indexBasedComparison : indexBasedComparisons) {
+        indexedDocuments.add(indexedDocumentsMap.get(indexBasedComparison.getSecondId()));
+      }
 
+      fileReportWriter.writeIndexedDocuments(indexedDocuments, outputDirectory);
+      deduplicatedComparisons.forEach(c -> this.flushedComparisonIds.add(c.getId()));
     } catch (IOException e) {
       throw new ReportWriteException("Could not write document entry", e);
     }

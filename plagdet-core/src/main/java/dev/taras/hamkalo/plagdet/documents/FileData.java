@@ -15,6 +15,8 @@ import java.nio.file.Path;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class FileData {
 
+  boolean isIndexed;
+
   String submitter;
 
   Path temporaryPath;

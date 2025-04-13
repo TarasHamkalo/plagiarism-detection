@@ -49,12 +49,21 @@ public class FileReportWriter {
     }
   }
 
+  public void writeIndexedDocuments(
+    @NotNull List<DocumentEntry> documentEntries,
+    @NotNull Path destination
+  ) throws IOException {
+    Path indexedPath = IoUtils.resolveDirectory(destination, INDEXED_FILES_DIR, removeFilesOnExit);
+    for (var documentEntry : documentEntries) {
+      writeDocument(documentEntry, Collections.emptyList(), indexedPath);
+    }
+  }
+
   public void writeDocument(
     @NotNull DocumentEntry documentEntry,
     @NotNull List<Comparison> comparisons,
     @NotNull Path destination
   ) throws IOException {
-
     Path contentFilePath = IoUtils.resolveFile(
       destination, documentEntry.getId() + "_content.txt", removeFilesOnExit
     );
@@ -66,7 +75,8 @@ public class FileReportWriter {
 
     var documentEntryModel = DocumentEntryJsonModel.builder()
       .id(documentEntry.getId())
-      .isIndexed(documentEntry.isIndexed())
+      // TODO: remove after tested
+      .isIndexed(documentEntry.getFileData().isIndexed())
       .fileData(documentEntry.getFileData())
       .pairIds(comparisons.stream().map(Comparison::getId).toList())
       .markings(Collections.emptyList())

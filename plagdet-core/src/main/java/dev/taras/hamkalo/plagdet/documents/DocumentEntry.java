@@ -10,8 +10,6 @@ import org.jetbrains.annotations.NotNull;
 @Builder
 public class DocumentEntry {
 
-  boolean isIndexed;
-
   @NotNull Annotation annotation;
 
   @NotNull FileData fileData;

@@ -3,11 +3,10 @@ package dev.taras.hamkalo.plagdet.indexing.lucene.mapping;
 import dev.taras.hamkalo.plagdet.documents.FileData;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneConstants;
 import org.apache.lucene.document.Document;
-
-import static org.apache.lucene.document.Field.Store;
-
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+
+import static org.apache.lucene.document.Field.Store;
 
 public class FileDataMapper {
 
@@ -25,6 +24,7 @@ public class FileDataMapper {
 
   public static FileData parseFileData(Document doc) {
     return FileData.builder()
+      .isIndexed(true)
       .submitter(doc.get(LuceneConstants.SUBMITTER))
       .persistentPath(doc.get(LuceneConstants.PATH))
       .content(doc.get(LuceneConstants.CONTENT))

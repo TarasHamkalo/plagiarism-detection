@@ -3,6 +3,7 @@ package dev.taras.hamkalo.plagdet.indexing.jvector;
 
 import dev.taras.hamkalo.plagdet.comparision.Embeddings;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
+import dev.taras.hamkalo.plagdet.documents.corpus.Corpus;
 import dev.taras.hamkalo.plagdet.exception.PlagdetException;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import edu.stanford.nlp.util.CoreMap;
@@ -30,7 +31,8 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SentenceIndex implements AutoCloseable {
 
-  private static final VectorTypeSupport vectorTypeSupport = VectorizationProvider.getInstance().getVectorTypeSupport();
+  private static final VectorTypeSupport VECTOR_TYPE_SUPPORT =
+    VectorizationProvider.getInstance().getVectorTypeSupport();
 
   @NotNull Embeddings embeddings;
 
@@ -49,7 +51,7 @@ public class SentenceIndex implements AutoCloseable {
   private SentenceIndex(
     @NotNull Embeddings embeddings,
     @Nullable List<VectorFloat<?>> baseVectors,
-    @Nullable List<int[]> sentenceDocumentPairs,
+    @NotNull List<int[]> sentenceDocumentPairs,
     @NotNull List<CoreMap> globalSentencesList
   ) {
     int originalDimension = baseVectors.get(0).length();
@@ -74,6 +76,38 @@ public class SentenceIndex implements AutoCloseable {
 
   public static @NotNull SentenceIndex from(
     @NotNull Embeddings embeddings,
+    @NotNull Corpus corpus
+  ) {
+    List<VectorFloat<?>> baseVectors = new ArrayList<>();
+    List<int[]> sentenceDocumentPairs = new ArrayList<>();
+    List<CoreMap> globalSentencesList = new ArrayList<>();
+    log.trace("Querying embeddings");
+    int globalSentenceIndex = 0;
+    int i = 0;
+    while (corpus.hasNext()) {
+      var doc = corpus.next();
+      var sentences = AnnotationUtils.sentences(doc.getAnnotation());
+      int sentencesSize = sentences.size();
+      for (int j = 0; j < sentencesSize; j++) {
+        baseVectors.add(VECTOR_TYPE_SUPPORT.createFloatVector(
+          embeddings.getAccVector(sentences.get(j)).toFloatVector())
+        );
+        sentenceDocumentPairs.add(new int[]{i, j, globalSentenceIndex});
+        globalSentencesList.add(sentences.get(j));
+        globalSentenceIndex++;
+      }
+
+      i++;
+    }
+
+    corpus.reset();
+    log.trace("Querying embeddings done");
+    embeddings.clearSentenceVectorCache();
+    return new SentenceIndex(embeddings, baseVectors, sentenceDocumentPairs, globalSentencesList);
+  }
+
+  public static @NotNull SentenceIndex from(
+    @NotNull Embeddings embeddings,
     @NotNull List<DocumentEntry> documents
   ) throws PlagdetException {
     List<VectorFloat<?>> baseVectors = new ArrayList<>();
@@ -88,7 +122,7 @@ public class SentenceIndex implements AutoCloseable {
       var sentences = AnnotationUtils.sentences(doc.getAnnotation());
       int sentencesSize = sentences.size();
       for (int j = 0; j < sentencesSize; j++) {
-        baseVectors.add(vectorTypeSupport.createFloatVector(
+        baseVectors.add(VECTOR_TYPE_SUPPORT.createFloatVector(
           embeddings.getAccVector(sentences.get(j)).toFloatVector())
         );
         sentenceDocumentPairs.add(new int[]{i, j, globalSentenceIndex});
@@ -99,7 +133,6 @@ public class SentenceIndex implements AutoCloseable {
 
     log.trace("Querying embeddings done");
     embeddings.clearSentenceVectorCache();
-
     return new SentenceIndex(embeddings, baseVectors, sentenceDocumentPairs, globalSentencesList);
   }
 
@@ -111,17 +144,20 @@ public class SentenceIndex implements AutoCloseable {
     return globalSentencesList.get(globalSentenceIndex);
   }
 
-  public List<int[]> findSimilar(int globalSentenceIndex, int topK, float th) {
+  public @NotNull VectorFloat<?> findSentenceVectorByGlobalIndex(int globalSentenceIndex) {
+    return baseVectors.get(globalSentenceIndex);
+  }
+  public @NotNull List<int[]> findSimilar(int globalSentenceIndex, int topK, float th) {
     return findSimilar(baseVectors.get(globalSentenceIndex), topK, th);
   }
 
-  public List<int[]> findSimilar(CoreMap querySentence, int topK, float th) {
+  public @NotNull List<int[]> findSimilar(@NotNull CoreMap querySentence, int topK, float th) {
     var queryVec = embeddings.getAccVector(querySentence).toFloatVector();
-    var query = vectorTypeSupport.createFloatVector(queryVec);
+    var query = VECTOR_TYPE_SUPPORT.createFloatVector(queryVec);
     return findSimilar(query, topK, th);
   }
 
-  public List<int[]> findSimilar(VectorFloat<?> query, int topK, float th) {
+  public @NotNull List<int[]> findSimilar(@NotNull VectorFloat<?> query, int topK, float th) {
     var search = SearchScoreProvider.exact(
       query, VectorSimilarityFunction.COSINE, listRandomAccess
     );
