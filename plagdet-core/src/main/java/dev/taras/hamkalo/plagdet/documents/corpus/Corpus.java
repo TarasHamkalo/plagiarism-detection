@@ -4,11 +4,15 @@ import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.exceptions.CorpusAccessException;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Map;
+
 /**
  * Corpus is a container for preprocessed documents.
  * Implements kind of iterator for documents, providing one time iteration or reusable next.
  */
 public interface Corpus {
+
+  @NotNull Map<Integer, DocumentEntry> getDocumentsMap() throws CorpusAccessException;
 
   @NotNull DocumentEntry at(int position) throws CorpusAccessException;
 

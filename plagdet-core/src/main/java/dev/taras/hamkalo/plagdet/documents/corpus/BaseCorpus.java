@@ -11,7 +11,9 @@ import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -22,6 +24,13 @@ public class BaseCorpus implements Corpus {
   @NotNull List<DocumentEntry> corpusDocuments = new ArrayList<>();
 
   @NotNull Integer cursor = 0;
+
+  @Override
+  public @NotNull Map<Integer, DocumentEntry> getDocumentsMap() throws CorpusAccessException {
+    Map<Integer, DocumentEntry> documentsMap = new HashMap<>(corpusDocuments.size());
+    corpusDocuments.forEach(d -> documentsMap.put(d.getId(), d));
+    return documentsMap;
+  }
 
   @Override
   public @NotNull DocumentEntry at(int position) throws CorpusAccessException {
@@ -65,7 +74,6 @@ public class BaseCorpus implements Corpus {
         var annotation = Pipeline.annotate(next.getContent());
         corpusDocuments.add(
           DocumentEntry.builder()
-            .isIndexed(false)
             .fileData(next)
             .annotation(annotation)
             .build()
