@@ -9,7 +9,7 @@ import dev.taras.hamkalo.plagdet.comparision.model.PlagScore;
 import dev.taras.hamkalo.plagdet.comparision.model.PlagScoreType;
 import dev.taras.hamkalo.plagdet.comparision.util.ScoreUtils;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
-import dev.taras.hamkalo.plagdet.documents.corpus.IndexedCorpus;
+import dev.taras.hamkalo.plagdet.documents.corpus.IndexableCorpus;
 import dev.taras.hamkalo.plagdet.documents.markings.SpecialMarking;
 import dev.taras.hamkalo.plagdet.documents.pool.DocumentPool;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
@@ -111,8 +111,12 @@ public class Comparator {
    */
   public @NotNull List<Comparison> compare(
     @NotNull DocumentPool documentPool,
-    @NotNull IndexedCorpus corpus
+    @NotNull IndexableCorpus corpus
   ) {
+    if (!corpus.hasAny()) {
+      return Collections.emptyList();
+    }
+
     var suspiciousDocument = documentPool.getSuspiciousDocument();
 
     var results = new ArrayList<Comparison>();

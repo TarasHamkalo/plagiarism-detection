@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
  * Corpus is a container for preprocessed documents.
  * Implements kind of iterator for documents, providing one time iteration or reusable next.
  */
-public interface IndexedCorpus extends Corpus {
+public interface IndexableCorpus extends Corpus {
 
 
   @NotNull SentenceIndex getCorpusSentenceIndex() throws CorpusAccessException;

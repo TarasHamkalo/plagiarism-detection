@@ -124,7 +124,6 @@ public class LuceneIndex {
       initIndexReader();
 
       Query query = new TermQuery(new Term(field, value));
-
       return executeSearch(query, reader, limit);
     } catch (IndexNotFoundException error) {
       log.error("Index is empty");

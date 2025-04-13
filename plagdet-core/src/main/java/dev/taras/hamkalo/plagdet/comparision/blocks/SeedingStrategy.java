@@ -1,6 +1,5 @@
 package dev.taras.hamkalo.plagdet.comparision.blocks;
 
-import dev.taras.hamkalo.plagdet.documents.corpus.IndexedCorpus;
 import dev.taras.hamkalo.plagdet.documents.pool.DocumentPool;
 import dev.taras.hamkalo.plagdet.indexing.jvector.SentenceIndex;
 import org.jetbrains.annotations.NotNull;
