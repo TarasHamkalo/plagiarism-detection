@@ -1,6 +1,5 @@
 package dev.taras.hamkalo.plagdet.preprocessing;
 
-import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -18,11 +17,13 @@ public abstract class Pipeline {
 
   private static StanfordCoreNLP secondStagePipeline;
 
+  private static StanfordCoreNLP luceneDocumentPipeline;
+
   public static StanfordCoreNLP getFirstStagePipeline() {
     if (firstStagePipeline == null) {
 
       var props = new Properties();
-      props.put("annotators", "tokenize, ssplit, listssplit, morpho, code, word, stopword");//, code, spell");
+      props.put("annotators", "tokenize, ssplit, morpho, code, word, stopword");//, code, spell");
       props.put("ssplit.eolonly", "false");
 //      props.put("ssplit.newlineIsSentenceBreak", "two");
       props.put(
@@ -84,14 +85,38 @@ public abstract class Pipeline {
     return secondStagePipeline;
   }
 
+  private static StanfordCoreNLP getLuceneDocumentPipeline() {
+    if (luceneDocumentPipeline == null) {
+      var props = new Properties();
+      props.put("annotators", "lucene");
+      props.put(
+        "customAnnotatorClass.lucene",
+        "dev.taras.hamkalo.plagdet.preprocessing.annotators.LuceneStoredDocumentAnnotator"
+      );
+
+      props.put("enforceRequirements", "false");
+      luceneDocumentPipeline = new StanfordCoreNLP(props);
+    }
+
+    return luceneDocumentPipeline;
+  }
+
   public static void init() {
     firstStagePipeline = getFirstStagePipeline();
     secondStagePipeline = getSecondStagePipeline();
+    luceneDocumentPipeline = getLuceneDocumentPipeline();
   }
 
-  public static Annotation annotate(@NotNull DocumentEntry documentEntry) {
-    CoreDocument coreDocument = new CoreDocument(documentEntry.getFileData().getContent());
-    coreDocument.sentences();
+  public static @NotNull Annotation luceneAnnotate(@NotNull String content) {
+    CoreDocument coreDocument = new CoreDocument(content);
+    luceneDocumentPipeline.annotate(coreDocument);
+    var annotation = coreDocument.annotation();
+    annotation.remove(CoreAnnotations.TextAnnotation.class);
+    return annotation;
+  }
+
+  public static @NotNull Annotation annotate(@NotNull String content) {
+    CoreDocument coreDocument = new CoreDocument(content);
     firstStagePipeline.annotate(coreDocument);
     secondStagePipeline.annotate(coreDocument);
 
@@ -110,11 +135,19 @@ public abstract class Pipeline {
         CoreLabel compactToken = new CoreLabel();
         compactToken.set(CoreAnnotations.LemmaAnnotation.class, token.lemma());
         compactToken.set(CoreAnnotations.PartOfSpeechAnnotation.class, token.tag());
-        compactToken.set(CoreAnnotations.TextAnnotation.class, token.word());
         compactToken.setBeginPosition(token.beginPosition());
         compactToken.setEndPosition(token.endPosition());
-        AnnotationUtils.copy(PlagdetAnnotations.MisspelledAnnotation.class, compactToken, token);
-        AnnotationUtils.copy(PlagdetAnnotations.SpoofedWordAnnotation.class, compactToken, token);
+
+        if (AnnotationUtils.isMisspelledToken().test(token)) {
+          AnnotationUtils.copy(PlagdetAnnotations.MisspelledAnnotation.class, compactToken, token);
+          compactToken.set(CoreAnnotations.TextAnnotation.class, token.word());
+        }
+
+        if (AnnotationUtils.isSpoofedToken().test(token)) {
+          AnnotationUtils.copy(PlagdetAnnotations.SpoofedWordAnnotation.class, compactToken, token);
+          compactToken.set(CoreAnnotations.TextAnnotation.class, token.word());
+        }
+
         compactTokens.add(compactToken);
       }
 
@@ -123,7 +156,6 @@ public abstract class Pipeline {
       dest.get(CoreAnnotations.TokensAnnotation.class).addAll(compactTokens);
       dest.get(CoreAnnotations.SentencesAnnotation.class).add(sentence);
     }
-    System.gc();
     return dest;
   }
 
