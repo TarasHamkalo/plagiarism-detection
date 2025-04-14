@@ -68,11 +68,12 @@ public class WordFilteringAnnotator implements Annotator {
       var tokens = AnnotationUtils.tokens(sentencesCopy.get(i));
       if (tokens.size() < MIN_WORD_PER_SENTENCE) {
         var nextSentence = sentencesCopy.get(i + 1);
-        AnnotationUtils.tokens(nextSentence).addAll(tokens);
-        nextSentence.set(
-          CoreAnnotations.CharacterOffsetBeginAnnotation.class,
-          AnnotationUtils.begin(sentences.get(i))
-        );
+
+        var newTokens = new ArrayList<>(tokens);
+        newTokens.addAll(AnnotationUtils.tokens(nextSentence));
+//        AnnotationUtils.tokens(nextSentence).addAll(tokens);
+        nextSentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, AnnotationUtils.begin(sentences.get(i)));
+        nextSentence.set(CoreAnnotations.TokensAnnotation.class, newTokens);
         sentencesCopy.remove(i);
         i--;
         sentencesSize--;
