@@ -56,6 +56,7 @@ public class StanfordAdapterTokenizer extends Tokenizer {
   }
 
   private Iterator<CoreLabel> createTokenIterator() {
+    log.trace("Creating token iterator from annotation with hash {}", annotation.hashCode());
     return AnnotationUtils.tokens(annotation).iterator();
   }
 }

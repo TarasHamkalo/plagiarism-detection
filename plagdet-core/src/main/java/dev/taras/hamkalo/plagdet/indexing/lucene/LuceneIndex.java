@@ -5,10 +5,9 @@ import dev.taras.hamkalo.plagdet.indexing.exception.LuceneException;
 import dev.taras.hamkalo.plagdet.indexing.lucene.analysis.DocumentAnalyzer;
 import dev.taras.hamkalo.plagdet.indexing.lucene.mapping.FileDataMapper;
 import dev.taras.hamkalo.plagdet.indexing.lucene.mapping.MetadataMapper;
+import dev.taras.hamkalo.plagdet.indexing.lucene.mapping.StanfordAnnotationMapper;
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.experimental.FieldDefaults;
-import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
@@ -28,23 +27,22 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class LuceneIndex {
 
-  @NotNull Directory indexDirectory;
+  @NotNull
+  Directory indexDirectory;
 
-  @Getter
+  @NotNull
   Path indexDirectoryPath;
 
-  // TODO: close this
   @Nullable
-  @NonFinal
-  IndexReader reader;
+  DirectoryReader reader;
 
   @Nullable
-  @NonFinal
   IndexWriter writer;
 
+  @NotNull
   Map<String, Double> inverseDocumentFrequencyCache;
 
   public LuceneIndex(@NotNull Path indexDirectoryPath) throws IOException {
@@ -78,37 +76,24 @@ public class LuceneIndex {
       FileDataMapper.addId(document.getId(), doc);
       FileDataMapper.addFileData(fileData, doc);
       MetadataMapper.addMetadata(fileData.getMetadata(), doc);
+      StanfordAnnotationMapper.addPreprocessedContent(document, doc);
       writer.addDocument(doc);
+      writer.commit();
     } catch (IOException e) {
       throw new LuceneException("Failed to index document", e);
-    }
-  }
-
-  private void initIndexWriter() throws IOException {
-    if (writer == null) {
-      var conf = new IndexWriterConfig(new DocumentAnalyzer());
-      writer = new IndexWriter(this.indexDirectory, conf);
-    }
-  }
-
-  private void initIndexReader() throws IOException {
-    if (reader == null) {
-      reader = DirectoryReader.open(indexDirectory);
     }
   }
 
   public @NotNull List<LuceneResult> retrieveSimilar(@NotNull DocumentEntry document, int limit) {
     try {
       initIndexReader();
-
       MoreLikeThis mlt = new MoreLikeThis(reader);
       mlt.setFieldNames(new String[]{LuceneConstants.SEARCH_CONTENT});
       mlt.setAnalyzer(new DocumentAnalyzer(document));
-
       Query query = mlt.like(LuceneConstants.SEARCH_CONTENT, new StringReader(""));
-      return executeSearch(query, reader, limit);
+      return executeSearch(query, limit, reader);
     } catch (IndexNotFoundException error) {
-      log.error("Index is empty");
+      log.info("Index was empty while retrieving similar");
       return new ArrayList<>();
     } catch (IOException e) {
       throw new LuceneException("Failed to retrieve similar documents", e);
@@ -122,22 +107,31 @@ public class LuceneIndex {
   ) throws LuceneException {
     try {
       initIndexReader();
-
       Query query = new TermQuery(new Term(field, value));
-      return executeSearch(query, reader, limit);
+      return executeSearch(query, limit, reader);
     } catch (IndexNotFoundException error) {
-      log.error("Index is empty");
+      log.info("Index was empty while retrieving by field");
       return new ArrayList<>();
     } catch (IOException e) {
       throw new LuceneException("Failed to search index", e);
     }
   }
 
-  private @NotNull List<LuceneResult> executeSearch(
-    @NotNull Query query,
-    @NotNull IndexReader reader,
-    int limit
-  ) throws IOException {
+  private void initIndexWriter() throws IOException {
+    if (writer == null) {
+      var conf = new IndexWriterConfig(new DocumentAnalyzer());
+      writer = new IndexWriter(this.indexDirectory, conf);
+    }
+  }
+
+  private void initIndexReader() throws IOException {
+    if (reader == null) {
+      log.trace("Opening new reader");
+      reader = DirectoryReader.open(indexDirectory);
+    }
+  }
+
+  private List<LuceneResult> executeSearch(Query query, int limit, IndexReader reader) throws IOException {
     IndexSearcher searcher = new IndexSearcher(reader);
     List<LuceneResult> results = new ArrayList<>();
     TopDocs topDocs = searcher.search(query, limit);
@@ -147,8 +141,8 @@ public class LuceneIndex {
       results.add(new LuceneResult(FileDataMapper.parseFileData(doc), scoreDoc.score));
     }
     return results;
-
   }
+
 
   public double inverseDocumentFrequency(@NotNull String term) {
     return inverseDocumentFrequencyCache.computeIfAbsent(
@@ -171,5 +165,17 @@ public class LuceneIndex {
       throw new LuceneException("Failed to retrieve term frequency", e);
     }
   }
-}
 
+  public void close() {
+    try {
+      if (writer != null) {
+        writer.close();
+      }
+      if (reader != null) {
+        reader.close();
+      }
+    } catch (IOException e) {
+      log.warn("Failed to close IndexReader", e);
+    }
+  }
+}
