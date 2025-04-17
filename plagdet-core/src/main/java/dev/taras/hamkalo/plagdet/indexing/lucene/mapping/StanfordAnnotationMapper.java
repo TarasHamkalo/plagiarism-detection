@@ -3,14 +3,18 @@ package dev.taras.hamkalo.plagdet.indexing.lucene.mapping;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneConstants;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
+import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
+import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations.CodeSentencesAnnotation;
+import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations.TemplateSentencesAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.StringJoiner;
+import java.util.*;
 
 import static org.apache.lucene.document.Field.Store;
 
@@ -20,9 +24,12 @@ public class StanfordAnnotationMapper {
     @NotNull DocumentEntry documentEntry,
     @NotNull Document doc
   ) {
-    var sentences = AnnotationUtils.sentences(documentEntry.getAnnotation());
+    var annotation = documentEntry.getAnnotation();
+    var sentences = AnnotationUtils.sentences(annotation);
     int sentencesSize = sentences.size();
     StringJoiner stringJoiner = new StringJoiner("\n");
+    stringJoiner.add(serializeArraysList(annotation, TemplateSentencesAnnotation.class));
+    stringJoiner.add(serializeArraysList(annotation, CodeSentencesAnnotation.class));
     for (int i = 0; i < sentencesSize; i++) {
       stringJoiner.add(serialize(sentences.get(i)));
     }
@@ -30,6 +37,54 @@ public class StanfordAnnotationMapper {
     doc.add(
       new TextField(LuceneConstants.PREPROCESSED_CONTENT, stringJoiner.toString(), Store.YES)
     );
+  }
+
+  /**
+   * Serializes int[] list into single line, each element separated by space character
+   */
+  public static String serializeArraysList(
+    @NotNull Annotation source,
+    @NotNull Class<? extends CoreAnnotation<List<int[]>>> annotationClazz
+  ) {
+    List<int[]> arrays = source.get(annotationClazz);
+    if (arrays == null) {
+      return "\n";
+    }
+
+    StringJoiner stringJoiner = new StringJoiner(" ");
+    arrays.stream().map(Arrays::toString).forEach(stringJoiner::add);
+    stringJoiner.add("\n");
+    return stringJoiner.toString();
+  }
+
+  /**
+   * Deserializes arrays list from line and places it into annotation with key annotationClazz
+   * In case of blank line, empty list is set
+   */
+  public static void deserializeArraysListToAnnotation(
+    @NotNull Annotation dest,
+    @NotNull Class<? extends CoreAnnotation<List<int[]>>> annotationClazz,
+    @NotNull String line,
+    int maxArraySize
+  ) {
+    if (line.isBlank()) {
+      dest.set(annotationClazz, Collections.emptyList());
+    }
+
+    List<int[]> deserialized = new ArrayList<>();
+    String[] arrayStrings = line.split(" ");
+    for (String arrayString : arrayStrings) {
+      String[] intStrings = arrayString.split(",");
+      int[] ints = new int[maxArraySize];
+      for (int i = 0; i < intStrings.length; i++) {
+        if (i < maxArraySize) {
+          ints[i] = Integer.parseInt(intStrings[i]);
+        }
+      }
+      deserialized.add(ints);
+    }
+
+    dest.set(annotationClazz, deserialized);
   }
 
   public static @NotNull CoreMap deserialize(String line) {

@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations.*;
+
 /**
  * Annotator used to reload document from lucene stored document.
  * It expects TextAnnotation to be provided on Annotation.
@@ -24,7 +26,19 @@ public class LuceneStoredDocumentAnnotator implements Annotator {
     var text = annotation.get(CoreAnnotations.TextAnnotation.class);
     var lines = text.split("\n");
     int linesSize = lines.length;
-    for (int i = 0; i < linesSize; i++) {
+    if (linesSize > 0) {
+      StanfordAnnotationMapper.deserializeArraysListToAnnotation(
+        annotation, TemplateSentencesAnnotation.class, lines[0], 2
+      );
+    }
+
+    if (linesSize > 1) {
+      StanfordAnnotationMapper.deserializeArraysListToAnnotation(
+        annotation, CodeSentencesAnnotation.class, lines[0], 2
+      );
+    }
+
+    for (int i = 2; i < linesSize; i++) {
       sentences.add(StanfordAnnotationMapper.deserialize(lines[i]));
     }
 
