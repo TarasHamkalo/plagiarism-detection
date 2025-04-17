@@ -69,14 +69,38 @@ public class CodeSegmentAnnotator implements Annotator {
     }
 
     int[] linesClass = codeTextClassifier.predict(encodedLines);
+    int codeLinesOffsetBegin = 0;
+    int codeLinesCount = 0;
+    List<String> codeLines = new ArrayList<>();
     for (int i = 0; i < linesSize; i++) {
       String line = lines[i];
       if (linesClass[i] == 1) {
-        codeSentences.add(lineOffsets[i]);
-        stringJoiner.add(" ".repeat(line.length()));
+        log.trace("[true] {}", line);
+        codeLines.add(line);
+        codeLinesCount += line.isEmpty() ? 0 : 1;
+        continue;
       } else {
-        stringJoiner.add(line);
+        log.trace("[false] {}", line);
       }
+
+      if (codeLinesCount >= 3) {
+        int codeLinesOffsetEnd = lineOffsets[i][0] - 1; // before current line
+        codeSentences.add(new int[]{codeLinesOffsetBegin, codeLinesOffsetEnd});
+        stringJoiner.add(" ".repeat(codeLinesOffsetEnd - codeLinesOffsetBegin));
+      } else {
+        for (String codeLine : codeLines) {
+          stringJoiner.add(codeLine);
+        }
+      }
+      codeLines.clear();
+      codeLinesCount = 0;
+
+      stringJoiner.add(line);
+      codeLinesOffsetBegin = lineOffsets[i][1] + 1; // after current line
+    }
+
+    if (codeLinesCount >= 3) {
+      codeSentences.add(new int[]{codeLinesOffsetBegin, text.length()});
     }
 
     annotation.set(CoreAnnotations.TextAnnotation.class, stringJoiner.toString());
