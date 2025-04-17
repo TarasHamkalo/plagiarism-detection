@@ -1,66 +1,88 @@
 package dev.taras.hamkalo.plagdet.preprocessing.annotators;
 
-import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
+import dev.taras.hamkalo.plagdet.classification.code.FeatureExtractor;
+import dev.taras.hamkalo.plagdet.io.IoUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
-import edu.stanford.nlp.util.CoreMap;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.StringJoiner;
+
+import static dev.taras.hamkalo.plagdet.classification.code.FeatureExtractor.FEATURE_VECTOR_SIZE;
 
 @Slf4j
 public class CodeSegmentAnnotator implements Annotator {
 
-  private static final double GUESSED_RATIO_THRESHOLD = 0.90;
+  public static final String CLASSIFIER_RESOURCE_PREFIX = "models/";
 
-  public static final Pattern CODE_PATTERN = Pattern.compile(
-//    "(?sm)^(\\s*[\\w\\s]*([()])?.*\\{.*|.*}|.*;.*|#include\\s+[<\"].*[>\"])$"
-    "(?sm)^\\s*((.*\\{.*}.*)|(\\s*/\\/.*)|(.*#include.*)|(.*#define.*)|(.*;.*))\\s*$"
-  );
+  public static final String CLASSIFIER_RESOURCE_NAME = "code-classifier.bin";
+
+  private static MultiLayerNetwork codeTextClassifier;
+
+  public CodeSegmentAnnotator() {
+    loadClassifier();
+  }
+
+  private static synchronized void loadClassifier() {
+    if (codeTextClassifier == null) {
+      try {
+        var classifierPath = IoUtils.resourceFromTemp(
+          CLASSIFIER_RESOURCE_PREFIX + CLASSIFIER_RESOURCE_NAME, CLASSIFIER_RESOURCE_NAME
+        );
+        codeTextClassifier = ModelSerializer.restoreMultiLayerNetwork(classifierPath.toFile());
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
 
   @Override
   public void annotate(Annotation annotation) {
-    CODE_PATTERN.matcher("").results();
     log.trace("Code segment annotator started");
-    var sentences = annotation.get(CoreAnnotations.SentencesAnnotation.class);
-    List<CoreMap> filteredSentences = new ArrayList<>();
-    List<int[]> codeSentenceOffsets = new ArrayList<>();
 
-    for (var sentence : sentences) {
-      boolean codePatternMatches =
-        CODE_PATTERN.matcher(sentence.get(CoreAnnotations.TextAnnotation.class)).matches();
-      boolean hasLemmatizationErrors = !isLemmatizedCorrectly(sentence);
-      if (codePatternMatches && hasLemmatizationErrors) {
-        codeSentenceOffsets.add(new int[]{
-          AnnotationUtils.begin(sentence),
-          AnnotationUtils.end(sentence),
-        });
+    var text = annotation.get(CoreAnnotations.TextAnnotation.class);
+    var lines = text.split("\n");
+    int linesSize = lines.length;
+    int[][] lineOffsets = new int[linesSize][2];
+    int beginOffset = 0;
+    List<int[]> codeSentences = new ArrayList<>();
+    StringJoiner stringJoiner = new StringJoiner("");
+    INDArray encodedLines = Nd4j.create(linesSize, FEATURE_VECTOR_SIZE);
+    for (int i = 0; i < linesSize; i++) {
+      String line = lines[i];
+      double[] features = FeatureExtractor.extractFeatures(line);
+      encodedLines.putRow(i, Nd4j.create(features));
+      lineOffsets[i][0] = beginOffset;
+      lineOffsets[i][1] = beginOffset + line.length();
+      beginOffset += line.length() + 1;
+    }
+
+    int[] linesClass = codeTextClassifier.predict(encodedLines);
+    for (int i = 0; i < linesSize; i++) {
+      String line = lines[i];
+      if (linesClass[i] == 1) {
+        codeSentences.add(lineOffsets[i]);
+        stringJoiner.add(" ".repeat(line.length()));
       } else {
-        filteredSentences.add(sentence);
+        stringJoiner.add(line);
       }
     }
 
-    annotation.set(CoreAnnotations.SentencesAnnotation.class, filteredSentences);
-    annotation.set(CoreAnnotations.TokensAnnotation.class,
-      AnnotationUtils.sentences(annotation).stream()
-        .flatMap(sentence -> AnnotationUtils.tokens(sentence).stream())
-        .toList()
-    );
-    annotation.set(PlagdetAnnotations.CodeSentencesAnnotation.class, codeSentenceOffsets);
+    annotation.set(CoreAnnotations.TextAnnotation.class, stringJoiner.toString());
+    annotation.set(PlagdetAnnotations.CodeSentencesAnnotation.class, codeSentences);
   }
 
-  private boolean isLemmatizedCorrectly(@NotNull CoreMap sentence) {
-    var tokens = AnnotationUtils.tokens(sentence);
-    long guessedLemmaCount = tokens.stream().filter(AnnotationUtils.isGuessed()).count();
-    return (1 - ((double) guessedLemmaCount / tokens.size())) >= GUESSED_RATIO_THRESHOLD;
-  }
 
   @Override
   public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
