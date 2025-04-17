@@ -26,9 +26,9 @@ import java.util.List;
 
 public class CodeTextClassifierTraining {
 
-  private static final int EPOCHS = 200;
+  private static final int EPOCHS = 300;
 
-  private static final double LEARNING_RATE = 0.11;
+  private static final double LEARNING_RATE = 0.021;
 
   private static final int NUM_CLASSES = 2;
 
@@ -84,11 +84,11 @@ public class CodeTextClassifierTraining {
       .seed(42)
       .updater(new Adam(LEARNING_RATE))
       .list()
-      .layer(new DenseLayer.Builder().nIn(FeatureExtractor.FEATURE_VECTOR_SIZE).nOut(32)
+      .layer(new DenseLayer.Builder().nIn(FeatureExtractor.FEATURE_VECTOR_SIZE).nOut(32 / 2)
         .activation(Activation.RELU).build())
       .layer(new OutputLayer.Builder()
         .lossFunction(new LossBinaryXENT())
-        .activation(Activation.SIGMOID).nIn(32).nOut(2).build())
+        .activation(Activation.SIGMOID).nIn(32 / 2).nOut(2).build())
       .build();
   }
 
