@@ -24,6 +24,8 @@ import static dev.taras.hamkalo.plagdet.classification.code.FeatureExtractor.FEA
 @Slf4j
 public class CodeSegmentAnnotator implements Annotator {
 
+  private static final int MIN_CODE_LINES_TO_RECORD = 2;
+
   public static final String CLASSIFIER_RESOURCE_PREFIX = "models/";
 
   public static final String CLASSIFIER_RESOURCE_NAME = "code-classifier.bin";
@@ -54,36 +56,26 @@ public class CodeSegmentAnnotator implements Annotator {
     var text = annotation.get(CoreAnnotations.TextAnnotation.class);
     var lines = text.split("\n");
     int linesSize = lines.length;
-    int[][] lineOffsets = new int[linesSize][2];
-    int beginOffset = 0;
-    List<int[]> codeSentences = new ArrayList<>();
-    StringJoiner stringJoiner = new StringJoiner("");
-    INDArray encodedLines = Nd4j.create(linesSize, FEATURE_VECTOR_SIZE);
-    for (int i = 0; i < linesSize; i++) {
-      String line = lines[i];
-      double[] features = FeatureExtractor.extractFeatures(line);
-      encodedLines.putRow(i, Nd4j.create(features));
-      lineOffsets[i][0] = beginOffset;
-      lineOffsets[i][1] = beginOffset + line.length();
-      beginOffset += line.length() + 1;
-    }
 
-    int[] linesClass = codeTextClassifier.predict(encodedLines);
+    int[][] lineOffsets = new int[linesSize][2];
+    List<int[]> codeSentences = new ArrayList<>();
+    StringJoiner stringJoiner = new StringJoiner("\n");
+
+    INDArray vectorizedLines = vectorizeLines(lines, lineOffsets);
+    int[] linesClass = codeTextClassifier.predict(vectorizedLines);
+
+    List<String> codeLines = new ArrayList<>();
     int codeLinesOffsetBegin = 0;
     int codeLinesCount = 0;
-    List<String> codeLines = new ArrayList<>();
     for (int i = 0; i < linesSize; i++) {
       String line = lines[i];
       if (linesClass[i] == 1) {
-        log.trace("[true] {}", line);
         codeLines.add(line);
-        codeLinesCount += line.isEmpty() ? 0 : 1;
+        codeLinesCount += line.isBlank() ? 0 : 1;
         continue;
-      } else {
-        log.trace("[false] {}", line);
       }
 
-      if (codeLinesCount >= 3) {
+      if (codeLinesCount >= MIN_CODE_LINES_TO_RECORD) {
         int codeLinesOffsetEnd = lineOffsets[i][0] - 1; // before current line
         codeSentences.add(new int[]{codeLinesOffsetBegin, codeLinesOffsetEnd});
         stringJoiner.add(" ".repeat(codeLinesOffsetEnd - codeLinesOffsetBegin));
@@ -99,12 +91,32 @@ public class CodeSegmentAnnotator implements Annotator {
       codeLinesOffsetBegin = lineOffsets[i][1] + 1; // after current line
     }
 
-    if (codeLinesCount >= 3) {
+    if (codeLinesCount >= MIN_CODE_LINES_TO_RECORD) {
+      stringJoiner.add(" ".repeat(text.length() - codeLinesOffsetBegin));
       codeSentences.add(new int[]{codeLinesOffsetBegin, text.length()});
+    } else {
+      for (String codeLine : codeLines) {
+        stringJoiner.add(codeLine);
+      }
     }
 
     annotation.set(CoreAnnotations.TextAnnotation.class, stringJoiner.toString());
     annotation.set(PlagdetAnnotations.CodeSentencesAnnotation.class, codeSentences);
+  }
+
+  private static INDArray vectorizeLines(String[] lines, int[][] lineOffsets) {
+    int linesSize = lines.length;
+    int beginOffset = 0;
+    INDArray encodedLines = Nd4j.create(linesSize, FEATURE_VECTOR_SIZE);
+    for (int i = 0; i < linesSize; i++) {
+      String line = lines[i];
+      double[] features = FeatureExtractor.extractFeatures(line);
+      encodedLines.putRow(i, Nd4j.create(features));
+      lineOffsets[i][0] = beginOffset;
+      lineOffsets[i][1] = beginOffset + line.length();
+      beginOffset += line.length() + 1;
+    }
+    return encodedLines;
   }
 
 
@@ -115,9 +127,6 @@ public class CodeSegmentAnnotator implements Annotator {
 
   @Override
   public Set<Class<? extends CoreAnnotation>> requires() {
-    return Set.of(
-      PlagdetAnnotations.GuessedLemmaAnnotation.class,
-      CoreAnnotations.SentencesAnnotation.class
-    );
+    return Set.of(PlagdetAnnotations.GuessedLemmaAnnotation.class, CoreAnnotations.SentencesAnnotation.class);
   }
 }
