@@ -14,12 +14,12 @@ import java.util.Set;
  * Annotator used to populate each sentence map with TextBlockId annotation based on
  * TextBoundaries annotation.
  */
-public class TextBlockIndentifierAnnotator implements Annotator {
+public class TextBlockIdentifierAnnotator implements Annotator {
 
   @Override
   public void annotate(Annotation annotation) {
     List<Integer> textBoundaries = annotation.get(PlagdetAnnotations.TextBlockBoundaries.class);
-    if (textBoundaries == null || textBoundaries.isEmpty()) {
+    if (textBoundaries == null) {
       return;
     }
 
@@ -35,7 +35,6 @@ public class TextBlockIndentifierAnnotator implements Annotator {
     int maxId
   ) {
     boolean isFirstAssignment = maxId == 0;
-
     var sentences = AnnotationUtils.sentences(annotation);
     int i = 0;
     int j = 0;
