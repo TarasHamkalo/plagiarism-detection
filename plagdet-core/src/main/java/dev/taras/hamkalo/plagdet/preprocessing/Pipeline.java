@@ -23,14 +23,20 @@ public abstract class Pipeline {
     if (firstStagePipeline == null) {
 
       var props = new Properties();
-      props.put("annotators", "tokenize, ssplit, morpho, code, word, stopword");//, code, spell");
-      props.put("ssplit.eolonly", "false");
-//      props.put("ssplit.newlineIsSentenceBreak", "two");
+      props.put("annotators", "tokenize, ssplit, code, text-block-ids, lssplit, morpho, word, stopword");
+      props.put("ssplit.eolonly", "true");
+      props.put("ssplit.boundaryTokenRegex", "(:?[a-zA-Z]\\.)|[.。]|[!?！？]+");
+
+      props.put("tokenize.options", "invertible=true");
       props.put(
-        "customAnnotatorClass.listssplit",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.ListSentenceSplitter"
+        "customAnnotatorClass.lssplit",
+        "dev.taras.hamkalo.plagdet.preprocessing.annotators.TextBlockSentenceSplitter"
       );
 
+      props.put(
+        "customAnnotatorClass.text-block-ids",
+        "dev.taras.hamkalo.plagdet.preprocessing.annotators.TextBlockIdentifierAnnotator"
+      );
 
       props.put(
         "customAnnotatorClass.code",
@@ -124,7 +130,7 @@ public abstract class Pipeline {
     Annotation dest = new Annotation("");
     Annotation source = coreDocument.annotation();
 
-    AnnotationUtils.copy(PlagdetAnnotations.CodeSentencesAnnotation.class, dest, source);
+    AnnotationUtils.copy(PlagdetAnnotations.CodeSegmentsAnnotation.class, dest, source);
     dest.set(CoreAnnotations.SentencesAnnotation.class, new ArrayList<>());
     dest.set(CoreAnnotations.TokensAnnotation.class, new ArrayList<>());
     for (var sentence : AnnotationUtils.sentences(source)) {

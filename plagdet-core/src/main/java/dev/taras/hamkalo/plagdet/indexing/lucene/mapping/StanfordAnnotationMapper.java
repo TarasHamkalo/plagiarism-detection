@@ -3,8 +3,7 @@ package dev.taras.hamkalo.plagdet.indexing.lucene.mapping;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneConstants;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
-import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
-import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations.CodeSentencesAnnotation;
+import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations.CodeSegmentsAnnotation;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations.TemplateSentencesAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -29,7 +28,7 @@ public class StanfordAnnotationMapper {
     int sentencesSize = sentences.size();
     StringJoiner stringJoiner = new StringJoiner("\n");
     stringJoiner.add(serializeArraysList(annotation, TemplateSentencesAnnotation.class));
-    stringJoiner.add(serializeArraysList(annotation, CodeSentencesAnnotation.class));
+    stringJoiner.add(serializeArraysList(annotation, CodeSegmentsAnnotation.class));
     for (int i = 0; i < sentencesSize; i++) {
       stringJoiner.add(serialize(sentences.get(i)));
     }

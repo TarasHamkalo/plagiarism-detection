@@ -34,7 +34,7 @@ public class LuceneStoredDocumentAnnotator implements Annotator {
 
     if (linesSize > 1) {
       StanfordAnnotationMapper.deserializeArraysListToAnnotation(
-        annotation, CodeSentencesAnnotation.class, lines[0], 2
+        annotation, CodeSegmentsAnnotation.class, lines[0], 2
       );
     }
 
