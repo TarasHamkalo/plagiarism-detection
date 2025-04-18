@@ -8,9 +8,49 @@ import java.util.List;
 public class PlagdetAnnotations {
 
   /**
-   * Stores a list of character offsets for each code sentence detected
+   * Serves as identifier for sentences, to which text block they belong.
+   * During comparison phase sentences should be merged only inside of same block
    */
-  public static class CodeSentencesAnnotation implements CoreAnnotation<List<int[]>> {
+  public static class TextBlockId implements CoreAnnotation<Integer> {
+
+    @Override
+    public Class<Integer> getType() {
+      return Integer.class;
+    }
+
+  }
+
+  /**
+   * During preprocessing stores max text block id, for faster sentence marking.
+   */
+  public static class TextBlockCounter implements CoreAnnotation<Integer> {
+
+    @Override
+    public Class<Integer> getType() {
+      return Integer.class;
+    }
+
+  }
+
+  /**
+   * During preprocessing stores indexes of sentences, which represent text boundary.
+   * Always stores index of previous (before ignored text block) sentence.
+   * e.g. after removing large code block, we would not want to merge similar sentences
+   * which are on different sides of it.
+   */
+  public static class TextBlockBoundaries implements CoreAnnotation<List<Integer>> {
+
+    @Override
+    public Class<List<Integer>> getType() {
+      return ErasureUtils.uncheckedCast(List.class);
+    }
+
+  }
+
+  /**
+   * Stores a list of character offsets for each code segment detected
+   */
+  public static class CodeSegmentsAnnotation implements CoreAnnotation<List<int[]>> {
 
     @Override
     public Class<List<int[]>> getType() {

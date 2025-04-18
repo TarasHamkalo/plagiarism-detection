@@ -2,11 +2,13 @@ package dev.taras.hamkalo.plagdet.preprocessing.annotators;
 
 import dev.taras.hamkalo.plagdet.classification.code.FeatureExtractor;
 import dev.taras.hamkalo.plagdet.io.IoUtils;
+import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
+import edu.stanford.nlp.util.CoreMap;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
@@ -52,64 +54,72 @@ public class CodeSegmentAnnotator implements Annotator {
   @Override
   public void annotate(Annotation annotation) {
     log.trace("Code segment annotator started");
+    sentenceRemoval(annotation);
+  }
 
-    var text = annotation.get(CoreAnnotations.TextAnnotation.class);
-    var lines = text.split("\n");
-    int linesSize = lines.length;
+  private static void sentenceRemoval(Annotation annotation) {
+    List<CoreMap> sentences = AnnotationUtils.sentences(annotation);
+    List<CoreMap> filteredSentences = new ArrayList<>(sentences.size() / 2);
 
-    int[][] lineOffsets = new int[linesSize][2];
-    List<int[]> codeSentences = new ArrayList<>();
-    StringJoiner stringJoiner = new StringJoiner("\n");
+    int sentencesSize = sentences.size();
+    int[][] lineOffsets = new int[sentencesSize][2];
+    List<int[]> codeSegments = new ArrayList<>();
+    List<Integer> textBlockBoundaries = new ArrayList<>();
 
-    INDArray vectorizedLines = vectorizeLines(lines, lineOffsets);
+    INDArray vectorizedLines = vectorizeSentences(sentences, lineOffsets);
     int[] linesClass = codeTextClassifier.predict(vectorizedLines);
 
-    List<String> codeLines = new ArrayList<>();
+    List<Integer> codeLines = new ArrayList<>();
     int codeLinesOffsetBegin = 0;
+    int codeLinesBeginIndex = 0;
     int codeLinesCount = 0;
-    for (int i = 0; i < linesSize; i++) {
-      String line = lines[i];
+    for (int i = 0; i < sentencesSize; i++) {
+      CoreMap sentence = sentences.get(i);
       if (linesClass[i] == 1) {
-        codeLines.add(line);
+        String line = sentence.get(CoreAnnotations.TextAnnotation.class);
+        codeLines.add(i);
         codeLinesCount += line.isBlank() ? 0 : 1;
         continue;
       }
 
       if (codeLinesCount >= MIN_CODE_LINES_TO_RECORD) {
         int codeLinesOffsetEnd = lineOffsets[i][0] - 1; // before current line
-        codeSentences.add(new int[]{codeLinesOffsetBegin, codeLinesOffsetEnd});
-        stringJoiner.add(" ".repeat(codeLinesOffsetEnd - codeLinesOffsetBegin));
+        codeSegments.add(new int[]{codeLinesOffsetBegin, codeLinesOffsetEnd});
+        textBlockBoundaries.add(codeLinesBeginIndex);
       } else {
-        for (String codeLine : codeLines) {
-          stringJoiner.add(codeLine);
+        for (int sentenceIdx : codeLines) {
+          filteredSentences.add(sentences.get(sentenceIdx));
         }
       }
-      codeLines.clear();
-      codeLinesCount = 0;
 
-      stringJoiner.add(line);
+      filteredSentences.add(sentence);
       codeLinesOffsetBegin = lineOffsets[i][1] + 1; // after current line
+      codeLinesBeginIndex = filteredSentences.size() - 1; // possibly the next sentence
+      codeLinesCount = 0;
+      codeLines.clear();
     }
 
     if (codeLinesCount >= MIN_CODE_LINES_TO_RECORD) {
-      stringJoiner.add(" ".repeat(text.length() - codeLinesOffsetBegin));
-      codeSentences.add(new int[]{codeLinesOffsetBegin, text.length()});
+      var text = annotation.get(CoreAnnotations.TextAnnotation.class);
+      codeSegments.add(new int[]{codeLinesOffsetBegin, text.length()});
+      textBlockBoundaries.add(codeLinesBeginIndex);
     } else {
-      for (String codeLine : codeLines) {
-        stringJoiner.add(codeLine);
+      for (int sentenceIdx : codeLines) {
+        filteredSentences.add(sentences.get(sentenceIdx));
       }
     }
 
-    annotation.set(CoreAnnotations.TextAnnotation.class, stringJoiner.toString());
-    annotation.set(PlagdetAnnotations.CodeSentencesAnnotation.class, codeSentences);
+    annotation.set(PlagdetAnnotations.TextBlockBoundaries.class, textBlockBoundaries);
+    annotation.set(PlagdetAnnotations.CodeSegmentsAnnotation.class, codeSegments);
+    annotation.set(CoreAnnotations.SentencesAnnotation.class, filteredSentences);
   }
 
-  private static INDArray vectorizeLines(String[] lines, int[][] lineOffsets) {
-    int linesSize = lines.length;
+  private static INDArray vectorizeSentences(List<CoreMap> sentences, int[][] lineOffsets) {
+    int sentencesSize = sentences.size();
     int beginOffset = 0;
-    INDArray encodedLines = Nd4j.create(linesSize, FEATURE_VECTOR_SIZE);
-    for (int i = 0; i < linesSize; i++) {
-      String line = lines[i];
+    INDArray encodedLines = Nd4j.create(sentencesSize, FEATURE_VECTOR_SIZE);
+    for (int i = 0; i < sentencesSize; i++) {
+      String line = sentences.get(i).get(CoreAnnotations.TextAnnotation.class);
       double[] features = FeatureExtractor.extractFeatures(line);
       encodedLines.putRow(i, Nd4j.create(features));
       lineOffsets[i][0] = beginOffset;
@@ -122,7 +132,7 @@ public class CodeSegmentAnnotator implements Annotator {
 
   @Override
   public Set<Class<? extends CoreAnnotation>> requirementsSatisfied() {
-    return Set.of(PlagdetAnnotations.CodeSentencesAnnotation.class);
+    return Set.of(PlagdetAnnotations.CodeSegmentsAnnotation.class);
   }
 
   @Override
