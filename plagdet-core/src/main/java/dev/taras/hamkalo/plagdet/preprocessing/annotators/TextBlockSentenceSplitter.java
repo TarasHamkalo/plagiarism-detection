@@ -42,9 +42,13 @@ public class TextBlockSentenceSplitter implements Annotator {
     "^%s$", CLAUSE_CONJUCTIONS.stream().map(Pattern::quote).collect(Collectors.joining("|"))
   );
 
-  private static final String BASIC_SENTENCE_BOUNDARY = "(:?[a-zA-Z]\\.)|[.。]|[!?！？]+";
+  private static final String BASIC_SENTENCE_BOUNDARY = "(?:[a-zA-Z]\\.)|[.。]|[!?！？]+";
 
   private static final Pattern LIST_ITEM_PATTERN = Pattern.compile("^([^-=:]+)[-=:](.+)$");
+
+  private static final Pattern PROGRAM_RUN_PATTERN = Pattern.compile("^(?:\\w+)?\\s*(?:<[\\w\\s]+>\\s*)+\\s*$");
+
+  private static final Pattern PUNCTUATION_PATTERN = Pattern.compile("\\p{Punct}");
 
   private static final int MAX_SENT_LENGTH_WORD = 15; // counting for small words which will be lately removed
 
@@ -151,10 +155,25 @@ public class TextBlockSentenceSplitter implements Annotator {
         validSentences.addAll(listItemsSentences);
       }
 
+      if (PROGRAM_RUN_PATTERN.matcher(text).matches()) {
+        validSentences.add(i);
+        continue;
+      }
+
+      if (isHeading(text)) {
+        validSentences.add(i);
+        continue;
+      }
+
       listItemsSentences.clear();
     }
 
     return validSentences;
+  }
+
+  public boolean isHeading(@NotNull String text) {
+    String last = text.substring(text.length() - 1);
+    return text.length() < 50 && !PUNCTUATION_PATTERN.matcher(last).matches();
   }
 
   @Override
