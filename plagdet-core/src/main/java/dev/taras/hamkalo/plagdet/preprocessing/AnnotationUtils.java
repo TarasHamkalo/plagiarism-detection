@@ -12,9 +12,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public abstract class AnnotationUtils {
+
+  public static final Pattern WORD_PATTERN = Pattern.compile("[a-zA-Z]+");
 
   public static <V> void copy(
     @NotNull Class<? extends edu.stanford.nlp.util.TypesafeMap.Key<V>> clazz,
@@ -24,12 +27,45 @@ public abstract class AnnotationUtils {
     dest.set(clazz, source.get(clazz));
   }
 
+
+  public static @NotNull List<List<CoreLabel>> mergeToMinLength(
+    @NotNull List<List<CoreLabel>> sentences,
+    int minLength
+  ) {
+    var sentencesCopy = new ArrayList<>(sentences);
+    int sentencesSize = sentencesCopy.size();
+    for (int i = 0; i < sentencesSize - 1; i++) {
+      var wordTokens = AnnotationUtils.wordTokens(sentencesCopy.get(i));
+      if (wordTokens.size() < minLength) {
+        var nextSentence = sentencesCopy.get(i + 1);
+        var newTokens = new ArrayList<>(sentencesCopy.get(i));
+        newTokens.addAll(nextSentence);
+        sentencesCopy.set(i + 1, newTokens);
+        sentencesCopy.remove(i);
+        sentencesSize--;
+        i--;
+      }
+    }
+
+    List<CoreLabel> lastSentenceTokens = sentencesCopy.get(sentencesSize - 1);
+    if (AnnotationUtils.wordTokens(lastSentenceTokens).size() < minLength) {
+      sentencesCopy.get(sentencesSize - 2).addAll(lastSentenceTokens);
+      sentencesCopy.remove(sentencesSize - 1);
+    }
+
+    return sentencesCopy;
+  }
+
   public static @NotNull Integer begin(@NotNull CoreMap map) {
     return map.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
   }
 
   public static @NotNull Integer end(@NotNull CoreMap map) {
     return map.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+  }
+
+  public static @NotNull Integer textBlockId(@NotNull CoreMap map) {
+    return map.get(PlagdetAnnotations.TextBlockId.class);
   }
 
   public static @NotNull String tokensText(@NotNull CoreMap coreMap) {
@@ -48,7 +84,7 @@ public abstract class AnnotationUtils {
   }
 
   public static @NotNull List<int[]> codeSentences(@NotNull CoreMap map) {
-    var sentences = map.get(PlagdetAnnotations.CodeSentencesAnnotation.class);
+    var sentences = map.get(PlagdetAnnotations.CodeSegmentsAnnotation.class);
     return sentences == null ? Collections.emptyList() : sentences;
   }
 
@@ -56,10 +92,14 @@ public abstract class AnnotationUtils {
     return map.get(CoreAnnotations.SentencesAnnotation.class);
   }
 
-  public static @NotNull List<CoreLabel> wordTokens(@NotNull CoreMap map) {
-    return AnnotationUtils.tokens(map).stream()
-      .filter(t -> StringUtils.stripAccents(t.word()).matches("[a-zA-Z]+"))
+  public static @NotNull List<CoreLabel> wordTokens(@NotNull List<CoreLabel> tokens) {
+    return tokens.stream()
+      .filter(t -> WORD_PATTERN.matcher(StringUtils.stripAccents(t.word())).matches())
       .toList();
+  }
+
+  public static @NotNull List<CoreLabel> wordTokens(@NotNull CoreMap map) {
+    return wordTokens(AnnotationUtils.tokens(map));
   }
 
   public static @NotNull List<CoreLabel> tokens(@NotNull CoreMap map) {
@@ -82,6 +122,18 @@ public abstract class AnnotationUtils {
     return map.get(CoreAnnotations.TokensAnnotation.class).stream()
       .map(CoreLabel::tag)
       .toList();
+  }
+
+  public static @NotNull CoreMap createSentence(
+    @NotNull List<CoreLabel> tokens,
+    int begin,
+    int end
+  ) {
+    CoreMap coreMap = new Annotation("");
+    coreMap.set(CoreAnnotations.TokensAnnotation.class, tokens);
+    coreMap.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, begin);
+    coreMap.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, end);
+    return coreMap;
   }
 
   public static @NotNull CoreMap createSentence(@NotNull List<CoreLabel> tokens) {
