@@ -40,11 +40,11 @@ public class Fragment {
     this.sideEnds = new int[]{last(0)[0], last(1)[1]};
   }
 
-  private int[] first(int side) {
+  public int[] first(int side) {
     return sortedSeeds.get(side).get(0);
   }
 
-  private int[] last(int side) {
+  public int[] last(int side) {
     return sortedSeeds.get(side).get(sortedSeeds.get(side).size() - 1);
   }
 
