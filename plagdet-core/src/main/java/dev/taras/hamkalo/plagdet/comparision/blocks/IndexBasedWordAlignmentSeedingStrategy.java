@@ -7,7 +7,9 @@ import dev.taras.hamkalo.plagdet.indexing.jvector.SentenceIndex;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import edu.stanford.nlp.util.Pair;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -17,36 +19,56 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
 
-  /**
-   * Query HNSW for top 10 sentences above that threshold
-   */
-  public static final float VECTOR_SIMILARITY_THRESHOLD = 0.6f;
 
-  /**
-   * Drop every sentence match below that similarity
-   */
-  public static final float ALIGNMENT_SIMILARITY_THRESHOLD = 0.65f;
+  @Value
+  @Builder
+  public static class IndexBasedWordAlignmentSeedingStrategyParameters {
 
-  /**
-   * Drop every sentence match below that size ratio
-   */
-  public static final float SIZE_RATIO_TRESHOLD = 0.5f;
+    /**
+     * Query HNSW for top 10 sentences above that threshold
+     */
+    public static final float DEFAULT_VECTOR_SIMILARITY_THRESHOLD = 0.6f;
 
-  /**
-   * Represents count of top sentences to query for, when doing document to document match
-   */
-  private static final int SIMILAR_SENTENCES_TO_CONSIDER = 10;
+    /**
+     * Drop every sentence match below that similarity
+     */
+    public static final float DEFAULT_ALIGNMENT_SIMILARITY_THRESHOLD = 0.75f;
 
-  /**
-   * Represents count of top sentences to query for, when doing document to corpus match.
-   * E.g. having single suspicious document and corpus of documents, for which we don't want results
-   * but would like to know if that single could a source document inside that corpus
-   */
-  private static final int SIMILAR_SENTENCES_TO_CONSIDER_MULTI_SEARCH = 250;
+    /**
+     * Drop every sentence match below that size ratio
+     */
+    public static final float DEFAULT_SIZE_RATIO_THRESHOLD = 0.5f;
+
+    /**
+     * Represents count of top sentences to query for, when doing document to document match
+     */
+    private static final int DEFAULT_SIMILAR_SENTENCES_TO_CONSIDER = 10;
+
+    /**
+     * Represents count of top sentences to query for, when doing document to corpus match.
+     * E.g. having single suspicious document and corpus of documents, for which we don't want results
+     * but would like to know if that single could a source document inside that corpus
+     */
+    private static final int DEFAULT_SIMILAR_SENTENCES_TO_CONSIDER_MULTI_SEARCH = 250;
+
+    @Builder.Default
+    float vectorSimilarityThreshold = DEFAULT_VECTOR_SIMILARITY_THRESHOLD;
+
+    @Builder.Default
+    float alignmentSimilarityThreshold = DEFAULT_ALIGNMENT_SIMILARITY_THRESHOLD;
+
+    @Builder.Default
+    float sizeRatioThreshold = DEFAULT_SIZE_RATIO_THRESHOLD;
+
+    @Builder.Default
+    int similarSentencesToConsider = DEFAULT_SIMILAR_SENTENCES_TO_CONSIDER;
+
+    @Builder.Default
+    int similarSentencesToConsiderMultiSearch = DEFAULT_SIMILAR_SENTENCES_TO_CONSIDER_MULTI_SEARCH;
+  }
 
   /**
    * Caches sentence word matrices for each document in collection
@@ -60,6 +82,17 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
 
   @NotNull Embeddings embeddings;
 
+  @NotNull
+  private final IndexBasedWordAlignmentSeedingStrategyParameters parameters;
+
+  public IndexBasedWordAlignmentSeedingStrategy(
+    @NotNull Embeddings embeddings,
+    @NotNull IndexBasedWordAlignmentSeedingStrategyParameters parameters
+  ) {
+    this.embeddings = embeddings;
+    this.parameters = parameters;
+  }
+
   public @NotNull List<int[]> seed(@NotNull DocumentPool documentPool) {
     List<int[]> seeds = new ArrayList<>();
     var suspSentenceIndex = documentPool.getSuspiciousDocumentSentenceIndex();
@@ -71,18 +104,23 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
 
     for (int i = 0; i < sourceDocumentSentencesSize; i++) {
       var matches = suspSentenceIndex.findSimilar(
-        sourceDocumentSentences.get(i), SIMILAR_SENTENCES_TO_CONSIDER, VECTOR_SIMILARITY_THRESHOLD
+        sourceDocumentSentences.get(i),
+        parameters.similarSentencesToConsider,
+        parameters.vectorSimilarityThreshold
       );
       int matchesSize = matches.size();
-      // TODO: profile embeddings get word vectors
       var sourceSentenceMatrix = embeddings.getWordVectorsWithWeights(sourceDocumentSentences.get(i));
       for (int j = 0; j < matchesSize; j++) {
         var match = matches.get(j);
-        // TODO: validate not ZERO vector, strange matches
         var similarSentenceMatrix = suspiciousDocumentSentenceMatrices.get(match[1]);
-        if (WeightedWordAlignmentScorer.areSimilar(
-          similarSentenceMatrix, sourceSentenceMatrix, SIZE_RATIO_TRESHOLD, ALIGNMENT_SIMILARITY_THRESHOLD
-        )) {
+        boolean areSimilar = WeightedWordAlignmentScorer.areSimilar(
+          similarSentenceMatrix,
+          sourceSentenceMatrix,
+          parameters.getSizeRatioThreshold(),
+          parameters.getAlignmentSimilarityThreshold()
+        );
+
+        if (areSimilar) {
           seeds.add(new int[]{match[1], i});
         }
       }
@@ -106,17 +144,22 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     for (int i = 0; i < suspiciousDocumentSentencesSize; i++) {
       var matches = corpusSentencesIndex.findSimilar(
         suspiciousDocumentSentenceIndex.findSentenceVectorByGlobalIndex(i),
-        SIMILAR_SENTENCES_TO_CONSIDER_MULTI_SEARCH,
-        VECTOR_SIMILARITY_THRESHOLD
+        parameters.similarSentencesToConsiderMultiSearch,
+        parameters.vectorSimilarityThreshold
       );
       var suspiciousSentenceMatrix = suspiciousDocumentSentenceMatrices.get(i);
       int matchesSize = matches.size();
       for (int j = 0; j < matchesSize; j++) {
         var match = matches.get(j);
         var similarSentenceMatrix = retrieveSentenceRepresentationForMatch(corpusSentencesIndex, match);
-        if (WeightedWordAlignmentScorer.areSimilar(
-          similarSentenceMatrix, suspiciousSentenceMatrix, SIZE_RATIO_TRESHOLD, ALIGNMENT_SIMILARITY_THRESHOLD
-        )) {
+        boolean areSimilar = WeightedWordAlignmentScorer.areSimilar(
+          similarSentenceMatrix,
+          suspiciousSentenceMatrix,
+          parameters.sizeRatioThreshold,
+          parameters.alignmentSimilarityThreshold
+        );
+
+        if (areSimilar) {
           documentToSeeds.computeIfAbsent(match[0], (key) -> new ArrayList<>())
             .add(new int[]{i, match[1]});
         }

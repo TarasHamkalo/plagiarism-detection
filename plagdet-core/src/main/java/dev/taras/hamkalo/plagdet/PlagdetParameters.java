@@ -1,6 +1,7 @@
 package dev.taras.hamkalo.plagdet;
 
 import dev.taras.hamkalo.plagdet.comparision.MetadataComparator.MetadataComparatorParameters;
+import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedingStrategy.IndexBasedWordAlignmentSeedingStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.filter.ShingleOverlapComparisonFilter.ShingleOverlapComparisonFilterParameters;
 import lombok.Builder;
 import lombok.Value;
@@ -9,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static dev.taras.hamkalo.plagdet.ComparisonsStore.*;
 import static dev.taras.hamkalo.plagdet.comparision.filter.LengthComparisonFilter.LengthComparisonFilterParameters;
+import static dev.taras.hamkalo.plagdet.indexing.lucene.LuceneFileDataSource.*;
 
 
 @Value
@@ -29,4 +31,7 @@ public class PlagdetParameters {
 
   @NotNull ComparisonsStoreParameters comparisonsStoreParameters;
 
+  @NotNull LuceneFileDataSourceParameters luceneFileDataSourceParameters;
+
+  @NotNull IndexBasedWordAlignmentSeedingStrategyParameters seedingStrategyParameters;
 }
