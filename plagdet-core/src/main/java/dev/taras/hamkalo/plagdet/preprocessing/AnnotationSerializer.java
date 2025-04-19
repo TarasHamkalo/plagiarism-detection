@@ -1,5 +1,6 @@
 package dev.taras.hamkalo.plagdet.preprocessing;
 
+import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -71,7 +72,7 @@ public class AnnotationSerializer {
   ) {
     List<int[]> arrays = source.get(annotationClazz);
     if (arrays == null || arrays.isEmpty()) {
-      return "\n";
+      return "";
     }
 
     return arrays.stream()
@@ -79,7 +80,7 @@ public class AnnotationSerializer {
                Arrays.stream(arr)
                  .mapToObj(Integer::toString)
                  .collect(Collectors.joining(",")))
-             .collect(Collectors.joining(";")) + "\n";
+             .collect(Collectors.joining(";"));
   }
 
   /**
@@ -115,11 +116,12 @@ public class AnnotationSerializer {
 
   public static @NotNull CoreMap deserializeSentence(@NotNull String line) {
     String[] parts = line.split("\t");
-    String[] range = parts[0].split("-");
+    String idString = parts[0];
+    String[] range = parts[1].split("-");
     int begin = Integer.parseInt(range[0]);
     int end = Integer.parseInt(range[1]);
 
-    String[] tokenPosLemmas = parts.length > 1 ? parts[1].split(" ") : new String[0];
+    String[] tokenPosLemmas = parts.length > 2 ? parts[2].split(" ") : new String[0];
     int tokensSize = tokenPosLemmas.length;
     var tokens = new ArrayList<CoreLabel>();
     for (int i = 0; i < tokensSize; i++) {
@@ -130,12 +132,15 @@ public class AnnotationSerializer {
       tokens.add(token);
     }
 
-    return AnnotationUtils.createSentence(tokens, begin, end);
+    var deserialized = AnnotationUtils.createSentence(tokens, begin, end);
+    deserialized.set(PlagdetAnnotations.TextBlockId.class, Integer.parseInt(idString));
+    return deserialized;
   }
 
   public static @NotNull String serializeSentence(@NotNull CoreMap sentence) {
     StringJoiner tokenJoiner = new StringJoiner(" ");
     var tokens = AnnotationUtils.tokens(sentence);
+    var id = AnnotationUtils.textBlockId(sentence);
     int tokensSize = tokens.size();
     for (int i = 0; i < tokensSize; i++) {
       var token = tokens.get(i);
@@ -143,7 +148,7 @@ public class AnnotationSerializer {
     }
 
     return String.format(
-      "%d-%d\t%s", AnnotationUtils.begin(sentence), AnnotationUtils.end(sentence), tokenJoiner
+      "%d\t%d-%d\t%s", id, AnnotationUtils.begin(sentence), AnnotationUtils.end(sentence), tokenJoiner
     );
   }
 }
