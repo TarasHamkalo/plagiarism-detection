@@ -2,10 +2,10 @@ package dev.taras.hamkalo.plagdet.indexing.jvector;
 
 
 import dev.taras.hamkalo.plagdet.comparision.Embeddings;
-import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.corpus.Corpus;
 import dev.taras.hamkalo.plagdet.exception.PlagdetException;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
+import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import io.github.jbellis.jvector.graph.*;
 import io.github.jbellis.jvector.graph.similarity.BuildScoreProvider;
@@ -20,7 +20,6 @@ import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,20 +49,18 @@ public class SentenceIndex implements AutoCloseable {
 
   private SentenceIndex(
     @NotNull Embeddings embeddings,
-    @Nullable List<VectorFloat<?>> baseVectors,
+    @NotNull List<VectorFloat<?>> baseVectors,
     @NotNull List<int[]> sentenceDocumentPairs,
     @NotNull List<CoreMap> globalSentencesList
   ) {
-    int originalDimension = baseVectors.get(0).length();
+    int originalDimension = baseVectors.isEmpty() ? 1 : baseVectors.get(0).length();
     var ravv = new ListRandomAccessVectorValues(baseVectors, originalDimension);
     var bsp = BuildScoreProvider.randomAccessScoreProvider(ravv, VectorSimilarityFunction.COSINE);
     log.trace("Building index");
     try (var builder = new GraphIndexBuilder(bsp, ravv.dimension(), 16, 100, 1.2f, 1.2f)) {
       this.index = builder.build(ravv);
       this.graphSearcher = new GraphSearcher(index);
-      this.listRandomAccess = new ListRandomAccessVectorValues(
-        baseVectors, baseVectors.get(0).length()
-      );
+      this.listRandomAccess = ravv;
       this.baseVectors = baseVectors;
       this.embeddings = embeddings;
       this.sentenceDocumentPairs = sentenceDocumentPairs;
@@ -108,29 +105,23 @@ public class SentenceIndex implements AutoCloseable {
 
   public static @NotNull SentenceIndex from(
     @NotNull Embeddings embeddings,
-    @NotNull List<DocumentEntry> documents
+    @NotNull Annotation annotation
   ) throws PlagdetException {
     List<VectorFloat<?>> baseVectors = new ArrayList<>();
     List<int[]> sentenceDocumentPairs = new ArrayList<>();
     List<CoreMap> globalSentencesList = new ArrayList<>();
-
     log.trace("Querying embeddings");
-    int documentsSize = documents.size();
     int globalSentenceIndex = 0;
-    for (int i = 0; i < documentsSize; i++) {
-      var doc = documents.get(i);
-      var sentences = AnnotationUtils.sentences(doc.getAnnotation());
-      int sentencesSize = sentences.size();
-      for (int j = 0; j < sentencesSize; j++) {
-        baseVectors.add(VECTOR_TYPE_SUPPORT.createFloatVector(
-          embeddings.getAccVector(sentences.get(j)).toFloatVector())
-        );
-        sentenceDocumentPairs.add(new int[]{i, j, globalSentenceIndex});
-        globalSentencesList.add(sentences.get(j));
-        globalSentenceIndex++;
-      }
+    var sentences = AnnotationUtils.sentences(annotation);
+    int sentencesSize = sentences.size();
+    for (int j = 0; j < sentencesSize; j++) {
+      baseVectors.add(VECTOR_TYPE_SUPPORT.createFloatVector(
+        embeddings.getAccVector(sentences.get(j)).toFloatVector())
+      );
+      sentenceDocumentPairs.add(new int[]{0, j, globalSentenceIndex});
+      globalSentencesList.add(sentences.get(j));
+      globalSentenceIndex++;
     }
-
     log.trace("Querying embeddings done");
     embeddings.clearSentenceVectorCache();
     return new SentenceIndex(embeddings, baseVectors, sentenceDocumentPairs, globalSentencesList);
@@ -147,6 +138,7 @@ public class SentenceIndex implements AutoCloseable {
   public @NotNull VectorFloat<?> findSentenceVectorByGlobalIndex(int globalSentenceIndex) {
     return baseVectors.get(globalSentenceIndex);
   }
+
   public @NotNull List<int[]> findSimilar(int globalSentenceIndex, int topK, float th) {
     return findSimilar(baseVectors.get(globalSentenceIndex), topK, th);
   }

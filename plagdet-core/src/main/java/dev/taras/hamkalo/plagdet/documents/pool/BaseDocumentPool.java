@@ -81,7 +81,7 @@ public class BaseDocumentPool implements DocumentPool {
 
     try {
       suspiciousDocumentSentenceIndex =
-        SentenceIndex.from(embeddings, List.of(suspiciousDocument));
+        SentenceIndex.from(embeddings, suspiciousDocument.getAnnotation());
     } catch (PlagdetException e) {
       throw new DocumentPoolAccessException("Was not able to index suspicious document");
     }
