@@ -5,10 +5,10 @@ import dev.taras.hamkalo.plagdet.comparision.scorer.WeightedWordAlignmentScorer;
 import dev.taras.hamkalo.plagdet.documents.pool.DocumentPool;
 import dev.taras.hamkalo.plagdet.indexing.jvector.SentenceIndex;
 import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
+import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import lombok.AccessLevel;
 import lombok.Builder;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
@@ -94,30 +94,41 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
   }
 
   public @NotNull List<int[]> seed(@NotNull DocumentPool documentPool) {
-    List<int[]> seeds = new ArrayList<>();
-    var suspSentenceIndex = documentPool.getSuspiciousDocumentSentenceIndex();
+    var suspiciousDocumentSentenceIndex = documentPool.getSuspiciousDocumentSentenceIndex();
     var suspiciousDocumentSentenceMatrices = documentPool.getSuspiciousDocumentSentenceMatrices();
-
     var sourceDocumentSentences =
       AnnotationUtils.sentences(documentPool.getSourceDocument().getAnnotation());
+
+    return seed(
+      suspiciousDocumentSentenceIndex, suspiciousDocumentSentenceMatrices, sourceDocumentSentences
+    );
+  }
+
+  public @NotNull List<int[]> seed(
+    @NotNull SentenceIndex suspiciousDocumentSentenceIndex,
+    @NotNull List<Pair<INDArray, INDArray>> suspiciousDocumentSentenceMatrices,
+    @NotNull List<CoreMap> sourceDocumentSentences
+  ) {
+    List<int[]> seeds = new ArrayList<>();
     int sourceDocumentSentencesSize = sourceDocumentSentences.size();
 
     for (int i = 0; i < sourceDocumentSentencesSize; i++) {
-      var matches = suspSentenceIndex.findSimilar(
+      var matches = suspiciousDocumentSentenceIndex.findSimilar(
         sourceDocumentSentences.get(i),
         parameters.similarSentencesToConsider,
         parameters.vectorSimilarityThreshold
       );
       int matchesSize = matches.size();
-      var sourceSentenceMatrix = embeddings.getWordVectorsWithWeights(sourceDocumentSentences.get(i));
+      var sourceSentenceMatrix =
+        embeddings.getWordVectorsWithWeights(sourceDocumentSentences.get(i));
       for (int j = 0; j < matchesSize; j++) {
         var match = matches.get(j);
         var similarSentenceMatrix = suspiciousDocumentSentenceMatrices.get(match[1]);
         boolean areSimilar = WeightedWordAlignmentScorer.areSimilar(
           similarSentenceMatrix,
           sourceSentenceMatrix,
-          parameters.getSizeRatioThreshold(),
-          parameters.getAlignmentSimilarityThreshold()
+          parameters.sizeRatioThreshold,
+          parameters.alignmentSimilarityThreshold
         );
 
         if (areSimilar) {
