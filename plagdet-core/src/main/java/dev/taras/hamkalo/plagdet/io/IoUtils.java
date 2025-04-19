@@ -1,11 +1,17 @@
 package dev.taras.hamkalo.plagdet.io;
 
+import dev.taras.hamkalo.plagdet.io.filedata.reader.FileDataReader;
+import dev.taras.hamkalo.plagdet.io.filedata.reader.FileDataReaders;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,11 +41,16 @@ public abstract class IoUtils {
     return resultPaths;
   }
 
-  public static Path resourceFromTemp(@NotNull String resource, @NotNull String filename) {
-    var resourceAsStream = ClassLoader.getSystemClassLoader()
-      .getResourceAsStream(resource);
+  public static @NotNull String resourceContent(@NotNull String resource) {
+    try (var resourceAsStream = ClassLoader.getSystemClassLoader().getResourceAsStream(resource)) {
+      return IOUtils.toString(resourceAsStream, StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
-    try {
+  public static @NotNull Path resourceFromTemp(@NotNull String resource, @NotNull String filename) {
+    try (var resourceAsStream = ClassLoader.getSystemClassLoader().getResourceAsStream(resource)) {
       Path tempDir = Files.createTempDirectory("dir_");
       Path tempFilePath = tempDir.resolve(filename);
       Files.copy(resourceAsStream, tempFilePath);
@@ -95,5 +106,19 @@ public abstract class IoUtils {
     return FileNameUtils.getBaseName(path);
   }
 
+  public static @NotNull String getFileContent(
+    @NotNull List<FileDataReader> readersList,
+    @NotNull String pathString
+  ) {
+    Path path = Path.of(pathString);
+    File file = path.toFile();
+    if (file.isFile()) {
+      FileDataReaders readers = new FileDataReaders(readersList);
+      var fileData = readers.getFileData(path);
+      return fileData.getContent();
+    } else {
+      throw new IllegalArgumentException("Submitted pass is not a file");
+    }
+  }
 
 }
