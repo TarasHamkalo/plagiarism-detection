@@ -122,15 +122,14 @@ public class CodeSegmentAnnotator implements Annotator {
 
   private static INDArray vectorizeSentences(List<CoreMap> sentences, int[][] lineOffsets) {
     int sentencesSize = sentences.size();
-    int beginOffset = 0;
     INDArray encodedLines = Nd4j.create(sentencesSize, FEATURE_VECTOR_SIZE);
     for (int i = 0; i < sentencesSize; i++) {
-      String line = sentences.get(i).get(CoreAnnotations.TextAnnotation.class);
+      CoreMap sentence = sentences.get(i);
+      String line = sentence.get(CoreAnnotations.TextAnnotation.class);
       double[] features = FeatureExtractor.extractFeatures(line);
       encodedLines.putRow(i, Nd4j.create(features));
-      lineOffsets[i][0] = beginOffset;
-      lineOffsets[i][1] = beginOffset + line.length();
-      beginOffset += line.length() + 1;
+      lineOffsets[i][0] = AnnotationUtils.begin(sentence);
+      lineOffsets[i][1] = AnnotationUtils.end(sentence);
     }
     return encodedLines;
   }
