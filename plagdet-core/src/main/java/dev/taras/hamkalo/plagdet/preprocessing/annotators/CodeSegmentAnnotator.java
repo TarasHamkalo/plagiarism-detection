@@ -112,6 +112,12 @@ public class CodeSegmentAnnotator implements Annotator {
     annotation.set(PlagdetAnnotations.TextBlockBoundaries.class, textBlockBoundaries);
     annotation.set(PlagdetAnnotations.CodeSegmentsAnnotation.class, codeSegments);
     annotation.set(CoreAnnotations.SentencesAnnotation.class, filteredSentences);
+    annotation.set(
+      CoreAnnotations.TokensAnnotation.class,
+      filteredSentences.stream()
+        .flatMap(s -> AnnotationUtils.tokens(s).stream())
+        .toList()
+    );
   }
 
   private static INDArray vectorizeSentences(List<CoreMap> sentences, int[][] lineOffsets) {
