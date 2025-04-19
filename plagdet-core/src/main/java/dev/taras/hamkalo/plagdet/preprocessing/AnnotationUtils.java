@@ -65,7 +65,12 @@ public abstract class AnnotationUtils {
   }
 
   public static @NotNull Integer textBlockId(@NotNull CoreMap map) {
-    return map.get(PlagdetAnnotations.TextBlockId.class);
+    var id = map.get(PlagdetAnnotations.TextBlockId.class);
+    if (id == null) {
+      return -1;
+    }
+
+    return id;
   }
 
   public static @NotNull String tokensText(@NotNull CoreMap coreMap) {
