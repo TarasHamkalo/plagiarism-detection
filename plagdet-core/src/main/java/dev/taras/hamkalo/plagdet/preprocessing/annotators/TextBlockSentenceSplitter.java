@@ -44,11 +44,9 @@ public class TextBlockSentenceSplitter implements Annotator {
 
   private static final String BASIC_SENTENCE_BOUNDARY = "(?:[a-zA-Z]\\.)|[.。]|[!?！？]+";
 
-  private static final Pattern LIST_ITEM_PATTERN = Pattern.compile("^([^-=:]+)[-=:](.+)$");
+  private static final Pattern LIST_ITEM_PATTERN = Pattern.compile("^([^-=:]{1,50})[-=:](.{1,70})$");
 
   private static final Pattern PROGRAM_RUN_PATTERN = Pattern.compile("^(?:\\w+)?\\s*(?:<[\\w\\s]+>\\s*)+\\s*$");
-
-  private static final Pattern PUNCTUATION_PATTERN = Pattern.compile("\\p{Punct}");
 
   private static final int MAX_SENT_LENGTH_WORD = 15; // counting for small words which will be lately removed
 
@@ -153,6 +151,7 @@ public class TextBlockSentenceSplitter implements Annotator {
 
       if (listItemsSentences.size() >= MIN_LIST_ITEMS_TO_RECORD) {
         validSentences.addAll(listItemsSentences);
+        listItemsSentences.clear();
       }
 
       if (PROGRAM_RUN_PATTERN.matcher(text).matches()) {
@@ -162,18 +161,15 @@ public class TextBlockSentenceSplitter implements Annotator {
 
       if (isHeading(text)) {
         validSentences.add(i);
-        continue;
       }
-
-      listItemsSentences.clear();
     }
 
     return validSentences;
   }
 
   public boolean isHeading(@NotNull String text) {
-    String last = text.substring(text.length() - 1);
-    return text.length() < 50 && !PUNCTUATION_PATTERN.matcher(last).matches();
+    char first = text.charAt(0);
+    return text.length() < 50 && (Character.isUpperCase(first) || Character.isDigit(first));
   }
 
   @Override
