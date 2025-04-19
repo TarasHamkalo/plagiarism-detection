@@ -3,6 +3,7 @@ package dev.taras.hamkalo.plagdet.io.report;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.taras.hamkalo.plagdet.comparision.model.Comparison;
 import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
+import dev.taras.hamkalo.plagdet.documents.markings.MarkingUtils;
 import dev.taras.hamkalo.plagdet.io.IoUtils;
 import dev.taras.hamkalo.plagdet.io.report.model.DocumentEntryJsonModel;
 import dev.taras.hamkalo.plagdet.io.report.model.OverviewJsonModel;
@@ -79,7 +80,7 @@ public class FileReportWriter {
       .isIndexed(documentEntry.getFileData().isIndexed())
       .fileData(documentEntry.getFileData())
       .pairIds(comparisons.stream().map(Comparison::getId).toList())
-      .markings(Collections.emptyList())
+      .markings(MarkingUtils.getMarkings(documentEntry.getAnnotation()))
       .build();
 
     writeObject(metadataFilePath, documentEntryModel);
