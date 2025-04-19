@@ -36,9 +36,31 @@ public class TextBlockIdentifierAnnotator implements Annotator {
   ) {
     boolean isFirstAssignment = maxId == 0;
     var sentences = AnnotationUtils.sentences(annotation);
+    if (sentences.isEmpty()) {
+      return maxId;
+    }
+
     int i = 0;
     int j = 0;
+
     while (j < textBoundaries.size() && i <= textBoundaries.get(j)) {
+      int textBoundaryBlockId = AnnotationUtils.textBlockId(sentences.get(textBoundaries.get(j)));
+      if (textBoundaryBlockId != -1) {
+        int currentBlockId = AnnotationUtils.textBlockId(sentences.get(i));
+        while (currentBlockId != textBoundaryBlockId) {
+          i++;
+          if (i < sentences.size()) {
+            currentBlockId = AnnotationUtils.textBlockId(sentences.get(i));
+          } else {
+            break;
+          }
+        }
+
+        if (i >= sentences.size()) {
+          break;
+        }
+      }
+
       sentences.get(i).set(PlagdetAnnotations.TextBlockId.class, maxId);
       if (i == textBoundaries.get(j)) {
         maxId++;
