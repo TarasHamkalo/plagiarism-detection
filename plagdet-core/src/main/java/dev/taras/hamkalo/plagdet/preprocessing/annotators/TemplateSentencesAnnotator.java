@@ -75,7 +75,9 @@ public class TemplateSentencesAnnotator implements Annotator {
 
   private @NotNull Annotation loadTemplateAnnotation() {
     var content = IoUtils.resourceContent(TEMPLATE_RESOURCE);
-    return AnnotationSerializer.deserialize(content);
+    var annotation = AnnotationSerializer.deserialize(content);
+    annotation.remove(CoreAnnotations.TextAnnotation.class);
+    return annotation;
   }
 
   @Override
