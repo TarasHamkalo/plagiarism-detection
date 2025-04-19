@@ -8,15 +8,12 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
-import edu.stanford.nlp.util.CoreMap;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -26,7 +23,7 @@ public class WordFilteringAnnotator implements Annotator {
 
   private static final Pattern VALID_WORD_PATTERN = Pattern.compile("[a-zA-Z]+");
 
-  private static final int MIN_WORD_PER_SENTENCE = 3;
+  private static final int MIN_WORD_PER_SENTENCE = 2;
 
   public static final int MIN_WORD_LENGTH = 3;
 
@@ -51,36 +48,14 @@ public class WordFilteringAnnotator implements Annotator {
         });
     });
 
+    AnnotationUtils.sentences(annotation)
+      .removeIf(s -> AnnotationUtils.tokens(s).size() < MIN_WORD_PER_SENTENCE);
+
     annotation.set(CoreAnnotations.TokensAnnotation.class,
       AnnotationUtils.sentences(annotation).stream()
         .flatMap(sentence -> AnnotationUtils.tokens(sentence).stream())
         .toList()
     );
-    annotation.set(CoreAnnotations.SentencesAnnotation.class,
-      mergeToMinLength(AnnotationUtils.sentences(annotation))
-    );
-  }
-
-  private @NotNull List<CoreMap> mergeToMinLength(@NotNull List<CoreMap> sentences) {
-    var sentencesCopy = new ArrayList<>(sentences);
-    int sentencesSize = sentencesCopy.size();
-    for (int i = 0; i < sentencesSize - 1; i++) {
-      var tokens = AnnotationUtils.tokens(sentencesCopy.get(i));
-      if (tokens.size() < MIN_WORD_PER_SENTENCE) {
-        var nextSentence = sentencesCopy.get(i + 1);
-
-        var newTokens = new ArrayList<>(tokens);
-        newTokens.addAll(AnnotationUtils.tokens(nextSentence));
-//        AnnotationUtils.tokens(nextSentence).addAll(tokens);
-        nextSentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, AnnotationUtils.begin(sentences.get(i)));
-        nextSentence.set(CoreAnnotations.TokensAnnotation.class, newTokens);
-        sentencesCopy.remove(i);
-        i--;
-        sentencesSize--;
-      }
-    }
-
-    return sentencesCopy;
   }
 
   private void transformSpoofed(@NotNull CoreLabel token) {
