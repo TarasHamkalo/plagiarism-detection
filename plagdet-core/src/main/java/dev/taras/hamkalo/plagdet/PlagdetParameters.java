@@ -8,9 +8,10 @@ import lombok.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static dev.taras.hamkalo.plagdet.ComparisonsStore.*;
+import static dev.taras.hamkalo.plagdet.ComparisonsStore.ComparisonsStoreParameters;
 import static dev.taras.hamkalo.plagdet.comparision.filter.LengthComparisonFilter.LengthComparisonFilterParameters;
-import static dev.taras.hamkalo.plagdet.indexing.lucene.LuceneFileDataSource.*;
+import static dev.taras.hamkalo.plagdet.indexing.lucene.LuceneFileDataSource.LuceneFileDataSourceParameters;
+import static dev.taras.hamkalo.plagdet.preprocessing.Pipeline.PipelineParameters;
 
 
 @Value
@@ -20,6 +21,8 @@ public class PlagdetParameters {
   @Nullable String luceneIndexDirectoryPath;
 
   @Nullable String templateDocumentPath;
+
+  @NotNull PipelineParameters pipelineParameters;
 
   @NotNull Integer numberOfProcessors;
 

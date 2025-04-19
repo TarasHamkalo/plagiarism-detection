@@ -1,21 +1,37 @@
 package dev.taras.hamkalo.plagdet.preprocessing;
 
+import dev.taras.hamkalo.plagdet.comparision.Embeddings;
 import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
+import dev.taras.hamkalo.plagdet.preprocessing.annotators.*;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import lombok.Builder;
+import lombok.Value;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Properties;
 
 public abstract class Pipeline {
 
+  @Value
+  @Builder
+  public static class PipelineParameters {
+
+    public static final boolean DEFAULT_BYPASS_TEMPLATE_REMOVAL = false;
+
+    @Builder.Default
+    boolean bypassTemplateRemoval = DEFAULT_BYPASS_TEMPLATE_REMOVAL;
+
+  }
+
   private static StanfordCoreNLP firstStagePipeline;
 
-  private static StanfordCoreNLP secondStagePipeline;
+  private static StanfordCoreNLP templateComparisonPipeline;
 
   private static StanfordCoreNLP luceneDocumentPipeline;
 
@@ -23,72 +39,39 @@ public abstract class Pipeline {
     if (firstStagePipeline == null) {
 
       var props = new Properties();
-      props.put("annotators", "tokenize, ssplit, code, text-block-ids, lssplit, morpho, word, stopword");
+      props.put("annotators", "tokenize, ssplit");
       props.put("ssplit.eolonly", "true");
       props.put("ssplit.boundaryTokenRegex", "(:?[a-zA-Z]\\.)|[.。]|[!?！？]+");
-
       props.put("tokenize.options", "invertible=true");
-      props.put(
-        "customAnnotatorClass.lssplit",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.TextBlockSentenceSplitter"
-      );
-
-      props.put(
-        "customAnnotatorClass.text-block-ids",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.TextBlockIdentifierAnnotator"
-      );
-
-      props.put(
-        "customAnnotatorClass.code",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.CodeSegmentAnnotator"
-      );
-
-      props.put(
-        "customAnnotatorClass.morpho",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoDiTaAnalysisAnnotator"
-      );
-
-      props.put(
-        "customAnnotatorClass.spell",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.SpellingAnnotator"
-      );
-
-      props.put(
-        "customAnnotatorClass.stopword",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.StopWordAnnotator"
-      );
-
-      props.put(
-        "customAnnotatorClass.word",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.WordFilteringAnnotator"
-      );
-
-      props.put(
-        "customAnnotatorClass.dssplit",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.SentenceLengthSplitterAnnotator"
-      );
       props.put("enforceRequirements", "false");
+
       firstStagePipeline = new StanfordCoreNLP(props);
+      firstStagePipeline.addAnnotator(new CodeSegmentAnnotator());
+      firstStagePipeline.addAnnotator(new TextBlockIdentifierAnnotator());
+      firstStagePipeline.addAnnotator(new TextBlockSentenceSplitter());
+      firstStagePipeline.addAnnotator(new MorphoDiTaAnalysisAnnotator());
+      firstStagePipeline.addAnnotator(new WordFilteringAnnotator());
+      firstStagePipeline.addAnnotator(new StopWordAnnotator());
+      firstStagePipeline.addAnnotator(new MorphoDiTaAnalysisAnnotator());
     }
 
     return firstStagePipeline;
   }
 
-  public static StanfordCoreNLP getSecondStagePipeline() {
-    if (secondStagePipeline == null) {
+  public static StanfordCoreNLP getTemplateComparisonPipeline(
+    @NotNull Embeddings embeddings,
+    @Nullable Annotation templateAnnotation
+  ) {
+    if (templateComparisonPipeline == null) {
       var props = new Properties();
-
-      props.put("annotators", "morpho");
-      props.put(
-        "customAnnotatorClass.morpho",
-        "dev.taras.hamkalo.plagdet.preprocessing.annotators.MorphoDiTaAnalysisAnnotator"
-      );
-
+      props.put("annotators", "");
       props.put("enforceRequirements", "false");
-      secondStagePipeline = new StanfordCoreNLP(props);
+      templateComparisonPipeline = new StanfordCoreNLP(props);
+      templateComparisonPipeline.addAnnotator(new TemplateSentencesAnnotator(embeddings, templateAnnotation));
+      templateComparisonPipeline.addAnnotator(new TextBlockIdentifierAnnotator());
     }
 
-    return secondStagePipeline;
+    return templateComparisonPipeline;
   }
 
   private static StanfordCoreNLP getLuceneDocumentPipeline() {
@@ -107,10 +90,24 @@ public abstract class Pipeline {
     return luceneDocumentPipeline;
   }
 
-  public static void init() {
+  // compare to template ?
+  // template path
+  public static void init(
+    @NotNull PipelineParameters parameters,
+    @NotNull Embeddings embeddings,
+    @Nullable String templateContent
+  ) {
     firstStagePipeline = getFirstStagePipeline();
-    secondStagePipeline = getSecondStagePipeline();
     luceneDocumentPipeline = getLuceneDocumentPipeline();
+    if (!parameters.bypassTemplateRemoval) {
+      if (templateContent != null) {
+        templateComparisonPipeline = getTemplateComparisonPipeline(
+          embeddings, annotate(templateContent)
+        );
+      } else {
+        templateComparisonPipeline = getTemplateComparisonPipeline(embeddings, null);
+      }
+    }
   }
 
   public static @NotNull Annotation luceneAnnotate(@NotNull String content) {
@@ -124,13 +121,24 @@ public abstract class Pipeline {
   public static @NotNull Annotation annotate(@NotNull String content) {
     CoreDocument coreDocument = new CoreDocument(content);
     firstStagePipeline.annotate(coreDocument);
-    secondStagePipeline.annotate(coreDocument);
+    if (templateComparisonPipeline != null) {
+      templateComparisonPipeline.annotate(coreDocument);
+    }
 
     // spell -> misspelled, tag, pos, code sentences, spoofed
     Annotation dest = new Annotation("");
     Annotation source = coreDocument.annotation();
 
     AnnotationUtils.copy(PlagdetAnnotations.CodeSegmentsAnnotation.class, dest, source);
+    AnnotationUtils.copy(PlagdetAnnotations.TemplateSentencesAnnotation.class, dest, source);
+    createCompactSentencesAndTokens(dest, source);
+    return dest;
+  }
+
+  private static void createCompactSentencesAndTokens(
+    @NotNull Annotation dest,
+    @NotNull Annotation source
+  ) {
     dest.set(CoreAnnotations.SentencesAnnotation.class, new ArrayList<>());
     dest.set(CoreAnnotations.TokensAnnotation.class, new ArrayList<>());
     for (var sentence : AnnotationUtils.sentences(source)) {
@@ -138,31 +146,32 @@ public abstract class Pipeline {
       var tokens = AnnotationUtils.tokens(sentence);
       var compactTokens = new ArrayList<CoreLabel>();
       for (var token : tokens) {
-        CoreLabel compactToken = new CoreLabel();
-        compactToken.set(CoreAnnotations.LemmaAnnotation.class, token.lemma());
-        compactToken.set(CoreAnnotations.PartOfSpeechAnnotation.class, token.tag());
-        compactToken.setBeginPosition(token.beginPosition());
-        compactToken.setEndPosition(token.endPosition());
-
-        if (AnnotationUtils.isMisspelledToken().test(token)) {
-          AnnotationUtils.copy(PlagdetAnnotations.MisspelledAnnotation.class, compactToken, token);
-          compactToken.set(CoreAnnotations.TextAnnotation.class, token.word());
-        }
-
-        if (AnnotationUtils.isSpoofedToken().test(token)) {
-          AnnotationUtils.copy(PlagdetAnnotations.SpoofedWordAnnotation.class, compactToken, token);
-          compactToken.set(CoreAnnotations.TextAnnotation.class, token.word());
-        }
-
-        compactTokens.add(compactToken);
+        compactTokens.add(createCompactToken(token));
       }
 
       sentence.set(CoreAnnotations.TokensAnnotation.class, compactTokens);
-
       dest.get(CoreAnnotations.TokensAnnotation.class).addAll(compactTokens);
       dest.get(CoreAnnotations.SentencesAnnotation.class).add(sentence);
     }
-    return dest;
+  }
+
+  public static @NotNull CoreLabel createCompactToken(@NotNull CoreLabel token) {
+    CoreLabel compactToken = new CoreLabel();
+    compactToken.set(CoreAnnotations.LemmaAnnotation.class, token.lemma());
+    compactToken.set(CoreAnnotations.PartOfSpeechAnnotation.class, token.tag());
+    compactToken.setBeginPosition(token.beginPosition());
+    compactToken.setEndPosition(token.endPosition());
+
+    if (AnnotationUtils.isMisspelledToken().test(token)) {
+      AnnotationUtils.copy(PlagdetAnnotations.MisspelledAnnotation.class, compactToken, token);
+      compactToken.set(CoreAnnotations.TextAnnotation.class, token.word());
+    }
+
+    if (AnnotationUtils.isSpoofedToken().test(token)) {
+      AnnotationUtils.copy(PlagdetAnnotations.SpoofedWordAnnotation.class, compactToken, token);
+      compactToken.set(CoreAnnotations.TextAnnotation.class, token.word());
+    }
+    return compactToken;
   }
 
 }
