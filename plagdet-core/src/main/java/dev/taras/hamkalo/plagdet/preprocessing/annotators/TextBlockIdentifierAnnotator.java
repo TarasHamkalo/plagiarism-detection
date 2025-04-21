@@ -27,6 +27,7 @@ public class TextBlockIdentifierAnnotator implements Annotator {
     maxId = maxId == null ? 0 : maxId + 1;
     maxId = assignTextBlockIdentifiers(annotation, textBoundaries, maxId);
     annotation.set(PlagdetAnnotations.TextBlockCounter.class, maxId);
+    annotation.remove(PlagdetAnnotations.TextBlockBoundaries.class);
   }
 
   private Integer assignTextBlockIdentifiers(
