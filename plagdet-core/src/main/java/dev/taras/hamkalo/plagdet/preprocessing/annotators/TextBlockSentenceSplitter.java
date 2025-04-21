@@ -32,8 +32,8 @@ public class TextBlockSentenceSplitter implements Annotator {
 
   private static final Set<String> CLAUSE_CONJUCTIONS = Set.of(
     "že", "aby", "ak", "ako", "akoby", "akonáhle", "akože", "ale", "alebo",
-    "ani", "avšak", "ač", "ačkoľvek", "až", "ba", "hoci", "keby", "keď", "keďže",
-    "lenže", "než", "pokiaľ", "pokým", "pretože", "pričom", "sotva",
+    "ani", "avšak", "až", "ba", "tak", "hoci", "keby", "keď", "keďže",
+    "lenže", "než", "pokiaľ", "pokým", "pretože", "pričom",
     "zatiaľčo", "zatiaľ čo", "kým", "kýmže", "nakoľko", "lebo", "ibaže",
     "kdežto", "kde", "respektíve"
   );
