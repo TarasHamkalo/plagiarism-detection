@@ -16,8 +16,8 @@ public class SeedUtils {
     return seeds.stream().sorted(Comparator.comparingInt(seed -> seed[side])).toList();
   }
 
-  public static boolean isAdjacent(int @NotNull [] first, int @NotNull [] other, int side, int gap) {
-    return Math.abs(first[side] - other[side]) <= gap;
+  public static boolean isAdjacent(int @NotNull [] that, int @NotNull [] other, int side, int gap) {
+    return that[2 + side] == other[2 + side] && Math.abs(that[side] - other[side]) <= gap;
   }
 
 }
