@@ -46,6 +46,8 @@ public class TextBlockSentenceSplitter implements Annotator {
 
   private static final Pattern LIST_ITEM_PATTERN = Pattern.compile("^([^-=:]{1,50})[-=:](.{1,70})$");
 
+  private static final Pattern FUNCTION_DOC_PATTERN = Pattern.compile("[^\\s]{1,50}\\(.*\\)\\s*(?:[\\-=:]\\s*)?.{1,70}");
+
   private static final Pattern PROGRAM_RUN_PATTERN = Pattern.compile("^(?:\\w+)?\\s*(?:<[\\w\\s]+>\\s*)+\\s*$");
 
   private static final int MAX_SENT_LENGTH_WORD = 15; // counting for small words which will be lately removed
@@ -155,6 +157,11 @@ public class TextBlockSentenceSplitter implements Annotator {
       }
 
       if (PROGRAM_RUN_PATTERN.matcher(text).matches()) {
+        validSentences.add(i);
+        continue;
+      }
+
+      if (FUNCTION_DOC_PATTERN.matcher(text).matches()) {
         validSentences.add(i);
         continue;
       }
