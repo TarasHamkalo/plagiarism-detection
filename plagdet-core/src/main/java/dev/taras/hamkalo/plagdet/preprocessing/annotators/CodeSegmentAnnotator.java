@@ -133,11 +133,12 @@ public class CodeSegmentAnnotator implements Annotator {
       CoreMap sentence = sentences.get(i);
       String line = sentence.get(CoreAnnotations.TextAnnotation.class);
       INDArray features = Nd4j.create(FeatureExtractor.extractFeatures(line), 1, FEATURE_VECTOR_SIZE);
-      normalizer.transform(features);
       encodedLines.putRow(i, features);
       lineOffsets[i][0] = AnnotationUtils.begin(sentence);
       lineOffsets[i][1] = AnnotationUtils.end(sentence);
     }
+
+    normalizer.transform(encodedLines);
     return encodedLines;
   }
 
