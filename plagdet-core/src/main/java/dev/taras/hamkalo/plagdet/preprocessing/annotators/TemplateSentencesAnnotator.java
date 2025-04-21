@@ -1,11 +1,9 @@
 package dev.taras.hamkalo.plagdet.preprocessing.annotators;
 
 import dev.taras.hamkalo.plagdet.comparision.Embeddings;
-import dev.taras.hamkalo.plagdet.comparision.blocks.ExtensionStrategy;
-import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedingStrategy;
+import dev.taras.hamkalo.plagdet.comparision.blocks.*;
 import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedingStrategy.IndexBasedWordAlignmentSeedingStrategyParameters;
-import dev.taras.hamkalo.plagdet.comparision.blocks.NopExtensionStrategy;
-import dev.taras.hamkalo.plagdet.comparision.blocks.SeedingStrategy;
+import dev.taras.hamkalo.plagdet.comparision.blocks.RecursiveClusteringExtensionStrategy.RecursiveClusteringExtensionStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.model.Fragment;
 import dev.taras.hamkalo.plagdet.indexing.jvector.SentenceIndex;
 import dev.taras.hamkalo.plagdet.io.IoUtils;
@@ -35,6 +33,12 @@ public class TemplateSentencesAnnotator implements Annotator {
     IndexBasedWordAlignmentSeedingStrategyParameters.builder()
       .alignmentSimilarityThreshold(0.9f)
       .vectorSimilarityThreshold(0.8f)
+      .build();
+
+  public static final RecursiveClusteringExtensionStrategyParameters EXTENSION_STRATEGY_PARAMETERS =
+    RecursiveClusteringExtensionStrategyParameters.builder()
+      .minClusterSize(5)
+      .sentMaxGap(3)
       .build();
 
   @NotNull Annotation templateAnnotation;
@@ -70,7 +74,10 @@ public class TemplateSentencesAnnotator implements Annotator {
     this.seedingStrategy = new IndexBasedWordAlignmentSeedingStrategy(
       embeddings, SEEDING_STRATEGY_PARAMETERS
     );
-    this.extensionStrategy = new NopExtensionStrategy();
+    this.extensionStrategy = new RecursiveClusteringExtensionStrategy(
+      embeddings, EXTENSION_STRATEGY_PARAMETERS
+    );
+
   }
 
   private @NotNull Annotation loadTemplateAnnotation() {
@@ -87,6 +94,7 @@ public class TemplateSentencesAnnotator implements Annotator {
 
     List<int[]> seeds =
       seedingStrategy.seed(templateSentenceIndex, templateSentenceMatrices, sourceSentences);
+
     List<Fragment> fragments =
       extensionStrategy.extend(List.of(suspSentences, sourceSentences), seeds);
     if (fragments.isEmpty()) {
@@ -99,7 +107,7 @@ public class TemplateSentencesAnnotator implements Annotator {
         .thenComparingInt((Fragment f) -> f.getSideEnds()[1])
     );
 
-    List<Integer> textBlockBoundaries = new ArrayList<>();
+    Set<Integer> textBlockBoundaries = new HashSet<>();
     List<int[]> templateOffsets = new ArrayList<>();
     List<CoreMap> filteredSentences = new ArrayList<>(sourceSentences.size());
     int sourceSentencesSize = sourceSentences.size();
@@ -107,17 +115,8 @@ public class TemplateSentencesAnnotator implements Annotator {
     int fragStart = fragments.get(0).getSideStarts()[1];
     int fragEnd = fragments.get(0).getSideEnds()[1];
     int textBlockBegin = 0;
+    int beginOffset = 0;
     for (int i = 0; i < sourceSentencesSize; i++) {
-      if (i < fragStart) {
-        textBlockBegin = filteredSentences.size();
-        filteredSentences.add(sourceSentences.get(i));
-        continue;
-      }
-
-      if (i == fragStart) {
-        textBlockBoundaries.add(textBlockBegin);
-      }
-
       while (i > fragEnd && fragIndex < fragments.size()) {
         fragStart = fragments.get(fragIndex).getSideStarts()[1];
         fragEnd = fragments.get(fragIndex).getSideEnds()[1];
@@ -125,14 +124,23 @@ public class TemplateSentencesAnnotator implements Annotator {
       }
 
       if (i < fragStart || i > fragEnd) {
+        textBlockBegin = filteredSentences.size();
         filteredSentences.add(sourceSentences.get(i));
         continue;
       }
 
-      templateOffsets.add(new int[]{
-        AnnotationUtils.begin(sourceSentences.get(i)),
-        AnnotationUtils.end(sourceSentences.get(i))
-      });
+      if (i == fragStart) {
+        beginOffset = AnnotationUtils.begin(sourceSentences.get(i));
+      }
+
+      if (i == fragEnd) {
+        textBlockBoundaries.add(textBlockBegin);
+        templateOffsets.add(new int[]{
+          beginOffset,
+          AnnotationUtils.end(sourceSentences.get(i))
+        });
+      }
+
     }
 
     annotation.set(CoreAnnotations.SentencesAnnotation.class, filteredSentences);
@@ -145,7 +153,7 @@ public class TemplateSentencesAnnotator implements Annotator {
     );
 
     annotation.set(PlagdetAnnotations.TemplateSentencesAnnotation.class, templateOffsets);
-    annotation.set(PlagdetAnnotations.TextBlockBoundaries.class, textBlockBoundaries);
+    annotation.set(PlagdetAnnotations.TextBlockBoundaries.class, new ArrayList<>(textBlockBoundaries));
   }
 
   @Override

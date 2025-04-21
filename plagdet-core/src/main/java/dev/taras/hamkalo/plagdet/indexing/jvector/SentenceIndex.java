@@ -86,11 +86,14 @@ public class SentenceIndex implements AutoCloseable {
       var sentences = AnnotationUtils.sentences(doc.getAnnotation());
       int sentencesSize = sentences.size();
       for (int j = 0; j < sentencesSize; j++) {
+        CoreMap sentence = sentences.get(j);
         baseVectors.add(VECTOR_TYPE_SUPPORT.createFloatVector(
-          embeddings.getAccVector(sentences.get(j)).toFloatVector())
+          embeddings.getAccVector(sentence).toFloatVector())
         );
-        sentenceDocumentPairs.add(new int[]{i, j, globalSentenceIndex});
-        globalSentencesList.add(sentences.get(j));
+        sentenceDocumentPairs.add(
+          new int[]{i, j, globalSentenceIndex, AnnotationUtils.textBlockId(sentence)}
+        );
+        globalSentencesList.add(sentence);
         globalSentenceIndex++;
       }
 
@@ -115,11 +118,14 @@ public class SentenceIndex implements AutoCloseable {
     var sentences = AnnotationUtils.sentences(annotation);
     int sentencesSize = sentences.size();
     for (int j = 0; j < sentencesSize; j++) {
+      CoreMap sentence = sentences.get(j);
       baseVectors.add(VECTOR_TYPE_SUPPORT.createFloatVector(
-        embeddings.getAccVector(sentences.get(j)).toFloatVector())
+        embeddings.getAccVector(sentence).toFloatVector())
       );
-      sentenceDocumentPairs.add(new int[]{0, j, globalSentenceIndex});
-      globalSentencesList.add(sentences.get(j));
+      sentenceDocumentPairs.add(
+        new int[]{0, j, globalSentenceIndex, AnnotationUtils.textBlockId(sentence)}
+      );
+      globalSentencesList.add(sentence);
       globalSentenceIndex++;
     }
     log.trace("Querying embeddings done");

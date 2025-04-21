@@ -132,7 +132,8 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
         );
 
         if (areSimilar) {
-          seeds.add(new int[]{match[1], i});
+          int id = AnnotationUtils.textBlockId(sourceDocumentSentences.get(i));
+          seeds.add(new int[]{match[1], i, match[3], id});
         }
       }
     }
@@ -148,8 +149,13 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     var documentToSeeds = new HashMap<Integer, List<int[]>>();
 
     var suspiciousDocument = documentPool.getSuspiciousDocument();
-    var suspiciousDocumentSentencesSize =
-      AnnotationUtils.sentences(suspiciousDocument.getAnnotation()).size();
+    List<Integer> sentenceTextBlockIds =
+      AnnotationUtils.sentences(suspiciousDocument.getAnnotation())
+        .stream()
+        .map(AnnotationUtils::textBlockId)
+        .toList();
+
+    var suspiciousDocumentSentencesSize = sentenceTextBlockIds.size();
     var suspiciousDocumentSentenceMatrices = documentPool.getSuspiciousDocumentSentenceMatrices();
     var suspiciousDocumentSentenceIndex = documentPool.getSuspiciousDocumentSentenceIndex();
     for (int i = 0; i < suspiciousDocumentSentencesSize; i++) {
@@ -172,7 +178,7 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
 
         if (areSimilar) {
           documentToSeeds.computeIfAbsent(match[0], (key) -> new ArrayList<>())
-            .add(new int[]{i, match[1]});
+            .add(new int[]{i, match[1], sentenceTextBlockIds.get(i), match[3]});
         }
       }
     }
