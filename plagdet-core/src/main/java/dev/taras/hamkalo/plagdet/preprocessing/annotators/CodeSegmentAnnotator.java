@@ -13,8 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
-import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -22,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.StringJoiner;
 
 import static dev.taras.hamkalo.plagdet.classification.code.FeatureExtractor.FEATURE_VECTOR_SIZE;
 
@@ -74,6 +71,7 @@ public class CodeSegmentAnnotator implements Annotator {
 
     INDArray vectorizedLines = vectorizeSentences(sentences, lineOffsets);
     int[] linesClass = codeTextClassifier.predict(vectorizedLines);
+    vectorizedLines.close();
 
     List<Integer> codeLines = new ArrayList<>();
     int codeLinesOffsetBegin = 0;
@@ -134,6 +132,7 @@ public class CodeSegmentAnnotator implements Annotator {
       String line = sentence.get(CoreAnnotations.TextAnnotation.class);
       INDArray features = Nd4j.create(FeatureExtractor.extractFeatures(line), 1, FEATURE_VECTOR_SIZE);
       encodedLines.putRow(i, features);
+      features.close();
       lineOffsets[i][0] = AnnotationUtils.begin(sentence);
       lineOffsets[i][1] = AnnotationUtils.end(sentence);
     }
