@@ -8,9 +8,9 @@ import java.util.regex.Pattern;
 public class FeatureExtractor {
   public static final int FEATURE_VECTOR_SIZE = 17;
 
-  private static final Pattern CAMEL_CASE = Pattern.compile("\\b[a-z]+[A-Z][a-zA-Z]*\\b");
+  private static final Pattern CAMEL_CASE = Pattern.compile("\\b[a-z]+[A-Z][a-zA-Z]+\\b");
 
-  private static final Pattern SNAKE_CASE = Pattern.compile("\\b[a-zA-Z]+(_[a-zA-Z]+)*\\b");
+  private static final Pattern SNAKE_CASE = Pattern.compile("\\b[a-zA-Z]+(_[a-zA-Z]+)+\\b");
 
   private static final Pattern WORDS_WITH_NUMBER = Pattern.compile("\\b\\w+\\d+\\b");
 
@@ -52,7 +52,7 @@ public class FeatureExtractor {
 
     features[0] = Math.min(1, characterFrequencyMap.getOrDefault(';', 0));
     features[1] = trim.startsWith("//") ? 1 : 0;
-    features[2] = tokens.length;
+    features[2] = trim.length();
     features[3] = characterFrequencyMap.getOrDefault('{', 0);
     features[4] = characterFrequencyMap.getOrDefault('}', 0);
     features[5] = countCamelCase(tokensList);

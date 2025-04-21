@@ -13,6 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
@@ -26,13 +29,15 @@ import static dev.taras.hamkalo.plagdet.classification.code.FeatureExtractor.FEA
 @Slf4j
 public class CodeSegmentAnnotator implements Annotator {
 
-  private static final int MIN_CODE_LINES_TO_RECORD = 2;
+  private static final int MIN_CODE_LINES_TO_RECORD = 4;
 
   public static final String CLASSIFIER_RESOURCE_PREFIX = "models/";
 
   public static final String CLASSIFIER_RESOURCE_NAME = "code-classifier.bin";
 
   private static MultiLayerNetwork codeTextClassifier;
+
+  private static NormalizerStandardize normalizer;
 
   public CodeSegmentAnnotator() {
     loadClassifier();
@@ -45,6 +50,7 @@ public class CodeSegmentAnnotator implements Annotator {
           CLASSIFIER_RESOURCE_PREFIX + CLASSIFIER_RESOURCE_NAME, CLASSIFIER_RESOURCE_NAME
         );
         codeTextClassifier = ModelSerializer.restoreMultiLayerNetwork(classifierPath.toFile());
+        normalizer = ModelSerializer.restoreNormalizerFromFile(classifierPath.toFile());
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -126,8 +132,9 @@ public class CodeSegmentAnnotator implements Annotator {
     for (int i = 0; i < sentencesSize; i++) {
       CoreMap sentence = sentences.get(i);
       String line = sentence.get(CoreAnnotations.TextAnnotation.class);
-      double[] features = FeatureExtractor.extractFeatures(line);
-      encodedLines.putRow(i, Nd4j.create(features));
+      INDArray features = Nd4j.create(FeatureExtractor.extractFeatures(line), 1, FEATURE_VECTOR_SIZE);
+      normalizer.transform(features);
+      encodedLines.putRow(i, features);
       lineOffsets[i][0] = AnnotationUtils.begin(sentence);
       lineOffsets[i][1] = AnnotationUtils.end(sentence);
     }

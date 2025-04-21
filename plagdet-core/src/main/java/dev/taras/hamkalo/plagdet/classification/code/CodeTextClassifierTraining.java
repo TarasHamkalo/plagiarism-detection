@@ -13,6 +13,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
@@ -26,7 +27,7 @@ import java.util.List;
 
 public class CodeTextClassifierTraining {
 
-  private static final int EPOCHS = 300;
+  private static final int EPOCHS = 80;
 
   private static final double LEARNING_RATE = 0.021;
 
@@ -39,8 +40,12 @@ public class CodeTextClassifierTraining {
 
   private static void trainAndStore() throws IOException {
 
-    DataSet allData = createDataset("/home/taras-hamkalo/bin/code-classification/classified_lines.csv");
+    DataSet allData = createDataset("/home/taras-hamkalo/bin/code-classification/classified_lines-v1.csv");
     allData.shuffle();
+    NormalizerStandardize normalizerStandardize = new NormalizerStandardize();
+    normalizerStandardize.fit(allData);
+    normalizerStandardize.transform(allData);
+
     MultiLayerConfiguration conf = buildModel();
 
     MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -51,17 +56,25 @@ public class CodeTextClassifierTraining {
       model.fit(allData);
     }
 
-    File file = new File("code-classifier.zip");
+    File file = new File("code-classifier.bin");
     ModelSerializer.writeModel(model, file, false);
+    ModelSerializer.addNormalizerToModel(file, normalizerStandardize);
   }
 
   private static void trainAndEval() throws IOException {
-    DataSet allData = createDataset("/home/taras-hamkalo/bin/code-classification/classified_lines.csv");
+    DataSet allData = createDataset("/home/taras-hamkalo/bin/code-classification/classified_lines-v1.csv");
+
     allData.shuffle();
 
     SplitTestAndTrain split = allData.splitTestAndTrain(0.6);
     DataSet trainData = split.getTrain();
     DataSet testData = split.getTest();
+    NormalizerStandardize normalizerStandardize = new NormalizerStandardize();
+    normalizerStandardize.fit(trainData);
+
+    normalizerStandardize.transform(trainData);
+    normalizerStandardize.transform(testData);
+
     MultiLayerConfiguration conf = buildModel();
 
     MultiLayerNetwork model = new MultiLayerNetwork(conf);
