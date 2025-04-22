@@ -17,13 +17,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils.MIN_WORD_PER_SENTENCE;
+
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class WordFilteringAnnotator implements Annotator {
 
   private static final Pattern VALID_WORD_PATTERN = Pattern.compile("[a-zA-Z]+");
-
-  private static final int MIN_WORD_PER_SENTENCE = 2;
 
   public static final int MIN_WORD_LENGTH = 3;
 

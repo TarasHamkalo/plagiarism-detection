@@ -17,6 +17,8 @@ import java.util.stream.Collectors;
 
 public abstract class AnnotationUtils {
 
+  public static final int MIN_WORD_PER_SENTENCE = 2;
+
   public static final Pattern WORD_PATTERN = Pattern.compile("[a-zA-Z]{3,}");
 
   public static <V> void copy(

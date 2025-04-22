@@ -17,6 +17,8 @@ import org.apache.lucene.analysis.WordlistLoader;
 import java.io.FileReader;
 import java.util.Set;
 
+import static dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils.MIN_WORD_PER_SENTENCE;
+
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class StopWordAnnotator implements Annotator {
@@ -39,6 +41,10 @@ public class StopWordAnnotator implements Annotator {
       sentence.get(CoreAnnotations.TokensAnnotation.class)
         .removeIf(token -> stopWordSet.contains(token.word().toLowerCase()));
     });
+
+
+    AnnotationUtils.sentences(annotation)
+      .removeIf(s -> AnnotationUtils.tokens(s).size() < MIN_WORD_PER_SENTENCE);
 
     annotation.set(CoreAnnotations.TokensAnnotation.class,
       AnnotationUtils.sentences(annotation).stream()
