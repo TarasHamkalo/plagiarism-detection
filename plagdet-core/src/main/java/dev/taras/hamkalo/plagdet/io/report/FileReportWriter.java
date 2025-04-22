@@ -65,11 +65,27 @@ public class FileReportWriter {
     @NotNull List<Comparison> comparisons,
     @NotNull Path destination
   ) throws IOException {
+    writeDocumentContent(documentEntry, destination);
+    writeDocumentMetadata(documentEntry, comparisons, destination);
+    log.trace("Wrote document entry {}", documentEntry.getFileData().getPersistentPath());
+  }
+
+  public void writeDocumentContent(
+    @NotNull DocumentEntry documentEntry,
+    @NotNull Path destination
+  ) throws IOException {
     Path contentFilePath = IoUtils.resolveFile(
       destination, documentEntry.getId() + "_content.txt", removeFilesOnExit
     );
 
     Files.writeString(contentFilePath, documentEntry.getFileData().getContent());
+  }
+
+  public void writeDocumentMetadata(
+    @NotNull DocumentEntry documentEntry,
+    @NotNull List<Comparison> comparisons,
+    @NotNull Path destination
+  ) {
     Path metadataFilePath = IoUtils.resolveFile(
       destination, documentEntry.getId() + "_meta.json", removeFilesOnExit
     );
@@ -84,7 +100,6 @@ public class FileReportWriter {
       .build();
 
     writeObject(metadataFilePath, documentEntryModel);
-    log.trace("Wrote document entry {}", documentEntry.getFileData().getPersistentPath());
   }
 
   private <T> void writeObject(@NotNull Path destination, @NotNull T object) {

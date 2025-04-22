@@ -20,6 +20,8 @@ public interface Corpus {
 
   @NotNull DocumentEntry next() throws CorpusAccessException;
 
+  void clear();
+
   boolean hasAny();
 
   boolean hasNext();

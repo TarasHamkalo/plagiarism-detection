@@ -71,7 +71,21 @@ public class BufferedReportWriter {
     }
   }
 
-  public void flushDocument(
+  public void flushDocumentContent(
+    @NotNull DocumentEntry documentEntry
+  ) {
+    String submitterDirectoryName = documentEntry.getFileData().getPersistentPath().split("/")[1]; // :)
+    try {
+      Path filesDir = IoUtils.resolveDirectory(outputDirectory, FILES_DIR, true);
+      Path submitterDirectory =
+        IoUtils.resolveDirectory(filesDir, submitterDirectoryName, true);
+      fileReportWriter.writeDocumentContent(documentEntry, submitterDirectory);
+    } catch (IOException e) {
+      throw new ReportWriteException("Could not write document's content", e);
+    }
+  }
+
+  public void flushDocumentMetadata(
     @NotNull DocumentEntry documentEntry,
     @NotNull Corpus indexedDocumentsCorpus
   ) throws ReportWriteException {
@@ -97,7 +111,10 @@ public class BufferedReportWriter {
         fileReportWriter.writeComparisons(deduplicatedComparisons, outputDirectory);
       }
 
-      fileReportWriter.writeDocument(documentEntry, deduplicatedComparisons, submitterDirectory);
+      fileReportWriter.writeDocumentMetadata(
+        documentEntry, deduplicatedComparisons, submitterDirectory
+      );
+      // TODO: check which document was already written to disk (from INDEXED corpus)
       var indexedDocumentsMap = indexedDocumentsCorpus.getDocumentsMap();
       var indexedDocuments = new ArrayList<DocumentEntry>();
       for (var indexBasedComparison : indexBasedComparisons) {
@@ -107,7 +124,9 @@ public class BufferedReportWriter {
       fileReportWriter.writeIndexedDocuments(indexedDocuments, outputDirectory);
       deduplicatedComparisons.forEach(c -> this.flushedComparisonIds.add(c.getId()));
     } catch (IOException e) {
-      throw new ReportWriteException("Could not write document entry", e);
+      throw new ReportWriteException(
+        "Could not write document's metadata or dependent documents", e
+      );
     }
 
   }

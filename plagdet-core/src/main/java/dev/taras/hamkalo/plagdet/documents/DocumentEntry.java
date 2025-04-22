@@ -10,12 +10,19 @@ import org.jetbrains.annotations.NotNull;
 @Builder
 public class DocumentEntry {
 
+  int id;
+
   @NotNull Annotation annotation;
 
   @NotNull FileData fileData;
 
-  public int getId() {
-    return DocumentEntry.getId(fileData);
+  public static class DocumentEntryBuilder {
+
+    public DocumentEntry build() {
+      int calculatedId = getId(fileData);
+      return new DocumentEntry(calculatedId, annotation, fileData);
+    }
+
   }
 
   public static int getId(@NotNull FileData fileData) {

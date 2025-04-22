@@ -69,16 +69,18 @@ public class BaseCorpus implements Corpus {
   }
 
   @Override
+  public void clear() {
+    this.corpusDocuments.clear();
+  }
+
+  @Override
   public @NotNull DocumentEntry next() throws CorpusAccessException {
     try {
       if (cursor >= corpusDocuments.size() && fileDataSource.hasNext()) {
         var next = fileDataSource.next();
         var annotation = createAnnotation(next);
         corpusDocuments.add(
-          DocumentEntry.builder()
-            .fileData(next)
-            .annotation(annotation)
-            .build()
+          createDocumentEntry(next, annotation)
         );
       }
 
@@ -86,6 +88,13 @@ public class BaseCorpus implements Corpus {
     } catch (IndexOutOfBoundsException | FileDataSourceException e) {
       throw new CorpusAccessException(e);
     }
+  }
+
+  protected @NotNull DocumentEntry createDocumentEntry(@NotNull FileData next, @NotNull Annotation annotation) {
+    return DocumentEntry.builder()
+      .fileData(next)
+      .annotation(annotation)
+      .build();
   }
 
   protected @NotNull Annotation createAnnotation(@NotNull FileData next) {
