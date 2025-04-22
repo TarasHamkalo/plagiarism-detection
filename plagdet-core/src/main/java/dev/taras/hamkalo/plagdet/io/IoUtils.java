@@ -69,6 +69,10 @@ public abstract class IoUtils {
     boolean removeOnExit
   ) {
     Path path = rootDir.resolve(fileName);
+    if (path.toFile().exists()) {
+      return path;
+    }
+
     if (removeOnExit) {
       path.toFile().deleteOnExit();
     }
@@ -82,6 +86,10 @@ public abstract class IoUtils {
     boolean removeOnExit
   ) throws IOException {
     Path directoryPath = rootDir.resolve(directoryName);
+    if (directoryPath.toFile().exists()) {
+      return directoryPath;
+    }
+
     Files.createDirectories(directoryPath);
     if (removeOnExit) {
       directoryPath.toFile().deleteOnExit();
