@@ -6,10 +6,12 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
+@Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ComparisonsStore {
 
@@ -122,13 +124,14 @@ public class ComparisonsStore {
 
     final int storedComparisonsSize = comparisons.size();
     if (storedComparisonsSize > parameters.getMaxResultsPerDocument()) {
+      log.trace("Removing comparison with the least score");
       comparisons.poll();
     }
   }
 
   private boolean hasAnyScoreExceedingThreshold(@NotNull Comparison comparison) {
     return comparison.getPlagScores().stream()
-      .anyMatch(p -> p.getScore() > parameters.getMinSimilarityToRecord());
+      .anyMatch(p -> p.getScore() >= parameters.getMinSimilarityToRecord());
   }
 
   private int prioritizeComparisons(Comparison that, Comparison other) {
