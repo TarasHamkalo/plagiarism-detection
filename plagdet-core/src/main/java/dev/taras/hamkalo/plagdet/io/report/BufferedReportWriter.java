@@ -37,6 +37,11 @@ public class BufferedReportWriter {
   @NotNull Set<String> flushedComparisonIds;
 
   /**
+   * Stores flushed indexed document ids
+   */
+  @NotNull Set<Integer> flushedIndexedDocumentsIds;
+
+  /**
    * Serves as cache and filter for comparisons
    */
   @NotNull ComparisonsStore resultsStore;
@@ -49,6 +54,7 @@ public class BufferedReportWriter {
   ) throws IOException {
     this.resultsStore = comparisonsStore;
     this.flushedComparisonIds = new HashSet<>();
+    this.flushedIndexedDocumentsIds = new HashSet<>();
     this.fileReportWriter = new FileReportWriter(true);
     this.outputDirectory = Files.createTempDirectory("plagdet_report_files_");
     outputDirectory.toFile().deleteOnExit();
@@ -114,11 +120,14 @@ public class BufferedReportWriter {
       fileReportWriter.writeDocumentMetadata(
         documentEntry, deduplicatedComparisons, submitterDirectory
       );
-      // TODO: check which document was already written to disk (from INDEXED corpus)
       var indexedDocumentsMap = indexedDocumentsCorpus.getDocumentsMap();
       var indexedDocuments = new ArrayList<DocumentEntry>();
       for (var indexBasedComparison : indexBasedComparisons) {
-        indexedDocuments.add(indexedDocumentsMap.get(indexBasedComparison.getSecondId()));
+        int documentId = indexBasedComparison.getSecondId();
+        if (!flushedIndexedDocumentsIds.contains(documentId)) {
+          indexedDocuments.add(indexedDocumentsMap.get(documentId));
+          flushedIndexedDocumentsIds.add(documentId);
+        }
       }
 
       fileReportWriter.writeIndexedDocuments(indexedDocuments, outputDirectory);
