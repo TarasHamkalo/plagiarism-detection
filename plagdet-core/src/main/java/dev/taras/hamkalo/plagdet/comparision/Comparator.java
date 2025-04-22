@@ -142,6 +142,7 @@ public class Comparator {
             .plagSource(metadataComparator.inferPlagiarismSource(suspiciousDocument, sourceDocument))
             .build()
         );
+        continue;
       }
 
       List<int[]> seeds = documentSeedsEntry.getValue();
