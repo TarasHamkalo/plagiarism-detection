@@ -30,7 +30,7 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     /**
      * Query HNSW for top 10 sentences above that threshold
      */
-    public static final float DEFAULT_VECTOR_SIMILARITY_THRESHOLD = 0.6f;
+    public static final float DEFAULT_VECTOR_SIMILARITY_THRESHOLD = 0.7f;
 
     /**
      * Drop every sentence match below that similarity
@@ -45,14 +45,14 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     /**
      * Represents count of top sentences to query for, when doing document to document match
      */
-    private static final int DEFAULT_SIMILAR_SENTENCES_TO_CONSIDER = 10;
+    private static final int DEFAULT_SIMILAR_SENTENCES_TO_CONSIDER = 4;
 
     /**
      * Represents count of top sentences to query for, when doing document to corpus match.
      * E.g. having single suspicious document and corpus of documents, for which we don't want results
      * but would like to know if that single could a source document inside that corpus
      */
-    private static final int DEFAULT_SIMILAR_SENTENCES_TO_CONSIDER_MULTI_SEARCH = 250;
+    private static final int DEFAULT_SIMILAR_SENTENCES_TO_CONSIDER_MULTI_SEARCH = 150;
 
     @Builder.Default
     float vectorSimilarityThreshold = DEFAULT_VECTOR_SIMILARITY_THRESHOLD;
@@ -111,11 +111,14 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
   ) {
     List<int[]> seeds = new ArrayList<>();
     int sourceDocumentSentencesSize = sourceDocumentSentences.size();
-
+    int suspiciousSentencesSize = suspiciousDocumentSentenceMatrices.size();
+    int similarSentenceToConsider = (int) Math.max(
+      parameters.similarSentencesToConsider, Math.ceil(0.1 * suspiciousSentencesSize)
+    );
     for (int i = 0; i < sourceDocumentSentencesSize; i++) {
       var matches = suspiciousDocumentSentenceIndex.findSimilar(
         sourceDocumentSentences.get(i),
-        parameters.similarSentencesToConsider,
+        similarSentenceToConsider,
         parameters.vectorSimilarityThreshold
       );
       int matchesSize = matches.size();
