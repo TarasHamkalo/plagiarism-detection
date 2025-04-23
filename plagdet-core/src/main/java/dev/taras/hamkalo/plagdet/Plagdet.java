@@ -9,7 +9,6 @@ import dev.taras.hamkalo.plagdet.comparision.filter.ComparisonFilter;
 import dev.taras.hamkalo.plagdet.comparision.filter.LengthComparisonFilter;
 import dev.taras.hamkalo.plagdet.comparision.filter.ShingleOverlapComparisonFilter;
 import dev.taras.hamkalo.plagdet.concurrency.ExecutorServiceSingleton;
-import dev.taras.hamkalo.plagdet.documents.DocumentEntry;
 import dev.taras.hamkalo.plagdet.documents.corpus.*;
 import dev.taras.hamkalo.plagdet.documents.pool.BaseDocumentPool;
 import dev.taras.hamkalo.plagdet.documents.pool.DocumentPool;
@@ -150,7 +149,6 @@ public class Plagdet {
     bufferedReportWriter.createReport(
       OverviewJsonModel.builder()
         .inputPath(path)
-        .comparisonsCount(comparisonsCount)
         .plagdetParameters(parameters)
         .build()
     );
@@ -163,7 +161,7 @@ public class Plagdet {
     @NotNull BufferedReportWriter bufferedReportWriter,
     int comparisonsCount
   ) {
-    var susp = documentPool.nextSuspiciousDocument();
+    var susp = documentPool.getSuspiciousDocument();
     documentPool.prepareSuspiciousDocument();
     while (documentPool.hasAnySourceDocument()) {
       documentPool.nextSourceDocument();
@@ -177,7 +175,10 @@ public class Plagdet {
     );
 
     IndexableCorpus indexedCorpus = new LuceneIndexableCorpus(
-      embeddings, luceneSource, AnnotationUtils.sentences(susp.getAnnotation()).size()
+      embeddings,
+      luceneSource,
+      AnnotationUtils.sentences(susp.getAnnotation()).size(),
+      parameters.getLengthComparisonFilterParameters().getSentenceSizeRatioThreshold()
     );
 
     log.info("Starting comparison to indexed documents");
