@@ -17,6 +17,7 @@ import io.github.jbellis.jvector.vector.types.VectorFloat;
 import io.github.jbellis.jvector.vector.types.VectorTypeSupport;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -39,13 +40,15 @@ public class SentenceIndex implements AutoCloseable {
 
   @NotNull List<int[]> sentenceDocumentPairs;
 
-  @NotNull List<CoreMap> globalSentencesList;
-
   @NotNull OnHeapGraphIndex index;
 
   @NotNull GraphSearcher graphSearcher;
 
   @NotNull ListRandomAccessVectorValues listRandomAccess;
+
+  @Getter
+  @NotNull
+  List<CoreMap> globalSentencesList;
 
   private SentenceIndex(
     @NotNull Embeddings embeddings,
@@ -57,7 +60,7 @@ public class SentenceIndex implements AutoCloseable {
     var ravv = new ListRandomAccessVectorValues(baseVectors, originalDimension);
     var bsp = BuildScoreProvider.randomAccessScoreProvider(ravv, VectorSimilarityFunction.COSINE);
     log.trace("Building index");
-    try (var builder = new GraphIndexBuilder(bsp, ravv.dimension(), 16, 100, 1.2f, 1.2f)) {
+    try (var builder = new GraphIndexBuilder(bsp, ravv.dimension(), 8, 50, 1.2f, 1.2f)) {
       this.index = builder.build(ravv);
       this.graphSearcher = new GraphSearcher(index);
       this.listRandomAccess = ravv;
@@ -165,6 +168,10 @@ public class SentenceIndex implements AutoCloseable {
       matches.add(sentenceDocumentPairs.get(ns.node));
     }
     return matches;
+  }
+
+  public int getIndexSize() {
+    return globalSentencesList.size();
   }
 
   @Override
