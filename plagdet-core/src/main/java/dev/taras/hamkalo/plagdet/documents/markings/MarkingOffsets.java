@@ -25,9 +25,9 @@ public class MarkingOffsets implements Comparable<MarkingOffsets> {
     this.length = end - start;
   }
 
-  public static MarkingOffsets from(@NotNull CoreMap sentence) {
-    int start = sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-    int end = sentence.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+  public static MarkingOffsets from(@NotNull CoreMap coreMap) {
+    int start = coreMap.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+    int end = coreMap.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
     return new MarkingOffsets(start, end, end - start);
   }
 
