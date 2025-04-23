@@ -11,6 +11,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
 
@@ -28,12 +30,12 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
   public static class IndexBasedWordAlignmentSeedingStrategyParameters {
 
     /**
-     * Query HNSW for top 10 sentences above that threshold
+     * Query HNSW for top K sentences above that threshold
      */
-    public static final float DEFAULT_VECTOR_SIMILARITY_THRESHOLD = 0.7f;
+    public static final float DEFAULT_VECTOR_SIMILARITY_THRESHOLD = 0.6f;
 
     /**
-     * Drop every sentence match below that similarity
+     * Drop every sentence match below that similarity by Word alignment score
      */
     public static final float DEFAULT_ALIGNMENT_SIMILARITY_THRESHOLD = 0.75f;
 
@@ -43,16 +45,28 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     public static final float DEFAULT_SIZE_RATIO_THRESHOLD = 0.5f;
 
     /**
-     * Represents count of top sentences to query for, when doing document to document match
+     * Represents the least amount of top sentences to query for during Index search
      */
-    private static final int DEFAULT_SIMILAR_SENTENCES_TO_CONSIDER = 4;
+    public static final int DEFAULT_MIN_SENTENCES_TO_CONSIDER = 4;
 
     /**
-     * Represents count of top sentences to query for, when doing document to corpus match.
-     * E.g. having single suspicious document and corpus of documents, for which we don't want results
+     * Percentage of the number of corpus sentences that will be considered during Index search
+     */
+    public static final double DEFAULT_PORTION_OF_SENTENCES_TO_CONSIDER = 0.1d;
+
+    /**
+     * Represents the hard limit for count of top sentences to query for, when doing document to corpus match.
+     * e.g. having single suspicious document and corpus of documents, for which we don't want results
      * but would like to know if that single could a source document inside that corpus
      */
-    private static final int DEFAULT_SIMILAR_SENTENCES_TO_CONSIDER_MULTI_SEARCH = 150;
+    public static final double DEFAULT_PORTION_OF_SENTENCES_TO_CONSIDER_MULTI_SEARCH = 0.1d;
+
+
+    /**
+     * Represents default per document count of top sentences to query for.
+     * e.g. having 10 documents, for each sentence will be queried 10 * 5 top sentences from Index
+     */
+    public static final int DEFAULT_SENTENCES_PER_DOCUMENT_TO_CONSIDER_MULTI_SEARCH = 5;
 
     @Builder.Default
     float vectorSimilarityThreshold = DEFAULT_VECTOR_SIMILARITY_THRESHOLD;
@@ -64,21 +78,27 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     float sizeRatioThreshold = DEFAULT_SIZE_RATIO_THRESHOLD;
 
     @Builder.Default
-    int similarSentencesToConsider = DEFAULT_SIMILAR_SENTENCES_TO_CONSIDER;
+    int minSentencesToConsider = DEFAULT_MIN_SENTENCES_TO_CONSIDER;
 
     @Builder.Default
-    int similarSentencesToConsiderMultiSearch = DEFAULT_SIMILAR_SENTENCES_TO_CONSIDER_MULTI_SEARCH;
+    double portionOfSentencesToConsider = DEFAULT_PORTION_OF_SENTENCES_TO_CONSIDER;
+
+    @Builder.Default
+    double portionOfSentencesToConsiderMultiSearch = DEFAULT_PORTION_OF_SENTENCES_TO_CONSIDER_MULTI_SEARCH;
+
+    @Builder.Default
+    int sentencesPerDocumentToConsiderMultiSearch = DEFAULT_SENTENCES_PER_DOCUMENT_TO_CONSIDER_MULTI_SEARCH;
   }
 
   /**
    * Caches sentence word matrices for each document in collection
    * Sentence global list, cached in sentence index is flat sentence collection for fast lookup
    * The representation stored here, is matrix and weights for each sentence,
-   * goal is to free it aftere document was compared, so it will be more
+   * goal is to free it after document was compared, so it will be more
    * efficient to store organized
    */
   @NotNull
-  Map<Integer, Map<Integer, Pair<INDArray, INDArray>>> docToSentenceVectors = new HashMap<>();
+  Map<Integer, Map<Integer, Pair<INDArray, INDArray>>> docToSentenceVectors;
 
   @NotNull Embeddings embeddings;
 
@@ -89,6 +109,7 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     @NotNull Embeddings embeddings,
     @NotNull IndexBasedWordAlignmentSeedingStrategyParameters parameters
   ) {
+    this.docToSentenceVectors = new HashMap<>();
     this.embeddings = embeddings;
     this.parameters = parameters;
   }
@@ -113,7 +134,8 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     int sourceDocumentSentencesSize = sourceDocumentSentences.size();
     int suspiciousSentencesSize = suspiciousDocumentSentenceMatrices.size();
     int similarSentenceToConsider = (int) Math.max(
-      parameters.similarSentencesToConsider, Math.ceil(0.1 * suspiciousSentencesSize)
+      parameters.minSentencesToConsider,
+      Math.ceil(parameters.portionOfSentencesToConsider * suspiciousSentencesSize)
     );
     for (int i = 0; i < sourceDocumentSentencesSize; i++) {
       var matches = suspiciousDocumentSentenceIndex.findSimilar(
@@ -147,10 +169,10 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
   @Override
   public @NotNull Map<Integer, List<int[]>> seedMultiple(
     @NotNull DocumentPool documentPool,
-    @NotNull SentenceIndex corpusSentencesIndex
+    @NotNull SentenceIndex corpusSentencesIndex,
+    int indexedDocumentsCount
   ) {
     var documentToSeeds = new HashMap<Integer, List<int[]>>();
-
     var suspiciousDocument = documentPool.getSuspiciousDocument();
     List<Integer> sentenceTextBlockIds =
       AnnotationUtils.sentences(suspiciousDocument.getAnnotation())
@@ -161,17 +183,27 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     var suspiciousDocumentSentencesSize = sentenceTextBlockIds.size();
     var suspiciousDocumentSentenceMatrices = documentPool.getSuspiciousDocumentSentenceMatrices();
     var suspiciousDocumentSentenceIndex = documentPool.getSuspiciousDocumentSentenceIndex();
+    int similarSentenceToConsider = (int) Math.min(
+      Math.ceil(parameters.portionOfSentencesToConsiderMultiSearch * corpusSentencesIndex.getIndexSize()),
+      parameters.sentencesPerDocumentToConsiderMultiSearch * indexedDocumentsCount
+    );
+
+    log.trace(
+      "Considering [{}] when there is [{}] sentences\n",
+      similarSentenceToConsider,
+      corpusSentencesIndex.getGlobalSentencesList().size()
+    );
     for (int i = 0; i < suspiciousDocumentSentencesSize; i++) {
       var matches = corpusSentencesIndex.findSimilar(
         suspiciousDocumentSentenceIndex.findSentenceVectorByGlobalIndex(i),
-        parameters.similarSentencesToConsiderMultiSearch,
+        similarSentenceToConsider,
         parameters.vectorSimilarityThreshold
       );
       var suspiciousSentenceMatrix = suspiciousDocumentSentenceMatrices.get(i);
       int matchesSize = matches.size();
       for (int j = 0; j < matchesSize; j++) {
         var match = matches.get(j);
-        var similarSentenceMatrix = retrieveSentenceRepresentationForMatch(corpusSentencesIndex, match);
+        var similarSentenceMatrix = getSentenceMatrixForMatch(corpusSentencesIndex, match);
         boolean areSimilar = WeightedWordAlignmentScorer.areSimilar(
           similarSentenceMatrix,
           suspiciousSentenceMatrix,
@@ -190,7 +222,7 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     return documentToSeeds;
   }
 
-  private @NotNull Pair<INDArray, INDArray> retrieveSentenceRepresentationForMatch(
+  private @NotNull Pair<INDArray, INDArray> getSentenceMatrixForMatch(
     @NotNull SentenceIndex sentenceIndex,
     int[] match
   ) {

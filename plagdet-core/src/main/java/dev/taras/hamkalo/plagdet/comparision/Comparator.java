@@ -120,7 +120,10 @@ public class Comparator {
     var suspiciousDocument = documentPool.getSuspiciousDocument();
 
     var results = new ArrayList<Comparison>();
-    var documentSeedsMap = seedingStrategy.seedMultiple(documentPool, corpus.getCorpusSentenceIndex());
+    var documentSeedsMap = seedingStrategy.seedMultiple(
+      documentPool, corpus.getCorpusSentenceIndex(), corpus.getCorpusSize()
+    );
+//    corpus -> 20 docs -> 1 -> 5, 70 -> 70 * 5 ->
     var documentSeedsEntries = documentSeedsMap.entrySet();
     for (var documentSeedsEntry : documentSeedsEntries) {
       int documentIndex = documentSeedsEntry.getKey();
@@ -160,12 +163,12 @@ public class Comparator {
 
       results.add(
         Comparison.builder()
-        .firstId(suspiciousDocument.getId())
-        .secondId(sourceDocument.getId())
-        .plagCases(plagCases)
-        .plagScores(plagScores)
-        .plagSource(metadataComparator.inferPlagiarismSource(suspiciousDocument, sourceDocument))
-        .build()
+          .firstId(suspiciousDocument.getId())
+          .secondId(sourceDocument.getId())
+          .plagCases(plagCases)
+          .plagScores(plagScores)
+          .plagSource(metadataComparator.inferPlagiarismSource(suspiciousDocument, sourceDocument))
+          .build()
       );
     }
     return results;

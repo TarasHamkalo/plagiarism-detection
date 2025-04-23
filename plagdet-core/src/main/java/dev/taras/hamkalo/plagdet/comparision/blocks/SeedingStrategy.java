@@ -22,7 +22,8 @@ public interface SeedingStrategy {
 
   @NotNull Map<Integer, List<int[]>> seedMultiple(
     @NotNull DocumentPool documentPool,
-    @NotNull SentenceIndex sentenceIndex
+    @NotNull SentenceIndex sentenceIndex,
+    int indexedDocumentsCount
   );
 
 }
