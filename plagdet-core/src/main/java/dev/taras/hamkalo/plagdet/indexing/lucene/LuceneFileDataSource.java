@@ -102,11 +102,11 @@ public class LuceneFileDataSource implements FileDataSource {
   private @NotNull List<LuceneResult> querySimilar() {
     List<LuceneResult> similarDocs = new ArrayList<>();
     if (parameters.similarDocumentsLimit > 0) {
-      log.trace("Querying Lucene for similar documents");
+      log.info("Querying Lucene for similar documents");
       similarDocs.addAll(this.luceneIndex.retrieveSimilar(
         suspiciousDocument, parameters.getSimilarDocumentsLimit()
       ));
-      log.trace("Querying Lucene for similar done");
+      log.info("Querying Lucene for similar documents done");
     }
 
     if (parameters.maxMetaSimilarDoc <= 0) {
@@ -126,4 +126,14 @@ public class LuceneFileDataSource implements FileDataSource {
     log.trace("Querying Lucene for documents with metadata done");
     return similarDocs;
   }
+
+  @Override
+  public int estimateFilesCount() throws FileDataSourceException {
+    if (similarDocuments == null) {
+      return 0;
+    }
+
+    return similarDocuments.size();
+  }
+
 }

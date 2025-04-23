@@ -8,6 +8,7 @@ import dev.taras.hamkalo.plagdet.indexing.lucene.mapping.MetadataMapper;
 import dev.taras.hamkalo.plagdet.indexing.lucene.mapping.StanfordAnnotationMapper;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
@@ -27,8 +28,11 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@FieldDefaults(level = AccessLevel.PRIVATE)
-public class LuceneIndex {
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class LuceneIndex implements AutoCloseable {
+
+  @NotNull
+  Map<String, Double> inverseDocumentFrequencyCache;
 
   @NotNull
   Directory indexDirectory;
@@ -37,13 +41,12 @@ public class LuceneIndex {
   Path indexDirectoryPath;
 
   @Nullable
+  @NonFinal
   DirectoryReader reader;
 
   @Nullable
+  @NonFinal
   IndexWriter writer;
-
-  @NotNull
-  Map<String, Double> inverseDocumentFrequencyCache;
 
   public LuceneIndex(@NotNull Path indexDirectoryPath) throws IOException {
     this.indexDirectoryPath = indexDirectoryPath;
@@ -59,7 +62,6 @@ public class LuceneIndex {
       }
 
       Document doc = new Document();
-      log.info("Indexing document with path {}", document.getFileData().getPersistentPath());
       final var duplicateDocuments = retrieveByField(
         LuceneConstants.ID, String.valueOf(document.getId()), 1
       );
@@ -166,6 +168,7 @@ public class LuceneIndex {
     }
   }
 
+  @Override
   public void close() {
     try {
       if (writer != null) {
