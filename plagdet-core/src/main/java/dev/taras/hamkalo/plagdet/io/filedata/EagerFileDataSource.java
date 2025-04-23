@@ -19,6 +19,10 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+// a.zip -> {file.docx, file.pdf, file.doc}
+// a.zip -> {a.zip, b.zip, c.zip}
+// single.docx | single.pdf | single.doc
+//
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EagerFileDataSource implements FileDataSource {
@@ -76,9 +80,11 @@ public class EagerFileDataSource implements FileDataSource {
       return parseSubmissionsFromArchive(file, persistentPrefix);
     } else if (file.isDirectory()) {
       return parseSubmissionsFromDirectory(file, persistentPrefix);
+    } else if (IoUtils.isExtensionSupported(file, SUPPORTED_FILE_FORMATS)) {
+      return parseSubmissions(Map.of(file.getName(), file), persistentPrefix);
     }
 
-    throw new FileDataSourceException("Path does not represent directory or archive");
+    throw new FileDataSourceException("FS entry provided does not represent a valid input");
   }
 
   private @NotNull List<FileData> parseSubmissionsFromArchive(
@@ -88,6 +94,7 @@ public class EagerFileDataSource implements FileDataSource {
     var extractedFiles = ArchiveExtractor.extract(
       file, Sets.union(SUPPORTED_ARCHIVE_EXT, SUPPORTED_FILE_FORMATS)
     );
+    assertValidFileMap(extractedFiles);
     return parseSubmissions(extractedFiles, persistentPrefix);
   }
 
@@ -97,7 +104,36 @@ public class EagerFileDataSource implements FileDataSource {
   ) {
     Map<String, File> fileMap = Arrays.stream(Objects.requireNonNull(directory.listFiles()))
       .collect(Collectors.toMap(File::getName, f -> f));
+
+    assertValidFileMap(fileMap);
+
     return parseSubmissions(fileMap, persistentPrefix);
+  }
+
+  private void assertValidFileMap(@NotNull Map<String, File> fileMap) {
+    if (fileMap.values().stream().allMatch(File::isDirectory)) {
+      throw new FileDataSourceException(
+        "FS entry provided, holds directories, recursive lookup won't be made."
+      );
+    }
+
+    if (!areSubmittedFilesConsistent(fileMap)) {
+      throw new FileDataSourceException(
+        "Files provided are not in the consistent form (directories/archives/plain files are mixed)"
+      );
+    }
+  }
+
+  private boolean areSubmittedFilesConsistent(
+    @NotNull Map<String, File> submittedFiles
+  ) {
+
+    var extensions = submittedFiles.values().stream()
+      .map(f -> f.isDirectory() ? "dir" : FilenameUtils.getExtension(f.getName()))
+      .toList();
+
+    return SUPPORTED_ARCHIVE_EXT.containsAll(extensions) ||
+           SUPPORTED_FILE_FORMATS.containsAll(extensions);
   }
 
   private List<FileData> parseSubmissions(
@@ -115,6 +151,10 @@ public class EagerFileDataSource implements FileDataSource {
           var fileMap = ArchiveExtractor.extract(
             submissionFile, EagerFileDataSource.SUPPORTED_FILE_FORMATS
           );
+
+          if (fileMap.isEmpty()) {
+            log.warn("Submitter [{}] does not have any valid file.", submitterName);
+          }
 
           var extendedPrefix =
             persistentPrefix + File.separator + FilenameUtils.getBaseName(submissionSource.getKey());
