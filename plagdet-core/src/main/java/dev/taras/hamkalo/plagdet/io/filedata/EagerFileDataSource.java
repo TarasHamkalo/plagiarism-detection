@@ -42,9 +42,9 @@ public class EagerFileDataSource implements FileDataSource {
     @NotNull String inputPath
   ) throws FileDataSourceException {
     this.fileDataReaders = new FileDataReaders(contentReaders);
-    log.info("Parsing path {} started", inputPath);
+    log.info("Parsing path [{}] started", inputPath);
     this.parsedFileData = loadFileData(inputPath);
-    log.info("Parsing path {} done", inputPath);
+    log.info("Parsing path [{}] done", inputPath);
   }
 
   protected @NotNull Queue<FileData> loadFileData(@NotNull String inputPath) {
@@ -63,6 +63,11 @@ public class EagerFileDataSource implements FileDataSource {
       return fileData;
     }
     throw new FileDataSourceException("FileData source is empty");
+  }
+
+  @Override
+  public int estimateFilesCount() throws FileDataSourceException {
+    return parsedFileData.size();
   }
 
   @Override
@@ -149,7 +154,7 @@ public class EagerFileDataSource implements FileDataSource {
     for (var submissionSource : submissionFiles.entrySet()) {
       var submissionFile = submissionSource.getValue();
       var submitterName = IoUtils.extractSubmitter(submissionFile.toPath());
-      log.trace("Parsing {}", submissionFile.getAbsolutePath());
+      log.info("Looking at submission [{}]", submissionFile.getAbsolutePath());
       try {
         if (IoUtils.isExtensionSupported(submissionFile, SUPPORTED_ARCHIVE_EXT)) {
           var fileMap = ArchiveExtractor.extract(
@@ -177,7 +182,7 @@ public class EagerFileDataSource implements FileDataSource {
           parsedFileData.add(buildFileData(submissionFile, submitterName, persistentPath));
         }
       } catch (FileDataSourceException | DocumentReadException e) {
-        log.error("Submission {} was discarded, reason {}", submissionFile, e.getMessage());
+        log.error("Submission [{}] was discarded, reason [{}]", submissionFile, e.getMessage());
       }
 
     }

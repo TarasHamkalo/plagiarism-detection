@@ -12,5 +12,7 @@ public interface FileDataSource {
 
   @NotNull FileData next() throws FileDataSourceException;
 
+  int estimateFilesCount() throws FileDataSourceException;
+
   boolean hasNext() throws FileDataSourceException;
 }
