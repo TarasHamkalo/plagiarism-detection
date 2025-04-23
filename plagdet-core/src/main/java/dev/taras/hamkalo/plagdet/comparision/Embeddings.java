@@ -8,11 +8,13 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -47,7 +49,8 @@ public class Embeddings {
   );
 
   @Nullable
-  private static volatile Word2Vec word2Vec;
+  @NonFinal
+  Word2Vec word2Vec;
 
   @NotNull
   LuceneIndex luceneIndex;
@@ -62,6 +65,10 @@ public class Embeddings {
     this.luceneIndex = luceneIndex;
     this.sentenceToWeightedAccVector = new ConcurrentHashMap<>();
     this.wordVectorCache = new ConcurrentHashMap<>();
+  }
+
+  public void clearWordVectorCache() {
+    this.sentenceToWeightedAccVector.clear();
   }
 
   public void clearSentenceVectorCache() {
@@ -89,19 +96,21 @@ public class Embeddings {
   }
 
   private @Nullable INDArray queryWordVector(@NotNull String word) {
-    if (word2Vec == null) {
-      synchronized (Embeddings.class) {
-        if (word2Vec == null) {
-          word2Vec = loadWordVectors();
+    try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+      if (word2Vec == null) {
+        synchronized (Embeddings.class) {
+          if (word2Vec == null) {
+            word2Vec = loadWordVectors();
+          }
         }
       }
-    }
 
-    var wordVec = word2Vec.getWordVector(word);
-    if (wordVec != null) {
-      return Nd4j.createFromArray(wordVec);
-    }
+      var wordVec = word2Vec.getWordVector(word);
+      if (wordVec != null) {
+        return Nd4j.createFromArray(wordVec);
+      }
 
+    }
     return null;
   }
 
@@ -148,7 +157,6 @@ public class Embeddings {
     return word2vec;
   }
 
-  // TODO: cache that
   public Pair<INDArray, INDArray> getWordVectorsWithWeights(@NotNull CoreMap sentence) {
     var tokens = AnnotationUtils.tokens(sentence);
     INDArray matrix = Nd4j.create(tokens.size(), WORD_VECTOR_SIZE);
@@ -165,7 +173,8 @@ public class Embeddings {
         double idf = 1.0;
         try {
           idf = luceneIndex.inverseDocumentFrequency(token.lemma());
-        } catch (LuceneException ignoreEmptyIndex) {}
+        } catch (LuceneException ignoreEmptyIndex) {
+        }
 
         weights.putScalar(validCount, 0, posWeight * idf);
         validCount++;
