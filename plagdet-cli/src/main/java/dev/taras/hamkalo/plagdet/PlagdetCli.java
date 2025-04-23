@@ -1,11 +1,15 @@
 package dev.taras.hamkalo.plagdet;
 
-import dev.taras.hamkalo.plagdet.ResultsFilter.ResultsFilterParameters;
-import dev.taras.hamkalo.plagdet.comparision.comparator.MetadataComparator.MetadataComparatorParameters;
-import dev.taras.hamkalo.plagdet.comparision.comparator.SentenceComparator.SentenceComparatorParameters;
-import dev.taras.hamkalo.plagdet.comparision.comparator.ShingleComparator.ShingleComparatorParameters;
-import dev.taras.hamkalo.plagdet.indexing.SimilarDocumentSource.SimilarDocumentSourceParameters;
-import dev.taras.hamkalo.plagdet.io.reporting.writer.ZipReportWriter;
+import dev.taras.hamkalo.plagdet.ComparisonsStore.ComparisonsStoreParameters;
+import dev.taras.hamkalo.plagdet.comparision.MetadataComparator.MetadataComparatorParameters;
+import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedingStrategy.IndexBasedWordAlignmentSeedingStrategyParameters;
+import dev.taras.hamkalo.plagdet.comparision.blocks.RecursiveClusteringExtensionStrategy.RecursiveClusteringExtensionStrategyParameters;
+import dev.taras.hamkalo.plagdet.comparision.filter.LengthComparisonFilter.LengthComparisonFilterParameters;
+import dev.taras.hamkalo.plagdet.comparision.filter.ShingleOverlapComparisonFilter.ShingleOverlapComparisonFilterParameters;
+import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneFileDataSource;
+import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneFileDataSource.LuceneFileDataSourceParameters;
+import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
+import dev.taras.hamkalo.plagdet.preprocessing.Pipeline.PipelineParameters;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.cli.*;
 import org.jetbrains.annotations.NotNull;
@@ -13,8 +17,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Slf4j
 public class PlagdetCli {
@@ -34,16 +36,10 @@ public class PlagdetCli {
         return;
       }
 
-      String oldPath = cmd.getOptionValue("o");
       String newPath = cmd.getOptionValue("n");
       String templatePath = cmd.getOptionValue("t");
       String lucenePath = cmd.getOptionValue("l");
-      if (oldPath != null && !Files.exists(Path.of(oldPath))) {
-        log.error("Old submissions path does not exist, {}", oldPath);
-        return;
-      }
-
-      if (newPath != null && !Files.exists(Path.of(newPath))) {
+      if (newPath == null || !Files.exists(Path.of(newPath))) {
         log.error("New submissions path does not exist, {}", newPath);
         return;
       }
@@ -54,159 +50,189 @@ public class PlagdetCli {
       }
 
       boolean indexOnly = cmd.hasOption("i");
-
-      SentenceComparatorParameters sentenceParams = buildSentenceComparatorParams(cmd);
-      ShingleComparatorParameters shingleParams = buildShingleComparatorParams(cmd);
-      MetadataComparatorParameters metadataParams = MetadataComparatorParameters.builder()
-        .bypassFiltering(cmd.hasOption("bypass-metadata-filter"))
-        .build();
-
-      SimilarDocumentSourceParameters similarDocParams = buildSimilarDocumentSourceParams(cmd);
-      ResultsFilterParameters resultsFilterParameters = buildResultsFilterParams(cmd);
-
-      int numberOfProcessors = getOptionInt(cmd, "number-of-threads", Runtime.getRuntime().availableProcessors());
-      PlagdetParameters plagdetParameters = PlagdetParameters.builder()
-        .luceneIndexDirectoryPath(lucenePath)
+      var params = PlagdetParameters.builder()
         .templateDocumentPath(templatePath)
-        .numberOfProcessors(numberOfProcessors)
-        .sentenceComparatorParameters(sentenceParams)
-        .shingleComparatorParameters(shingleParams)
-        .metadataComparatorParameters(metadataParams)
-        .similarDocumentSourceParameters(similarDocParams)
-        .resultsFilterParameters(resultsFilterParameters)
+        .luceneIndexDirectoryPath(lucenePath)
+        .extensionStrategyParameters(OptionsMapper.buildExtensionStrategy(cmd))
+        .seedingStrategyParameters(OptionsMapper.buildSeedingParams(cmd))
+        .pipelineParameters(OptionsMapper.buildPipelineParameters(cmd))
+        .shingleOverlapComparisonFilterParameters(OptionsMapper.buildShingleComparatorParams(cmd))
+        .lengthComparisonFilterParameters(OptionsMapper.buildLengthComparatorParams(cmd))
+        .comparisonsStoreParameters(OptionsMapper.buildComparisonsStoreParameters(cmd))
+        .luceneFileDataSourceParameters(OptionsMapper.buildLuceneParams(cmd))
+        .metadataComparatorParameters(OptionsMapper.buildMetadataParams(cmd))
         .build();
+      run(newPath, params, indexOnly);
 
-      run(newPath, oldPath, plagdetParameters, indexOnly);
     } catch (ParseException e) {
       log.error("Error parsing command-line arguments: {}", e.getMessage());
       formatter.printHelp("java -jar plagdet.jar", options);
     }
   }
 
-  private static ResultsFilterParameters buildResultsFilterParams(CommandLine cmd) {
-    return ResultsFilterParameters.builder()
-      .bypassResultsFiltering(cmd.hasOption("bypass-results-filter"))
-      .maxResultsPerDocument(getOptionInt(cmd, "max-results", ResultsFilterParameters.DEFAULT_MAX_RESULTS_PER_DOCUMENT))
-      .minSimilarityToInclude(getOptionDouble(cmd, "min-similarity", ResultsFilterParameters.DEFAULT_MIN_SIMILARITY_TO_INCLUDE))
-      .build();
-  }
-
   private static @NotNull Options getOptions() {
-    Options options = new Options();
-
-    options.addRequiredOption("n", "new-path", true, "Path to the new submissions zip/directory");
-    options.addOption("l", "lucene-path", true, "Path to the lucene index directory, if empty, then temporary directory created");
-    options.addOption("o", "old-path", true, "Path to the old submissions directory (optional)");
-    options.addOption("t", "template-path", true, "Path to the template file (optional)");
-    options.addOption("i", "index-only", false, "Flag to index submissions without comparison");
-    options.addOption("h", "help", false, "Print help information");
-
-    options.addOption("bypass-metadata-filter", false, "Whether to stop comparison after matching authors/modifier");
-    options.addOption("bypass-shingle-filter", false, "Whether to stop comparison after shingle overlap threshold reached");
-
-    options.addOption("max-gap", true, "Maximum sentence gap for merging");
-    options.addOption("sentence-sim", true, "Sentence vector similarity threshold to be considered similar");
-    options.addOption("dice-sim", true, "Dice similarity threshold for two sentenced to be considered similar");
-    options.addOption("min-cluster-size", true, "Minimum number of sentence to be considered as plagiarism");
-    options.addOption("min-fragment-sim", true, "Min similarity for a group of sentence to be considered as similar");
-    options.addOption("min-fragment-length", true, "Minimum fragment character length");
-
-    options.addOption("shingle-size", true, "Shingle size");
-    options.addOption("shingle-overlap", true, "Shingle overlap");
-    options.addOption("plagiarized-level", true, "Threshold for Jaccard similarity, over which two are considered plagiarized");
-    options.addOption("discard-level", true, "Threshold for Jaccard similarity, document pairs below that threshold will be considered as plagiarism free");
-
-    options.addOption("max-results", true, "Maximum number of pairs/comparisons per document to be stored in result");
-    options.addOption("min-similarity", true, "Minimum similarity for comparison to be included in result");
-    options.addOption("bypass-results-filter", "No limit for results count which would be equal to (files_count * (files_count - 1) / 2) + files_count * similar-docs-limit");
-
-    options.addOption("similar-docs-limit", true, "Limit number of indexed documents retrieved for each submission document");
-
-    options.addOption("number-of-threads", true, "Number of threads for comparison execution");
-    return options;
+    return OptionsBuilder.builder()
+      .qualifiedRequired(
+        "n", "new-path", "Path to the new submissions zip/directory", null
+      )
+      .qualified(
+        "l", "lucene-path", "Path to the lucene index directory, if empty, then temporary directory created", null
+      )
+      .qualified("t", "template-path", "Path to the template file", "IPC task description")
+      .noArg("i", "Flag to index submissions without comparison", "false")
+      .noArg("h", "Print help information", null)
+      .noArg(
+        "bypass-metadata-filter",
+        "Flag to continue comparison after matching authors/modifier.",
+        MetadataComparatorParameters.DEFAULT_BYPASS_FILTERING
+      )
+      .noArg(
+        "enable-metadata-filter",
+        "Flag to stop comparison after matching authors/modifier",
+        MetadataComparatorParameters.DEFAULT_BYPASS_FILTERING
+      )
+      .noArg(
+        "bypass-shingle-filter",
+        "Flag to continue comparison after shingle overlap threshold reached.",
+        ShingleOverlapComparisonFilterParameters.DEFAULT_BYPASS_FILTERING
+      )
+      .noArg(
+        "bypass-length-filter",
+        "Flag to continue comparison after shingle overlap threshold reached.",
+        LengthComparisonFilterParameters.DEFAULT_BYPASS_FILTERING
+      )
+      .noArg(
+        "bypass-template-removal",
+        "Flag to stop removing template document matches from [new-path] document collection.",
+        PipelineParameters.DEFAULT_BYPASS_TEMPLATE_REMOVAL
+      )
+      .optional(
+        "max-gap",
+        "Gap between two matches which is acceptable during match merging.",
+        RecursiveClusteringExtensionStrategyParameters.DEFAULT_SENT_MAX_GAP
+      )
+      .optional(
+        "min-fragment-size",
+        "Minimum number of sentence to be considered as plagiarism.",
+        RecursiveClusteringExtensionStrategyParameters.DEFAULT_MIN_CLUSTER_SIZE
+      )
+      .optional(
+        "min-fragment-sim",
+        "Min similarity for a group of sentence to be considered as similar, otherwise group is resplit.",
+        RecursiveClusteringExtensionStrategyParameters.DEFAULT_MIN_FRAGMENT_SIDE_SIM
+      )
+      .optional(
+        "sentence-size-ratio-th",
+        "Drop every sentence match below that size ratio min(len1 / len2, len2 / len1).",
+        IndexBasedWordAlignmentSeedingStrategyParameters.DEFAULT_SIZE_RATIO_THRESHOLD
+      )
+      .optional(
+        "alignment-th",
+        "Drop every sentence match below that similarity by Word alignment score.",
+        IndexBasedWordAlignmentSeedingStrategyParameters.DEFAULT_ALIGNMENT_SIMILARITY_THRESHOLD
+      )
+      .optional(
+        "vector-sim-th",
+        "Query HNSW sentence index for top K sentences above that threshold.",
+        IndexBasedWordAlignmentSeedingStrategyParameters.DEFAULT_VECTOR_SIMILARITY_THRESHOLD
+      )
+      .optional(
+        "min-sentences-th",
+        "Represents the least amount of top sentences to query for during Index search." +
+        " The higher value the more sentences suspicious sentence is compared to," +
+        " eliminating false negatives during lookup stage.",
+        IndexBasedWordAlignmentSeedingStrategyParameters.DEFAULT_MIN_SENTENCES_TO_CONSIDER
+      )
+      .optional(
+        "sentences-percentage-th",
+        "Percentage of the number of source document sentences that will be considered during index search.",
+        IndexBasedWordAlignmentSeedingStrategyParameters.DEFAULT_PORTION_OF_SENTENCES_TO_CONSIDER
+      )
+      .optional(
+        "sentences-percentage-multi-th",
+        "Represents the hard limit in percentage of total sentences " +
+        "for count of top sentences to query for, when doing document to corpus match.",
+        IndexBasedWordAlignmentSeedingStrategyParameters.DEFAULT_MAX_PORTION_OF_SENTENCES_TO_CONSIDER_MULTI_SEARCH
+      )
+      .optional(
+        "sentences-per-document-th",
+        "Represents default per document count of top sentences to query for" +
+        "e.g. having 10 documents in corpus and th=5, for each sentence will be queried 10 * 5 top sentences from index.",
+        IndexBasedWordAlignmentSeedingStrategyParameters.DEFAULT_SENTENCES_PER_DOCUMENT_TO_CONSIDER_MULTI_SEARCH
+      )
+      .optional(
+        "shingle-size",
+        "Shingle size.",
+        ShingleOverlapComparisonFilterParameters.DEFAULT_SIZE
+      )
+      .optional(
+        "shingle-overlap",
+        "Shingle overlap.",
+        ShingleOverlapComparisonFilterParameters.DEFAULT_OVERLAP
+      )
+      .optional(
+        "plagiarized-level",
+        "Threshold for Jaccard similarity, over which two are considered plagiarized.",
+        ShingleOverlapComparisonFilterParameters.DEFAULT_PLAGIARIZED_LEVEL
+      )
+      .optional(
+        "discard-level",
+        "Threshold for Jaccard similarity, document pairs below that " +
+        "threshold will be considered as plagiarism free.",
+        ShingleOverlapComparisonFilterParameters.DEFAULT_DISCARD_LEVEL
+      )
+      .optional(
+        "max-results",
+        "Maximum number of comparisons per document to be stored in report.",
+        ComparisonsStoreParameters.DEFAULT_MAX_RESULTS_PER_DOCUMENT
+      )
+      .optional(
+        "min-result-sim",
+        "Minimum similarity for comparison to be recorded.",
+        ComparisonsStoreParameters.DEFAULT_MIN_SIMILARITY_TO_RECORD
+      )
+      .optional(
+        "max-meta-docs",
+        "Amount of queried documents per filed with same metadata",
+        LuceneFileDataSourceParameters.DEFAULT_MAX_META_SIMILAR_DOC
+      )
+      .optional(
+        "max-sim-docs",
+        "Amount of content queried documents",
+        LuceneFileDataSourceParameters.DEFAULT_SIMILAR_DOCUMENTS_LIMIT
+      )
+      .noArg(
+        "document-size-ratio-th",
+        "Document pairs for which size ratio is lower than specified value, won't be compared",
+        LengthComparisonFilterParameters.DEFAULT_SENTENCES_SIZE_RATIO_THRESHOLD
+      )
+      .build();
   }
 
   private static void run(
     @NotNull String inputDir,
-    @Nullable String oldSubmissionsDir,
     @NotNull PlagdetParameters parameters,
     boolean indexOnly
   ) {
-    System.out.println("Parameters:");
-    System.out.println("New Submissions Directory: " + inputDir);
-    System.out.println("Old Submissions Directory: " + oldSubmissionsDir);
-    System.out.println("Template Document: " + parameters.getTemplateDocumentPath());
-    System.out.println("Sentence Parameters: " + parameters.getSentenceComparatorParameters());
-    System.out.println("Shingle Parameters: " + parameters.getShingleComparatorParameters());
-    System.out.println("Metadata Parameters: " + parameters.getMetadataComparatorParameters());
-    System.out.println("Similar Document Parameters: " + parameters.getSimilarDocumentSourceParameters());
-
+    System.out.println("Starting...");
     Plagdet plagdet = new Plagdet(parameters);
     if (indexOnly) {
       index(inputDir, plagdet);
       return;
     }
 
-    if (oldSubmissionsDir != null) {
-      plagdet.index(oldSubmissionsDir);
-    }
-
-    var report = plagdet.compare(inputDir);
-    ZipReportWriter reportWriter = new ZipReportWriter();
-    reportWriter.writeReport(report);
-
+    plagdet.compare(inputDir);
   }
 
+  //
   private static void index(
     @NotNull String inputDir,
     @NotNull Plagdet plagdet
   ) {
     System.out.printf("Indexing directory %s\n", inputDir);
     plagdet.index(inputDir);
-    System.out.printf("Indexing done, index written to dir %s\n", plagdet.getLuceneIndex().getIndexDirectoryPath());
-  }
-
-  private static SentenceComparatorParameters buildSentenceComparatorParams(CommandLine cmd) {
-    return SentenceComparatorParameters.builder()
-      .maxGap(getOptionInt(cmd, "max-gap", SentenceComparatorParameters.DEFAULT_MAX_GAP))
-      .sentenceVectorSimilarityThreshold(
-        getOptionDouble(
-          cmd, "sentence-sim", SentenceComparatorParameters.DEFAULT_SENTENCE_VECTOR_SIMILARITY_THRESHOLD)
-      )
-      .diceSimilarityThreshold(
-        getOptionDouble(
-          cmd, "dice-sim", SentenceComparatorParameters.DEFAULT_DICE_SIMILARITY_THRESHOLD)
-      )
-      .minClusterSize(getOptionInt(cmd, "min-cluster-size", SentenceComparatorParameters.DEFAULT_MIN_CLUSTER_SIZE))
-      .minFragmentSideSim(getOptionDouble(cmd, "min-fragment-sim", SentenceComparatorParameters.DEFAULT_MIN_FRAGMENT_SIDE_SIM))
-      .minFragmentCharLength(getOptionInt(cmd, "min-fragment-length", SentenceComparatorParameters.DEFAULT_MIN_FRAGMENT_CHAR_LENGTH))
-      .build();
-  }
-
-  private static ShingleComparatorParameters buildShingleComparatorParams(CommandLine cmd) {
-    return ShingleComparatorParameters.builder()
-      .size(getOptionInt(cmd, "shingle-size", ShingleComparatorParameters.DEFAULT_SIZE))
-      .overlap(getOptionInt(cmd, "shingle-overlap", ShingleComparatorParameters.DEFAULT_OVERLAP))
-      .plagiarizedLevel(getOptionDouble(cmd, "plagiarized-level", ShingleComparatorParameters.DEFAULT_PLAGIARIZED_LEVEL))
-      .discardLevel(getOptionDouble(cmd, "discard-level", ShingleComparatorParameters.DEFAULT_DISCARD_LEVEL))
-      .bypassFiltering(cmd.hasOption("bypass-shingle-filter"))
-      .build();
-  }
-
-
-  private static SimilarDocumentSourceParameters buildSimilarDocumentSourceParams(CommandLine cmd) {
-    return SimilarDocumentSourceParameters.builder()
-      .similarDocumentsLimit(
-        getOptionInt(cmd, "similar-docs-limit", SimilarDocumentSourceParameters.DEFAULT_SIMILAR_DOCUMENTS_LIMIT)
-      )
-      .build();
-  }
-
-  private static int getOptionInt(CommandLine cmd, String option, int defaultValue) {
-    return Integer.parseInt(cmd.getOptionValue(option, String.valueOf(defaultValue)));
-  }
-
-  private static double getOptionDouble(CommandLine cmd, String option, double defaultValue) {
-    return Double.parseDouble(cmd.getOptionValue(option, String.valueOf(defaultValue)));
+    System.out.printf(
+      "Index written to dir %s\n", plagdet.getLuceneIndex().getIndexDirectoryPath()
+    );
   }
 }
