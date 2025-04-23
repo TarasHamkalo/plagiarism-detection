@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 // single.docx | single.pdf | single.doc
 //
 @Slf4j
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldDefaults(level = AccessLevel.PROTECTED, makeFinal = true)
 public class EagerFileDataSource implements FileDataSource {
 
   public static final Set<String> SUPPORTED_ARCHIVE_EXT = Set.of("zip");
@@ -32,10 +32,10 @@ public class EagerFileDataSource implements FileDataSource {
   public static final Set<String> SUPPORTED_FILE_FORMATS = Set.of("docx", "doc", "pdf");
 
   @NotNull
-  final FileDataReaders fileDataReaders;
+  FileDataReaders fileDataReaders;
 
   @NotNull
-  final Queue<FileData> parsedFileData;
+  Queue<FileData> parsedFileData;
 
   public EagerFileDataSource(
     @NotNull List<FileDataReader> contentReaders,
@@ -43,8 +43,12 @@ public class EagerFileDataSource implements FileDataSource {
   ) throws FileDataSourceException {
     this.fileDataReaders = new FileDataReaders(contentReaders);
     log.info("Parsing path {} started", inputPath);
-    this.parsedFileData = new LinkedList<>(parseSubmissions(inputPath));
+    this.parsedFileData = loadFileData(inputPath);
     log.info("Parsing path {} done", inputPath);
+  }
+
+  protected @NotNull Queue<FileData> loadFileData(@NotNull String inputPath) {
+    return new LinkedList<>(parseSubmissions(inputPath));
   }
 
   @Override
@@ -136,7 +140,7 @@ public class EagerFileDataSource implements FileDataSource {
            SUPPORTED_FILE_FORMATS.containsAll(extensions);
   }
 
-  private List<FileData> parseSubmissions(
+  private @NotNull List<FileData> parseSubmissions(
     @NotNull Map<String, File> submissionFiles,
     @NotNull String persistentPrefix
   ) {
@@ -181,7 +185,7 @@ public class EagerFileDataSource implements FileDataSource {
     return parsedFileData;
   }
 
-  private FileData buildFileData(
+  protected @NotNull FileData buildFileData(
     @NotNull File file,
     @NotNull String submitterName,
     @NotNull String persistentPath
