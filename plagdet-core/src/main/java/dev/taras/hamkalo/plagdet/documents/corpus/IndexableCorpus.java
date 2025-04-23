@@ -13,6 +13,8 @@ public interface IndexableCorpus extends Corpus {
 
   @NotNull SentenceIndex getCorpusSentenceIndex() throws CorpusAccessException;
 
+  int getCorpusSize();
+
   void close();
 
 }

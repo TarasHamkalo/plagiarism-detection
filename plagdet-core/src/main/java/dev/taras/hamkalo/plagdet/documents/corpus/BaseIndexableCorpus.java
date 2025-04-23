@@ -91,6 +91,11 @@ public class BaseIndexableCorpus extends BaseCorpus implements IndexableCorpus {
   }
 
   @Override
+  public int getCorpusSize() {
+    return corpusDocuments.size();
+  }
+
+  @Override
   public void close() {
     if (corpusSentenceIndex != null) {
       try {
