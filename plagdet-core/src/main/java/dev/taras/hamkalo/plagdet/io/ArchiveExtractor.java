@@ -1,6 +1,7 @@
 package dev.taras.hamkalo.plagdet.io;
 
 import dev.taras.hamkalo.plagdet.io.exception.FileDataSourceException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -17,7 +18,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+@Slf4j
 public class ArchiveExtractor {
+
+  /**
+   * This field limit the count of directories on the path to otherwise valid entry
+   */
+  public static final int MAX_NESTED_DIRS_ALLOWED = 1;
 
   public static Map<String, File> extract(
     @NotNull File file,
@@ -36,6 +43,7 @@ public class ArchiveExtractor {
       ArchiveEntry entry;
       while ((entry = ais.getNextEntry()) != null) {
         if (!isValidEntry(entry, allowedFormats)) {
+          log.trace("Dropping zip entry {}", entry.getName());
           continue;
         }
 
@@ -64,7 +72,7 @@ public class ArchiveExtractor {
       return false;
     }
 
-    if (entry.getName().chars().filter(c -> c == '/').count() > 1) {
+    if (entry.getName().chars().filter(c -> c == '/').count() > MAX_NESTED_DIRS_ALLOWED) {
       return false;
     }
 
