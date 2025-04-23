@@ -25,7 +25,7 @@ public class LengthComparisonFilter implements ComparisonFilter {
 
     public static final boolean DEFAULT_BYPASS_FILTERING = false;
 
-    public static final double DEFAULT_SENTENCES_SIZE_RATIO_THRESHOLD = 0.5;
+    public static final double DEFAULT_SENTENCES_SIZE_RATIO_THRESHOLD = 0.30;
 
     @Builder.Default
     boolean bypassFiltering = DEFAULT_BYPASS_FILTERING;

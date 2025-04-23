@@ -53,12 +53,12 @@ public class RecursiveClusteringExtensionStrategy implements ExtensionStrategy {
     /**
      * The small cluster that will be recorded, less than this threshold are dropped
      */
-    public static final int DEFAULT_MIN_CLUSTER_SIZE = 1;
+    public static final int DEFAULT_MIN_CLUSTER_SIZE = 4;
 
     /**
      * Gap between two matches which is acceptable during match merging
      */
-    public static final int DEFAULT_SENT_MAX_GAP = 1;
+    public static final int DEFAULT_SENT_MAX_GAP = 3;
 
     @Builder.Default
     double minFragmentSideSim = DEFAULT_MIN_FRAGMENT_SIDE_SIM;
