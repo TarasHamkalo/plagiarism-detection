@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
 
 
@@ -97,13 +97,11 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
    * goal is to free it after document was compared, so it will be more
    * efficient to store organized
    */
-  @NotNull
-  Map<Integer, Map<Integer, Pair<INDArray, INDArray>>> docToSentenceVectors;
+  @NotNull Map<Integer, Map<Integer, Pair<INDArray, INDArray>>> docToSentenceVectors;
 
   @NotNull Embeddings embeddings;
 
-  @NotNull
-  private final IndexBasedWordAlignmentSeedingStrategyParameters parameters;
+  @NotNull IndexBasedWordAlignmentSeedingStrategyParameters parameters;
 
   public IndexBasedWordAlignmentSeedingStrategy(
     @NotNull Embeddings embeddings,
