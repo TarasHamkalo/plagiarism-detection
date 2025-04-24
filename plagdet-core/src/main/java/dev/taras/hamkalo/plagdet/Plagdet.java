@@ -135,6 +135,7 @@ public class Plagdet {
     int i = 0;
     int comparisonsCount = 0;
     int estimateFilesCount = fileDataSource.estimateFilesCount();
+    log.info("Starting comparison, files begin to load into memory, so first iteration could be slower");
     while (documentPool.hasAnySuspiciousDocument()) {
       var susp = documentPool.nextSuspiciousDocument();
       log.info(
@@ -166,7 +167,7 @@ public class Plagdet {
     while (documentPool.hasAnySourceDocument()) {
       documentPool.nextSourceDocument();
       var comparison = comparator.compare(documentPool);
-      log.trace("Comparison count is [{}]", comparisonsCount++);
+      log.trace("Comparisons done [{}]", comparisonsCount++);
       bufferedReportWriter.writeComparison(comparison, false);
     }
 
@@ -210,11 +211,12 @@ public class Plagdet {
       try (ws) {
         var document = corpus.pop();
         log.info(
-          "[{}] Indexing [{}/{}]",
-          i++, estimateFilesCount,
+          "[{}/{}] Indexing [{}]",
+          i + 1, estimateFilesCount,
           document.getFileData().getPersistentPath()
         );
         luceneIndex.addToIndex(document);
+        i++;
       }
       embeddings.clearSentenceVectorCache();
     }
