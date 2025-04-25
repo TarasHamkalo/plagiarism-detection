@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static dev.taras.hamkalo.plagdet.io.report.FileReportWriter.FILES_DIR;
@@ -104,13 +105,17 @@ public class BufferedReportWriter {
       var indexBasedComparisons =
         resultsStore.removeIndexBasedComparisonsByDocumentId(documentEntry.getId());
 
-      var deduplicatedComparisons =
-        new ArrayList<>(
-          resultsStore.removeComparisonsByDocumentId(documentEntry.getId()).stream()
-            .filter(c -> !this.flushedComparisonIds.contains(c.getId()))
-            .toList()
-        );
+      List<Comparison> comparisons = new ArrayList<>(
+        resultsStore.removeComparisonsByDocumentId(documentEntry.getId())
+      );
 
+      var deduplicatedComparisons = new ArrayList<>(
+        comparisons.stream()
+          .filter(c -> !this.flushedComparisonIds.contains(c.getId()))
+          .toList()
+      );
+
+      comparisons.addAll(indexBasedComparisons);
       deduplicatedComparisons.addAll(indexBasedComparisons);
 
       if (!deduplicatedComparisons.isEmpty()) {
@@ -118,7 +123,7 @@ public class BufferedReportWriter {
       }
 
       fileReportWriter.writeDocumentMetadata(
-        documentEntry, deduplicatedComparisons, submitterDirectory
+        documentEntry, comparisons, submitterDirectory
       );
       var indexedDocumentsMap = indexedDocumentsCorpus.getDocumentsMap();
       var indexedDocuments = new ArrayList<DocumentEntry>();
