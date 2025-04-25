@@ -4,6 +4,8 @@ import dev.taras.hamkalo.plagdet.ComparisonsStore.ComparisonsStoreParameters;
 import dev.taras.hamkalo.plagdet.comparision.MetadataComparator;
 import dev.taras.hamkalo.plagdet.comparision.MetadataComparator.MetadataComparatorParameters;
 import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedingStrategy.IndexBasedWordAlignmentSeedingStrategyParameters;
+import dev.taras.hamkalo.plagdet.comparision.blocks.LengthBasedFilteringStrategy;
+import dev.taras.hamkalo.plagdet.comparision.blocks.LengthBasedFilteringStrategy.LengthBasedFilteringStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.blocks.RecursiveClusteringExtensionStrategy.RecursiveClusteringExtensionStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.filter.LengthComparisonFilter.LengthComparisonFilterParameters;
 import dev.taras.hamkalo.plagdet.comparision.filter.ShingleOverlapComparisonFilter.ShingleOverlapComparisonFilterParameters;
@@ -90,6 +92,12 @@ public class OptionsMapper {
     var hasBypassOption = cmd.hasOption("enable-metadata-filter");
     return MetadataComparatorParameters.builder()
       .canBypassFiltering(!hasBypassOption)
+      .build();
+  }
+
+  public static LengthBasedFilteringStrategyParameters buildFilteringStrategyParameters(@NotNull CommandLine cmd) {
+    return LengthBasedFilteringStrategyParameters.builder()
+      .minCharacterLength(getOptionInt(cmd, "min-char-len", LengthBasedFilteringStrategyParameters.DEFAULT_MIN_CHARACTER_LENGTH))
       .build();
   }
 }

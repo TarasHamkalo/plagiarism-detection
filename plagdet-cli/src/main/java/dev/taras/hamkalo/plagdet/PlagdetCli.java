@@ -3,6 +3,8 @@ package dev.taras.hamkalo.plagdet;
 import dev.taras.hamkalo.plagdet.ComparisonsStore.ComparisonsStoreParameters;
 import dev.taras.hamkalo.plagdet.comparision.MetadataComparator.MetadataComparatorParameters;
 import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedingStrategy.IndexBasedWordAlignmentSeedingStrategyParameters;
+import dev.taras.hamkalo.plagdet.comparision.blocks.LengthBasedFilteringStrategy;
+import dev.taras.hamkalo.plagdet.comparision.blocks.LengthBasedFilteringStrategy.LengthBasedFilteringStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.blocks.RecursiveClusteringExtensionStrategy.RecursiveClusteringExtensionStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.filter.LengthComparisonFilter.LengthComparisonFilterParameters;
 import dev.taras.hamkalo.plagdet.comparision.filter.ShingleOverlapComparisonFilter.ShingleOverlapComparisonFilterParameters;
@@ -50,6 +52,7 @@ public class PlagdetCli {
       var params = PlagdetParameters.builder()
         .templateDocumentPath(templatePath)
         .luceneIndexDirectoryPath(lucenePath)
+        .filteringStrategyParameters(OptionsMapper.buildFilteringStrategyParameters(cmd))
         .extensionStrategyParameters(OptionsMapper.buildExtensionStrategy(cmd))
         .seedingStrategyParameters(OptionsMapper.buildSeedingParams(cmd))
         .pipelineParameters(OptionsMapper.buildPipelineParameters(cmd))
@@ -102,6 +105,11 @@ public class PlagdetCli {
         "bypass-template-removal",
         "Flag to stop removing template document matches from [new-path] document collection.",
         PipelineParameters.DEFAULT_BYPASS_TEMPLATE_REMOVAL
+      )
+      .optional(
+        "min-char-len",
+        "Minimum character length for fragment to be preserved as plagiarism case.",
+        LengthBasedFilteringStrategyParameters.DEFAULT_MIN_CHARACTER_LENGTH
       )
       .optional(
         "max-gap",
