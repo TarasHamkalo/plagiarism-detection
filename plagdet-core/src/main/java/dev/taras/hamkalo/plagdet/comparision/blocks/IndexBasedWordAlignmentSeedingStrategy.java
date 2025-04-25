@@ -50,21 +50,22 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     public static final int DEFAULT_MIN_SENTENCES_TO_CONSIDER = 4;
 
     /**
-     * Percentage of the number of corpus sentences that will be considered during Index search
+     * Percentage of the number of source document sentences that will be considered
+     * during index search
      */
     public static final double DEFAULT_PORTION_OF_SENTENCES_TO_CONSIDER = 0.1d;
 
     /**
-     * Represents the hard limit for count of top sentences to query for, when doing document to corpus match.
+     * Represents the hard limit in percentage of total sentences
+     * for count of top sentences to query for, when doing document to corpus match.
      * e.g. having single suspicious document and corpus of documents, for which we don't want results
      * but would like to know if that single could a source document inside that corpus
      */
-    public static final double DEFAULT_PORTION_OF_SENTENCES_TO_CONSIDER_MULTI_SEARCH = 0.1d;
-
+    public static final double DEFAULT_MAX_PORTION_OF_SENTENCES_TO_CONSIDER_MULTI_SEARCH = 0.1d;
 
     /**
      * Represents default per document count of top sentences to query for.
-     * e.g. having 10 documents, for each sentence will be queried 10 * 5 top sentences from Index
+     * e.g. having 10 documents, for each sentence will be queried 10 * 5 top sentences from index
      */
     public static final int DEFAULT_SENTENCES_PER_DOCUMENT_TO_CONSIDER_MULTI_SEARCH = 5;
 
@@ -84,7 +85,7 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     double portionOfSentencesToConsider = DEFAULT_PORTION_OF_SENTENCES_TO_CONSIDER;
 
     @Builder.Default
-    double portionOfSentencesToConsiderMultiSearch = DEFAULT_PORTION_OF_SENTENCES_TO_CONSIDER_MULTI_SEARCH;
+    double maxPortionOfSentencesToConsiderMultiSearch = DEFAULT_MAX_PORTION_OF_SENTENCES_TO_CONSIDER_MULTI_SEARCH;
 
     @Builder.Default
     int sentencesPerDocumentToConsiderMultiSearch = DEFAULT_SENTENCES_PER_DOCUMENT_TO_CONSIDER_MULTI_SEARCH;
@@ -182,7 +183,7 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     var suspiciousDocumentSentenceMatrices = documentPool.getSuspiciousDocumentSentenceMatrices();
     var suspiciousDocumentSentenceIndex = documentPool.getSuspiciousDocumentSentenceIndex();
     int similarSentenceToConsider = (int) Math.min(
-      Math.ceil(parameters.portionOfSentencesToConsiderMultiSearch * corpusSentencesIndex.getIndexSize()),
+      Math.ceil(parameters.maxPortionOfSentencesToConsiderMultiSearch * corpusSentencesIndex.getIndexSize()),
       parameters.sentencesPerDocumentToConsiderMultiSearch * indexedDocumentsCount
     );
 

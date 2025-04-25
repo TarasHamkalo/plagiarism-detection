@@ -24,9 +24,13 @@ public abstract class Pipeline {
 
     public static final boolean DEFAULT_BYPASS_TEMPLATE_REMOVAL = false;
 
-    @Builder.Default
-    boolean bypassTemplateRemoval = DEFAULT_BYPASS_TEMPLATE_REMOVAL;
+    public static final boolean DEFAULT_BYPASS_SPELLCHECK = false;
 
+    @Builder.Default
+    boolean canBypassTemplateRemoval = DEFAULT_BYPASS_TEMPLATE_REMOVAL;
+
+    @Builder.Default
+    boolean canBypassSpellCheck = DEFAULT_BYPASS_TEMPLATE_REMOVAL;
   }
 
   private static StanfordCoreNLP firstStagePipeline;
@@ -35,7 +39,7 @@ public abstract class Pipeline {
 
   private static StanfordCoreNLP luceneDocumentPipeline;
 
-  public static StanfordCoreNLP getFirstStagePipeline() {
+  public static StanfordCoreNLP getFirstStagePipeline(boolean canBypassSpellcheck) {
     if (firstStagePipeline == null) {
 
       var props = new Properties();
@@ -52,7 +56,10 @@ public abstract class Pipeline {
       firstStagePipeline.addAnnotator(new MorphoDiTaAnalysisAnnotator());
       firstStagePipeline.addAnnotator(new WordFilteringAnnotator());
       firstStagePipeline.addAnnotator(new StopWordAnnotator());
-      firstStagePipeline.addAnnotator(new MorphoDiTaAnalysisAnnotator());
+      if (!canBypassSpellcheck) {
+        firstStagePipeline.addAnnotator(new SpellingAnnotator());
+        firstStagePipeline.addAnnotator(new MorphoDiTaAnalysisAnnotator());
+      }
     }
 
     return firstStagePipeline;
@@ -90,16 +97,14 @@ public abstract class Pipeline {
     return luceneDocumentPipeline;
   }
 
-  // compare to template ?
-  // template path
   public static void init(
     @NotNull PipelineParameters parameters,
     @NotNull Embeddings embeddings,
     @Nullable String templateContent
   ) {
-    firstStagePipeline = getFirstStagePipeline();
+    firstStagePipeline = getFirstStagePipeline(parameters.canBypassSpellCheck);
     luceneDocumentPipeline = getLuceneDocumentPipeline();
-    if (!parameters.bypassTemplateRemoval) {
+    if (!parameters.canBypassTemplateRemoval) {
       if (templateContent != null) {
         templateComparisonPipeline = getTemplateComparisonPipeline(
           embeddings, annotate(templateContent)

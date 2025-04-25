@@ -7,6 +7,7 @@ import dev.taras.hamkalo.plagdet.indexing.lucene.mapping.FileDataMapper;
 import dev.taras.hamkalo.plagdet.indexing.lucene.mapping.MetadataMapper;
 import dev.taras.hamkalo.plagdet.indexing.lucene.mapping.StanfordAnnotationMapper;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,7 @@ public class LuceneIndex implements AutoCloseable {
   @NotNull
   Directory indexDirectory;
 
+  @Getter
   @NotNull
   Path indexDirectoryPath;
 

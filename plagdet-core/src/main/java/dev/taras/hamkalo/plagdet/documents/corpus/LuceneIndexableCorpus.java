@@ -17,9 +17,10 @@ public class LuceneIndexableCorpus extends BaseIndexableCorpus {
   public LuceneIndexableCorpus(
     @NotNull Embeddings embeddings,
     @NotNull FileDataSource fileDataSource,
-    @NotNull Integer targetSentenceCount
+    @NotNull Integer targetSentenceCount,
+    double sizeRatioThreshold
   ) {
-    super(embeddings, fileDataSource, targetSentenceCount);
+    super(embeddings, fileDataSource, targetSentenceCount, sizeRatioThreshold);
   }
 
   @Override

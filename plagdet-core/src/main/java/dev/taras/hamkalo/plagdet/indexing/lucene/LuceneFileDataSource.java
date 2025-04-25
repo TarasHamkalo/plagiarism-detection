@@ -38,13 +38,16 @@ public class LuceneFileDataSource implements FileDataSource {
 
     public static final int DEFAULT_SIMILAR_DOCUMENTS_LIMIT = 10;
 
+    /**
+     * Amount of queried documents per filed with same metadata
+     */
     public static final int DEFAULT_MAX_META_SIMILAR_DOC = 3;
 
     @Builder.Default
     int similarDocumentsLimit = DEFAULT_SIMILAR_DOCUMENTS_LIMIT;
 
     @Builder.Default
-    int maxMetaSimilarDoc = DEFAULT_MAX_META_SIMILAR_DOC;
+    int maxMetadataSimilarDoc = DEFAULT_MAX_META_SIMILAR_DOC;
   }
 
   @NotNull LuceneIndex luceneIndex;
@@ -109,7 +112,7 @@ public class LuceneFileDataSource implements FileDataSource {
       log.info("Querying Lucene for similar documents done");
     }
 
-    if (parameters.maxMetaSimilarDoc <= 0) {
+    if (parameters.maxMetadataSimilarDoc <= 0) {
       return similarDocs;
     }
 
@@ -119,7 +122,7 @@ public class LuceneFileDataSource implements FileDataSource {
       var value = METADATA_FIELD_EXTRACTOR.get(field).apply(metadata);
       if (value != null) {
         similarDocs.addAll(
-          this.luceneIndex.retrieveByField(field, value, parameters.getMaxMetaSimilarDoc())
+          this.luceneIndex.retrieveByField(field, value, parameters.getMaxMetadataSimilarDoc())
         );
       }
     }

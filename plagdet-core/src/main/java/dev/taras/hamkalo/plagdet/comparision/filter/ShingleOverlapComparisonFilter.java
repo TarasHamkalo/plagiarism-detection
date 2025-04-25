@@ -54,7 +54,7 @@ public class ShingleOverlapComparisonFilter implements ComparisonFilter {
     double discardLevel = DEFAULT_DISCARD_LEVEL;
 
     @Builder.Default
-    boolean bypassFiltering = DEFAULT_BYPASS_FILTERING;
+    boolean canBypassFiltering = DEFAULT_BYPASS_FILTERING;
 
   }
 

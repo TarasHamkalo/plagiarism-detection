@@ -151,28 +151,6 @@ public abstract class AnnotationUtils {
     return coreMap;
   }
 
-  public static void removeTemplateSentences(
-    @NotNull Annotation annotation,
-    List<Integer> templateSentenceIndexes
-  ) {
-
-    List<int[]> templateSentences = new ArrayList<>();
-    var sentences = AnnotationUtils.sentences(annotation);
-    for (int i = templateSentenceIndexes.size() - 1; i >= 0; i--) {
-      int index = templateSentenceIndexes.get(i);
-      if (index >= 0 && index < sentences.size()) {
-        var sentence = sentences.remove(index);
-        templateSentences.add(new int[]{
-          AnnotationUtils.begin(sentence),
-          AnnotationUtils.end(sentence)
-        });
-      }
-    }
-
-    annotation.set(PlagdetAnnotations.TemplateSentencesAnnotation.class, templateSentences);
-
-  }
-
   public static @NotNull Predicate<CoreLabel> isMisspelledToken() {
     return t -> Boolean.TRUE.equals(t.get(PlagdetAnnotations.MisspelledAnnotation.class));
   }
@@ -186,9 +164,6 @@ public abstract class AnnotationUtils {
   }
 
   public static @NotNull List<String> getCorrection(@NotNull CoreLabel token) {
-    // TODO: proper correction suggestion
     return List.of(token.word());
-//    var correctedWordAnnotation = token.get(PlagdetAnnotations.CorrectedWordAnnotation.class);
-//    return correctedWordAnnotation != null ? List.of(correctedWordAnnotation) : Collections.emptyList();
   }
 }

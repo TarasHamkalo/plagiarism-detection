@@ -15,8 +15,6 @@ import java.util.Date;
 @Builder
 public class OverviewJsonModel {
 
-  int comparisonsCount;
-
   @NotNull
   @JsonIgnore
   String inputPath;

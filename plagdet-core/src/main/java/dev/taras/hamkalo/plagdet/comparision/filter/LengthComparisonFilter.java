@@ -28,7 +28,7 @@ public class LengthComparisonFilter implements ComparisonFilter {
     public static final double DEFAULT_SENTENCES_SIZE_RATIO_THRESHOLD = 0.30;
 
     @Builder.Default
-    boolean bypassFiltering = DEFAULT_BYPASS_FILTERING;
+    boolean canBypassFiltering = DEFAULT_BYPASS_FILTERING;
 
     @Builder.Default
     double sentenceSizeRatioThreshold = DEFAULT_SENTENCES_SIZE_RATIO_THRESHOLD;
@@ -50,7 +50,7 @@ public class LengthComparisonFilter implements ComparisonFilter {
     double secondSize = 1.0 * AnnotationUtils.sentences(sourceDocument.getAnnotation()).size();
     double sizeRatio = Math.min(firstSize / secondSize, secondSize / firstSize);
     return FilteringResult.builder()
-      .shouldFilter(!parameters.bypassFiltering && sizeRatio < parameters.sentenceSizeRatioThreshold)
+      .shouldFilter(!parameters.canBypassFiltering && sizeRatio < parameters.sentenceSizeRatioThreshold)
       .plagScore(
         PlagScore.builder()
           .score(0)

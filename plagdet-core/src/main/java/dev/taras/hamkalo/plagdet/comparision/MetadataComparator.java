@@ -36,10 +36,10 @@ public class MetadataComparator implements ComparisonFilter {
   @Builder
   public static class MetadataComparatorParameters {
 
-    public static final boolean DEFAULT_BYPASS_FILTERING = false;
+    public static final boolean DEFAULT_BYPASS_FILTERING = true;
 
     @Builder.Default
-    boolean bypassFiltering = DEFAULT_BYPASS_FILTERING;
+    boolean canBypassFiltering = DEFAULT_BYPASS_FILTERING;
   }
 
   @NotNull MetadataComparatorParameters parameters;
@@ -70,7 +70,7 @@ public class MetadataComparator implements ComparisonFilter {
     }
 
     return FilteringResult.builder()
-      .shouldFilter(!parameters.bypassFiltering && score == 1)
+      .shouldFilter(!parameters.canBypassFiltering && score == 1)
       .plagScore(
         PlagScore.builder()
           .score(score)

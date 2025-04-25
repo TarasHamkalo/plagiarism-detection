@@ -19,8 +19,6 @@ import java.io.IOException;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class BaseIndexableCorpus extends BaseCorpus implements IndexableCorpus {
 
-  private static final double SIZE_RATIO_THRESHOLD = 0.5;
-
   @NotNull Embeddings embeddings;
 
   @NotNull Double targetSentenceCount;
@@ -29,14 +27,18 @@ public class BaseIndexableCorpus extends BaseCorpus implements IndexableCorpus {
 
   @Nullable DocumentEntry cachedDocument;
 
+  double sizeRatioThreshold;
+
   public BaseIndexableCorpus(
     @NotNull Embeddings embeddings,
     @NotNull FileDataSource fileDataSource,
-    @NotNull Integer targetSentenceCount
+    @NotNull Integer targetSentenceCount,
+    double sizeRatioThreshold
   ) {
     super(fileDataSource);
     this.embeddings = embeddings;
     this.targetSentenceCount = 1d * targetSentenceCount;
+    this.sizeRatioThreshold = sizeRatioThreshold;
   }
 
   @Override
@@ -74,7 +76,7 @@ public class BaseIndexableCorpus extends BaseCorpus implements IndexableCorpus {
   public boolean isSizeRatioMatched(@NotNull DocumentEntry documentEntry) {
     double secondSize = AnnotationUtils.sentences(documentEntry.getAnnotation()).size();
     double sizeRatio = Math.min(targetSentenceCount / secondSize, secondSize / targetSentenceCount);
-    return sizeRatio >= SIZE_RATIO_THRESHOLD;
+    return sizeRatio >= sizeRatioThreshold;
   }
 
   @Override

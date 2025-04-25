@@ -26,8 +26,6 @@ public class PlagdetParameters {
 
   @NotNull PipelineParameters pipelineParameters;
 
-  @NotNull Integer numberOfProcessors;
-
   @NotNull MetadataComparatorParameters metadataComparatorParameters;
 
   @NotNull ShingleOverlapComparisonFilterParameters shingleOverlapComparisonFilterParameters;

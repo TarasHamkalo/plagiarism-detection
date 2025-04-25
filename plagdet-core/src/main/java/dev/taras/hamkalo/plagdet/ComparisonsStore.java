@@ -43,7 +43,7 @@ public class ComparisonsStore {
     public static final double DEFAULT_MIN_SIMILARITY_TO_RECORD = 0.5f;
 
     @Builder.Default
-    boolean canBypassResultFiltering = DEFAULT_BYPASS_FILTERING;
+    boolean canBypassFiltering = DEFAULT_BYPASS_FILTERING;
 
     @Builder.Default
     int maxResultsPerDocument = DEFAULT_MAX_RESULTS_PER_DOCUMENT;
@@ -75,7 +75,7 @@ public class ComparisonsStore {
   }
 
   public void recordIndexBasedComparison(@NotNull Comparison comparison) {
-    if (!parameters.canBypassResultFiltering &&
+    if (!parameters.canBypassFiltering &&
         !hasAnyScoreExceedingThreshold(comparison)) {
       return;
     }
@@ -83,7 +83,7 @@ public class ComparisonsStore {
   }
 
   public void recordComparison(@NotNull Comparison comparison) {
-    if (!parameters.canBypassResultFiltering &&
+    if (!parameters.canBypassFiltering &&
         !hasAnyScoreExceedingThreshold(comparison)) {
       return;
     }
@@ -118,7 +118,7 @@ public class ComparisonsStore {
     );
 
     comparisons.add(comparison);
-    if (parameters.canBypassResultFiltering) {
+    if (parameters.canBypassFiltering) {
       return;
     }
 

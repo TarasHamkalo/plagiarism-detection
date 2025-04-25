@@ -51,7 +51,7 @@ public class RecursiveClusteringExtensionStrategy implements ExtensionStrategy {
     public static final double DEFAULT_MIN_FRAGMENT_SIDE_SIM = 0.9;
 
     /**
-     * The small cluster that will be recorded, less than this threshold are dropped
+     * The smallest cluster that will be recorded, less than this threshold in size are dropped
      */
     public static final int DEFAULT_MIN_CLUSTER_SIZE = 4;
 
