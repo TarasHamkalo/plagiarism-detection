@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.similarity.LevenshteinDistance;
+import org.jetbrains.annotations.NotNull;
 import org.languagetool.JLanguageTool;
 import org.languagetool.Languages;
 import org.languagetool.rules.spelling.SpellingCheckRule;
@@ -29,12 +30,17 @@ import java.util.concurrent.ConcurrentHashMap;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SpellingAnnotator implements Annotator {
 
-  private static final ThreadLocal<JLanguageTool> languageToolThreadLocal =
-    ThreadLocal.withInitial(() -> {
-      JLanguageTool tool = new JLanguageTool(Languages.getLanguageForShortCode("sk"));
-      tool.getAllActiveRules().removeIf(rule -> !(rule instanceof SpellingCheckRule));
-      return tool;
-    });
+  @NotNull JLanguageTool languageTool;
+
+  public SpellingAnnotator() {
+    this.languageTool = getJLanguageTool();
+  }
+
+  private static @NotNull JLanguageTool getJLanguageTool() {
+    JLanguageTool tool = new JLanguageTool(Languages.getLanguageForShortCode("sk"));
+    tool.getAllActiveRules().removeIf(rule -> !(rule instanceof SpellingCheckRule));
+    return tool;
+  }
 
   private static final Map<String, String> correctionCache = new ConcurrentHashMap<>();
 
@@ -53,7 +59,6 @@ public class SpellingAnnotator implements Annotator {
 
   @SneakyThrows
   private void markSpellingWithLanguageTool(CoreMap sentence) {
-    var languageTool = languageToolThreadLocal.get();
     for (var token : AnnotationUtils.tokens(sentence)) {
       if (!AnnotationUtils.isGuessed().test(token)) {
         continue;
