@@ -63,6 +63,7 @@ public class OptionsMapper {
   public static Pipeline.PipelineParameters buildPipelineParameters(@NotNull CommandLine cmd) {
     return PipelineParameters.builder()
       .canBypassTemplateRemoval(cmd.hasOption("bypass-template-removal"))
+      .canBypassSpellCheck(cmd.hasOption("bypass-spellcheck"))
       .build();
   }
 

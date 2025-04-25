@@ -10,6 +10,10 @@ repositories {
     flatDir {
         dirs '../libs'
     }
+
+    maven {
+        url "https://repo.languagetool.org/artifactory/languagetool-os-release/"
+    }
 }
 
 shadowJar {
@@ -34,6 +38,9 @@ application {
 
 tasks.withType(JavaExec).configureEach {
     systemProperty 'java.library.path', '../libs'
+    // heap -- min 512M
+    // metaspace -- min 64M
+    jvmArgs '-Xmx512M', '-Xmx1024M', '-XX:MaxMetaspaceSize=124M'
 }
 
 dependencies {

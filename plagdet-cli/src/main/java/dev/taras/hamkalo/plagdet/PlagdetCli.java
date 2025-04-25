@@ -6,14 +6,11 @@ import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedi
 import dev.taras.hamkalo.plagdet.comparision.blocks.RecursiveClusteringExtensionStrategy.RecursiveClusteringExtensionStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.filter.LengthComparisonFilter.LengthComparisonFilterParameters;
 import dev.taras.hamkalo.plagdet.comparision.filter.ShingleOverlapComparisonFilter.ShingleOverlapComparisonFilterParameters;
-import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneFileDataSource;
 import dev.taras.hamkalo.plagdet.indexing.lucene.LuceneFileDataSource.LuceneFileDataSourceParameters;
-import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import dev.taras.hamkalo.plagdet.preprocessing.Pipeline.PipelineParameters;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.cli.*;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -82,14 +79,14 @@ public class PlagdetCli {
       .noArg("i", "Flag to index submissions without comparison", "false")
       .noArg("h", "Print help information", null)
       .noArg(
-        "bypass-metadata-filter",
-        "Flag to continue comparison after matching authors/modifier.",
-        MetadataComparatorParameters.DEFAULT_BYPASS_FILTERING
-      )
-      .noArg(
         "enable-metadata-filter",
         "Flag to stop comparison after matching authors/modifier",
         MetadataComparatorParameters.DEFAULT_BYPASS_FILTERING
+      )
+      .noArg(
+        "bypass-spellcheck",
+        "Flag to stop executing spell checking",
+        PipelineParameters.DEFAULT_BYPASS_SPELLCHECK
       )
       .noArg(
         "bypass-shingle-filter",
@@ -98,7 +95,7 @@ public class PlagdetCli {
       )
       .noArg(
         "bypass-length-filter",
-        "Flag to continue comparison after shingle overlap threshold reached.",
+        "Flag to continue comparison after size ratio wasn't matched.",
         LengthComparisonFilterParameters.DEFAULT_BYPASS_FILTERING
       )
       .noArg(
@@ -224,7 +221,6 @@ public class PlagdetCli {
     plagdet.compare(inputDir);
   }
 
-  //
   private static void index(
     @NotNull String inputDir,
     @NotNull Plagdet plagdet
