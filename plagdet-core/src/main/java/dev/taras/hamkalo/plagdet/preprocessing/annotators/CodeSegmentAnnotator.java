@@ -12,6 +12,7 @@ import edu.stanford.nlp.util.CoreMap;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -57,7 +58,9 @@ public class CodeSegmentAnnotator implements Annotator {
   @Override
   public void annotate(Annotation annotation) {
     log.trace("Code segment annotator started");
-    sentenceRemoval(annotation);
+    try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+      sentenceRemoval(annotation);
+    }
   }
 
   private static void sentenceRemoval(Annotation annotation) {

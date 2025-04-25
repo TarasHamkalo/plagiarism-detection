@@ -20,7 +20,10 @@ import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.nd4j.linalg.api.memory.MemoryManager;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 
@@ -64,19 +67,21 @@ public class TemplateSentencesAnnotator implements Annotator {
   }
 
   protected void prepareResources() {
-    this.templateSentenceIndex = SentenceIndex.from(embeddings, templateAnnotation);
-    this.templateSentenceMatrices = new ArrayList<>(
-      AnnotationUtils.sentences(templateAnnotation).stream()
-        .map(embeddings::getWordVectorsWithWeights)
-        .toList()
-    );
+    try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+      this.templateSentenceIndex = SentenceIndex.from(embeddings, templateAnnotation);
+      this.templateSentenceMatrices = new ArrayList<>(
+        AnnotationUtils.sentences(templateAnnotation).stream()
+          .map(embeddings::getWordVectorsWithWeights)
+          .toList()
+      );
 
-    this.seedingStrategy = new IndexBasedWordAlignmentSeedingStrategy(
-      embeddings, SEEDING_STRATEGY_PARAMETERS
-    );
-    this.extensionStrategy = new RecursiveClusteringExtensionStrategy(
-      embeddings, EXTENSION_STRATEGY_PARAMETERS
-    );
+      this.seedingStrategy = new IndexBasedWordAlignmentSeedingStrategy(
+        embeddings, SEEDING_STRATEGY_PARAMETERS
+      );
+      this.extensionStrategy = new RecursiveClusteringExtensionStrategy(
+        embeddings, EXTENSION_STRATEGY_PARAMETERS
+      );
+    }
 
   }
 
