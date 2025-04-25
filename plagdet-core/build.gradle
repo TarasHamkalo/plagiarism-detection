@@ -39,8 +39,6 @@ dependencies {
     implementation 'org.apache.commons:commons-compress:1.27.1'
 
     implementation 'com.itextpdf:itext7-core:7.2.5'
-    // https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox
-//    implementation 'org.apache.pdfbox:pdfbox:3.0.4'
 
     implementation 'org.apache.commons:commons-text:1.13.0'
 
@@ -60,7 +58,7 @@ dependencies {
         exclude group: 'org.bytedeco', module: 'hdf5'
         exclude group: 'org.bytedeco', module: 'leptonica'
         exclude group: 'org.bytedeco', module: 'ffmpeg'
-        exclude group: 'org.deeplearning4j', module: 'deeplearning4j-datasets'
+//        exclude group: 'org.deeplearning4j', module: 'deeplearning4j-datasets'
         exclude group: 'org.datavec', module: 'datavec-data-image'
     }
 
@@ -74,7 +72,6 @@ dependencies {
 
     implementation platform('com.fasterxml.jackson:jackson-bom:2.18.3')
 
-// https://mvnrepository.com/artifact/io.github.jbellis/jvector
     implementation 'io.github.jbellis:jvector:3.0.6'
 
     implementation 'com.fasterxml.jackson.core:jackson-databind'
