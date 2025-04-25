@@ -17,7 +17,7 @@ public class SeedUtils {
   }
 
   public static boolean isAdjacent(int @NotNull [] that, int @NotNull [] other, int side, int gap) {
-    return that[2 + side] == other[2 + side] && Math.abs(that[side] - other[side]) <= gap;
+    return that[2 + side] == other[2 + side] && (Math.abs(that[side] - other[side]) - 1) <= gap;
   }
 
 }

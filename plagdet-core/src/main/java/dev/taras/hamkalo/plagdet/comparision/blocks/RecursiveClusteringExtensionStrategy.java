@@ -58,7 +58,7 @@ public class RecursiveClusteringExtensionStrategy implements ExtensionStrategy {
     /**
      * Gap between two matches which is acceptable during match merging
      */
-    public static final int DEFAULT_SENT_MAX_GAP = 3;
+    public static final int DEFAULT_SENT_MAX_GAP = 2;
 
     @Builder.Default
     double minFragmentSideSim = DEFAULT_MIN_FRAGMENT_SIDE_SIM;
@@ -76,7 +76,10 @@ public class RecursiveClusteringExtensionStrategy implements ExtensionStrategy {
   @NotNull RecursiveClusteringExtensionStrategyParameters parameters;
 
   @Override
-  public @NotNull List<Fragment> extend(@NotNull DocumentPool documentPool, @NotNull List<int[]> seeds) {
+  public @NotNull List<Fragment> extend(
+    @NotNull DocumentPool documentPool,
+    @NotNull List<int[]> seeds
+  ) {
     var documents = List.of(
       AnnotationUtils.sentences(documentPool.getSuspiciousDocument().getAnnotation()),
       AnnotationUtils.sentences(documentPool.getSourceDocument().getAnnotation())
@@ -85,7 +88,10 @@ public class RecursiveClusteringExtensionStrategy implements ExtensionStrategy {
   }
 
   @Override
-  public @NotNull List<Fragment> extend(@NotNull List<List<CoreMap>> documents, @NotNull List<int[]> seeds) {
+  public @NotNull List<Fragment> extend(
+    @NotNull List<List<CoreMap>> documents,
+    @NotNull List<int[]> seeds
+  ) {
     return extend(documents, seeds, parameters.sentMaxGap);
   }
 
@@ -164,7 +170,6 @@ public class RecursiveClusteringExtensionStrategy implements ExtensionStrategy {
     int seedsSize = seeds.size();
     int clusterStart = 0;
     int clusterEnd = 0;
-    //TODO: check for off by one
     for (int i = 1; i < seedsSize; i++) {
       if (SeedUtils.isAdjacent(seeds.get(clusterEnd), seeds.get(i), side, sentMaxGap)) {
         clusterEnd++;
