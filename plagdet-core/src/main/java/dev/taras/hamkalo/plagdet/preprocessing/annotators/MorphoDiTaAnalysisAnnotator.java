@@ -70,7 +70,7 @@ public class MorphoDiTaAnalysisAnnotator implements Annotator {
       }
 
       if (isAnalyzed) {
-        log.warn("Skipping sentence {}", sentence.get(CoreAnnotations.TextAnnotation.class));
+//        log.warn("Skipping sentence {}", sentence.get(CoreAnnotations.TextAnnotation.class));
         continue;
       }
 
