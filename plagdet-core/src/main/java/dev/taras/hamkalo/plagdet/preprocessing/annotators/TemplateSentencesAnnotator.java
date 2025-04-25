@@ -3,6 +3,7 @@ package dev.taras.hamkalo.plagdet.preprocessing.annotators;
 import dev.taras.hamkalo.plagdet.comparision.Embeddings;
 import dev.taras.hamkalo.plagdet.comparision.blocks.*;
 import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedingStrategy.IndexBasedWordAlignmentSeedingStrategyParameters;
+import dev.taras.hamkalo.plagdet.comparision.blocks.LengthBasedFilteringStrategy.LengthBasedFilteringStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.blocks.RecursiveClusteringExtensionStrategy.RecursiveClusteringExtensionStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.model.Fragment;
 import dev.taras.hamkalo.plagdet.indexing.jvector.SentenceIndex;
@@ -20,7 +21,6 @@ import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.nd4j.linalg.api.memory.MemoryManager;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -44,6 +44,11 @@ public class TemplateSentencesAnnotator implements Annotator {
       .sentMaxGap(3)
       .build();
 
+  public static final LengthBasedFilteringStrategyParameters FILTERING_STRATEGY_PARAMETERS =
+    LengthBasedFilteringStrategyParameters.builder()
+      .minCharacterLength(50)
+      .build();
+
   @NotNull Annotation templateAnnotation;
 
   @NotNull Embeddings embeddings;
@@ -55,6 +60,8 @@ public class TemplateSentencesAnnotator implements Annotator {
   @NotNull SeedingStrategy seedingStrategy;
 
   @NotNull ExtensionStrategy extensionStrategy;
+
+  @NotNull FilteringStrategy filteringStrategy;
 
   public TemplateSentencesAnnotator(
     @NotNull Embeddings embeddings,
@@ -81,6 +88,7 @@ public class TemplateSentencesAnnotator implements Annotator {
       this.extensionStrategy = new RecursiveClusteringExtensionStrategy(
         embeddings, EXTENSION_STRATEGY_PARAMETERS
       );
+      this.filteringStrategy = new LengthBasedFilteringStrategy(FILTERING_STRATEGY_PARAMETERS);
     }
 
   }
@@ -96,35 +104,45 @@ public class TemplateSentencesAnnotator implements Annotator {
   public void annotate(Annotation annotation) {
     List<CoreMap> suspSentences = AnnotationUtils.sentences(templateAnnotation);
     List<CoreMap> sourceSentences = AnnotationUtils.sentences(annotation);
+    List<List<CoreMap>> documents = List.of(suspSentences, sourceSentences);
 
     List<int[]> seeds =
       seedingStrategy.seed(templateSentenceIndex, templateSentenceMatrices, sourceSentences);
 
     List<Fragment> fragments =
-      extensionStrategy.extend(List.of(suspSentences, sourceSentences), seeds);
-    if (fragments.isEmpty()) {
+      extensionStrategy.extend(documents, seeds);
+    List<Fragment> filtered = filteringStrategy.filter(documents, fragments);
+    if (filtered.isEmpty()) {
       annotation.set(PlagdetAnnotations.TemplateSentencesAnnotation.class, Collections.emptyList());
       return;
     }
 
-    fragments.sort(
+    filtered.sort(
       Comparator.comparingInt((Fragment f) -> f.getSideStarts()[1])
         .thenComparingInt((Fragment f) -> f.getSideEnds()[1])
     );
 
+    assignTextBoundaries(annotation, sourceSentences, filtered);
+  }
+
+  private static void assignTextBoundaries(
+    @NotNull Annotation annotation,
+    List<CoreMap> sourceSentences,
+    List<Fragment> filtered
+  ) {
     Set<Integer> textBlockBoundaries = new HashSet<>();
     List<int[]> templateOffsets = new ArrayList<>();
     List<CoreMap> filteredSentences = new ArrayList<>(sourceSentences.size());
     int sourceSentencesSize = sourceSentences.size();
     int fragIndex = 0;
-    int fragStart = fragments.get(0).getSideStarts()[1];
-    int fragEnd = fragments.get(0).getSideEnds()[1];
+    int fragStart = filtered.get(0).getSideStarts()[1];
+    int fragEnd = filtered.get(0).getSideEnds()[1];
     int textBlockBegin = 0;
     int beginOffset = 0;
     for (int i = 0; i < sourceSentencesSize; i++) {
-      while (i > fragEnd && fragIndex < fragments.size()) {
-        fragStart = fragments.get(fragIndex).getSideStarts()[1];
-        fragEnd = fragments.get(fragIndex).getSideEnds()[1];
+      while (i > fragEnd && fragIndex < filtered.size()) {
+        fragStart = filtered.get(fragIndex).getSideStarts()[1];
+        fragEnd = filtered.get(fragIndex).getSideEnds()[1];
         fragIndex++;
       }
 

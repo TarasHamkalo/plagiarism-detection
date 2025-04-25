@@ -4,6 +4,7 @@ import dev.taras.hamkalo.plagdet.comparision.Comparator;
 import dev.taras.hamkalo.plagdet.comparision.Embeddings;
 import dev.taras.hamkalo.plagdet.comparision.MetadataComparator;
 import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedingStrategy;
+import dev.taras.hamkalo.plagdet.comparision.blocks.LengthBasedFilteringStrategy;
 import dev.taras.hamkalo.plagdet.comparision.blocks.RecursiveClusteringExtensionStrategy;
 import dev.taras.hamkalo.plagdet.comparision.filter.ComparisonFilter;
 import dev.taras.hamkalo.plagdet.comparision.filter.LengthComparisonFilter;
@@ -101,6 +102,7 @@ public class Plagdet {
 
     return new Comparator(
 //      new NopExtensionStrategy(),
+      new LengthBasedFilteringStrategy(parameters.getFilteringStrategyParameters()),
       new RecursiveClusteringExtensionStrategy(embeddings, parameters.getExtensionStrategyParameters()),
       new IndexBasedWordAlignmentSeedingStrategy(embeddings, parameters.getSeedingStrategyParameters()),
       new MetadataComparator(parameters.getMetadataComparatorParameters()),
@@ -135,7 +137,7 @@ public class Plagdet {
     int i = 0;
     int comparisonsCount = 0;
     int estimateFilesCount = fileDataSource.estimateFilesCount();
-    log.info("Starting comparison, files begin to load into memory, so first iteration could be slower");
+    log.info("Starting comparison, files begin to load into memory, first iteration could be slower");
     while (documentPool.hasAnySuspiciousDocument()) {
       var susp = documentPool.nextSuspiciousDocument();
       log.info(

@@ -1,6 +1,7 @@
 package dev.taras.hamkalo.plagdet.comparision;
 
 import dev.taras.hamkalo.plagdet.comparision.blocks.ExtensionStrategy;
+import dev.taras.hamkalo.plagdet.comparision.blocks.FilteringStrategy;
 import dev.taras.hamkalo.plagdet.comparision.blocks.SeedingStrategy;
 import dev.taras.hamkalo.plagdet.comparision.filter.ComparisonFilter;
 import dev.taras.hamkalo.plagdet.comparision.model.Comparison;
@@ -29,6 +30,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Comparator {
+
+  @NotNull FilteringStrategy filteringStrategy;
 
   @NotNull ExtensionStrategy extensionStrategy;
 
@@ -66,13 +69,14 @@ public class Comparator {
 
     List<int[]> seeds = seedingStrategy.seed(documentPool);
     List<Fragment> fragments = extensionStrategy.extend(documentPool, seeds);
-    List<SpecialMarking> plagCases = fragments.stream()
+    List<Fragment> filtered = filteringStrategy.filter(documents, fragments);
+    List<SpecialMarking> plagCases = filtered.stream()
       .map(f -> f.toMarkingWithType(documents, SpecialMarking.SpecialMarkingType.PLAG))
       .collect(Collectors.toList());
 
     plagScores.add(
       PlagScore.builder()
-        .score(ScoreUtils.plagScoreAsSentenceCoverage(documents, fragments))
+        .score(ScoreUtils.plagScoreAsSentenceCoverage(documents, filtered))
         .type(PlagScoreType.SEMANTIC)
         .build()
     );
@@ -123,7 +127,6 @@ public class Comparator {
     var documentSeedsMap = seedingStrategy.seedMultiple(
       documentPool, corpus.getCorpusSentenceIndex(), corpus.getCorpusSize()
     );
-//    corpus -> 20 docs -> 1 -> 5, 70 -> 70 * 5 ->
     var documentSeedsEntries = documentSeedsMap.entrySet();
     for (var documentSeedsEntry : documentSeedsEntries) {
       int documentIndex = documentSeedsEntry.getKey();
@@ -150,13 +153,14 @@ public class Comparator {
 
       List<int[]> seeds = documentSeedsEntry.getValue();
       List<Fragment> fragments = extensionStrategy.extend(documents, seeds);
-      List<SpecialMarking> plagCases = fragments.stream()
+      List<Fragment> filtered = filteringStrategy.filter(documents, fragments);
+      List<SpecialMarking> plagCases = filtered.stream()
         .map(f -> f.toMarkingWithType(documents, SpecialMarking.SpecialMarkingType.PLAG))
         .collect(Collectors.toList());
 
       plagScores.add(
         PlagScore.builder()
-          .score(ScoreUtils.plagScoreAsSentenceCoverage(documents, fragments))
+          .score(ScoreUtils.plagScoreAsSentenceCoverage(documents, filtered))
           .type(PlagScoreType.SEMANTIC)
           .build()
       );
