@@ -150,10 +150,11 @@ public class Embeddings {
   }
 
   private static @Nullable Word2Vec loadWordVectors() {
+    log.info("Copying resource [{}] to file", MODEL_RESOURCE_PREFIX + POS_LEMMA_MODEL);
     var modelPath = IoUtils.resourceFromTemp(MODEL_RESOURCE_PREFIX + POS_LEMMA_MODEL, POS_LEMMA_MODEL);
-    log.warn("Loading Word2Vec model from {}", MODEL_RESOURCE_PREFIX + POS_LEMMA_MODEL);
+    log.info("Loading Word2Vec model from [{}]", modelPath);
     var word2vec = WordVectorSerializer.readWord2VecModel(modelPath.toFile());
-    log.warn("Loading Word2Vec model done");
+    log.info("Loading Word2Vec model done");
     return word2vec;
   }
 
