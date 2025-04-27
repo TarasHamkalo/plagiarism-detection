@@ -101,7 +101,7 @@ public class EagerFileDataSource implements FileDataSource {
     @NotNull String persistentPrefix
   ) throws FileDataSourceException {
     var extractedFiles = ArchiveExtractor.extract(
-      file, Sets.union(SUPPORTED_ARCHIVE_EXT, SUPPORTED_FILE_FORMATS)
+      file, Sets.union(SUPPORTED_ARCHIVE_EXT, SUPPORTED_FILE_FORMATS), 0
     );
     assertValidFileMap(extractedFiles);
     return parseSubmissions(extractedFiles, persistentPrefix);
@@ -158,7 +158,9 @@ public class EagerFileDataSource implements FileDataSource {
       try {
         if (IoUtils.isExtensionSupported(submissionFile, SUPPORTED_ARCHIVE_EXT)) {
           var fileMap = ArchiveExtractor.extract(
-            submissionFile, EagerFileDataSource.SUPPORTED_FILE_FORMATS
+            submissionFile,
+            EagerFileDataSource.SUPPORTED_FILE_FORMATS,
+            ArchiveExtractor.DEFAULT_MAX_NESTED_DIRS_ALLOWED
           );
 
           if (fileMap.isEmpty()) {

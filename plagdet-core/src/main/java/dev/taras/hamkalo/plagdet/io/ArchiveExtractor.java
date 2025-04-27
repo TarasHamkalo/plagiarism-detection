@@ -24,11 +24,12 @@ public class ArchiveExtractor {
   /**
    * This field limit the count of directories on the path to otherwise valid entry
    */
-  public static final int MAX_NESTED_DIRS_ALLOWED = 1;
+  public static final int DEFAULT_MAX_NESTED_DIRS_ALLOWED = 1;
 
   public static Map<String, File> extract(
     @NotNull File file,
-    @Nullable Set<String> allowedFormats
+    @Nullable Set<String> allowedFormats,
+    int maxNestedDirsAllowed
   ) throws FileDataSourceException {
 
     var result = new HashMap<String, File>();
@@ -42,7 +43,7 @@ public class ArchiveExtractor {
       extractDest.toFile().deleteOnExit();
       ArchiveEntry entry;
       while ((entry = ais.getNextEntry()) != null) {
-        if (!isValidEntry(entry, allowedFormats)) {
+        if (!isValidEntry(entry, allowedFormats, maxNestedDirsAllowed)) {
           log.trace("Dropping zip entry {}", entry.getName());
           continue;
         }
@@ -65,14 +66,18 @@ public class ArchiveExtractor {
     return result;
   }
 
-  private static boolean isValidEntry(@NotNull ArchiveEntry entry, @Nullable Set<String> allowedFormats) {
+  private static boolean isValidEntry(
+    @NotNull ArchiveEntry entry,
+    @Nullable Set<String> allowedFormats,
+    int maxNestedDirsAllowed
+  ) {
     String baseName = FilenameUtils.getBaseName(entry.getName());
 
     if (entry.isDirectory() || entry.getName().contains("../") || baseName.startsWith(".")) {
       return false;
     }
 
-    if (entry.getName().chars().filter(c -> c == '/').count() > MAX_NESTED_DIRS_ALLOWED) {
+    if (entry.getName().chars().filter(c -> c == '/').count() > maxNestedDirsAllowed) {
       return false;
     }
 
