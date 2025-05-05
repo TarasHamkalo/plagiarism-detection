@@ -26,7 +26,6 @@ import dev.taras.hamkalo.plagdet.preprocessing.AnnotationUtils;
 import dev.taras.hamkalo.plagdet.preprocessing.Pipeline;
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.SneakyThrows;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -101,8 +100,8 @@ public class Plagdet {
     );
 
     return new Comparator(
-//      new NopExtensionStrategy(),
       new LengthBasedFilteringStrategy(parameters.getFilteringStrategyParameters()),
+//      new NopExtensionStrategy(),
       new RecursiveClusteringExtensionStrategy(embeddings, parameters.getExtensionStrategyParameters()),
       new IndexBasedWordAlignmentSeedingStrategy(embeddings, parameters.getSeedingStrategyParameters()),
       new MetadataComparator(parameters.getMetadataComparatorParameters()),
@@ -122,41 +121,46 @@ public class Plagdet {
     Pipeline.init(parameters.getPipelineParameters(), embeddings, templateContent);
   }
 
-  // TODO: wrap to PlagDet exception
-  @SneakyThrows
   public void compare(@NotNull String path) {
-    initPipeline();
+    try {
+      initPipeline();
 
-    ComparisonsStore comparisonsStore =
-      new ComparisonsStore(parameters.getComparisonsStoreParameters());
-    BufferedReportWriter bufferedReportWriter = new BufferedReportWriter(comparisonsStore);
-    FileDataSource fileDataSource = new LazyFileDataSource(registeredFileDataReaders, path);
-    Corpus corpus = new ContentRemovalCorpus(bufferedReportWriter, fileDataSource);
-    DocumentPool documentPool = new BaseDocumentPool(corpus, embeddings);
+      ComparisonsStore comparisonsStore =
+        new ComparisonsStore(parameters.getComparisonsStoreParameters());
+      String reportName =
+        parameters.getReportFileName() != null ? parameters.getReportFileName() : "report";
 
-    int i = 0;
-    int comparisonsCount = 0;
-    int estimateFilesCount = fileDataSource.estimateFilesCount();
-    log.info("Starting comparison, files begin to load into memory, first iteration could be slower");
-    while (documentPool.hasAnySuspiciousDocument()) {
-      var susp = documentPool.nextSuspiciousDocument();
-      log.info(
-        "Processing file [{}/{}] with path [{}]",
-        i + 1, estimateFilesCount,
-        susp.getFileData().getPersistentPath()
+      BufferedReportWriter bufferedReportWriter = new BufferedReportWriter(comparisonsStore, reportName);
+      FileDataSource fileDataSource = new LazyFileDataSource(registeredFileDataReaders, path);
+      Corpus corpus = new ContentRemovalCorpus(bufferedReportWriter, fileDataSource);
+      DocumentPool documentPool = new BaseDocumentPool(corpus, embeddings);
+
+      int i = 0;
+      int comparisonsCount = 0;
+      int estimateFilesCount = fileDataSource.estimateFilesCount();
+      log.info("Starting comparison, files begin to load into memory, first file's processing could be slower");
+      while (documentPool.hasAnySuspiciousDocument()) {
+        var susp = documentPool.nextSuspiciousDocument();
+        log.info(
+          "Processing file [{}/{}] with path [{}]",
+          i + 1, estimateFilesCount,
+          susp.getFileData().getPersistentPath()
+        );
+        comparisonsCount += compareSingle(documentPool, bufferedReportWriter, comparisonsCount);
+        i++;
+      }
+
+      bufferedReportWriter.createReport(
+        OverviewJsonModel.builder()
+          .inputPath(path)
+          .plagdetParameters(parameters)
+          .build()
       );
-      comparisonsCount += compareSingle(documentPool, bufferedReportWriter, comparisonsCount);
-      i++;
+
+      luceneIndex.close();
+    } catch (Exception e) {
+      throw new PlagdetException("Error occurred during execution", e);
     }
-
-    bufferedReportWriter.createReport(
-      OverviewJsonModel.builder()
-        .inputPath(path)
-        .plagdetParameters(parameters)
-        .build()
-    );
-
-    luceneIndex.close();
   }
 
   private int compareSingle(
@@ -196,35 +200,39 @@ public class Plagdet {
   }
 
   public void index(@NotNull String path) {
-    initPipeline();
-    ExecutorServiceSingleton.getExecutorService().init();
-    FileDataSource fileDataSource = new LazyFileDataSource(registeredFileDataReaders, path);
-    Corpus corpus = new BaseCorpus(fileDataSource);
+    try {
+      initPipeline();
+      ExecutorServiceSingleton.getExecutorService().init();
+      FileDataSource fileDataSource = new LazyFileDataSource(registeredFileDataReaders, path);
+      Corpus corpus = new BaseCorpus(fileDataSource);
 
-    Nd4j.getMemoryManager().togglePeriodicGc(false);
+      Nd4j.getMemoryManager().togglePeriodicGc(false);
 
-    int i = 0;
-    int estimateFilesCount = fileDataSource.estimateFilesCount();
-    while (corpus.hasNext()) {
-      var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(
-        indexingMemoryWorkspace, "PD_INDEXING"
-      );
-
-      try (ws) {
-        var document = corpus.pop();
-        log.info(
-          "[{}/{}] Indexing [{}]",
-          i + 1, estimateFilesCount,
-          document.getFileData().getPersistentPath()
+      int i = 0;
+      int estimateFilesCount = fileDataSource.estimateFilesCount();
+      while (corpus.hasNext()) {
+        var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(
+          indexingMemoryWorkspace, "PD_INDEXING"
         );
-        luceneIndex.addToIndex(document);
-        i++;
-      }
-      embeddings.clearSentenceVectorCache();
-    }
 
-    luceneIndex.close();
-    ExecutorServiceSingleton.getExecutorService().deInit();
+        try (ws) {
+          var document = corpus.pop();
+          log.info(
+            "[{}/{}] Indexing [{}]",
+            i + 1, estimateFilesCount,
+            document.getFileData().getPersistentPath()
+          );
+          luceneIndex.addToIndex(document);
+          i++;
+        }
+        embeddings.clearSentenceVectorCache();
+      }
+
+      luceneIndex.close();
+      ExecutorServiceSingleton.getExecutorService().deInit();
+    } catch (Exception e) {
+      throw new PlagdetException("Error occurred during execution", e);
+    }
   }
 }
 

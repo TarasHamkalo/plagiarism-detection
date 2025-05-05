@@ -22,6 +22,8 @@ import static dev.taras.hamkalo.plagdet.preprocessing.Pipeline.PipelineParameter
 @Builder
 public class PlagdetParameters {
 
+  @Nullable String reportFileName;
+
   @Nullable String luceneIndexDirectoryPath;
 
   @Nullable String templateDocumentPath;

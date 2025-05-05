@@ -8,10 +8,7 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -21,15 +18,16 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class ZipArchiver {
 
-  public static final String REPORT_NAME = "report.zip";
-
-  public static void zipDirectory(@NotNull Path tempDir) throws IOException {
-    try (OutputStream fos = new FileOutputStream(REPORT_NAME);
+  public static void zipDirectory(
+    @NotNull Path tempDir,
+    @NotNull String outputName
+  ) throws IOException {
+    try (OutputStream fos = new FileOutputStream(outputName);
          BufferedOutputStream bos = new BufferedOutputStream(fos);
          ArchiveOutputStream<ZipArchiveEntry> aos = new ZipArchiveOutputStream(bos);
          Stream<Path> paths = Files.walk(tempDir)
     ) {
-     paths.forEach(srcPath -> {
+      paths.forEach(srcPath -> {
         var entryName = tempDir.relativize(srcPath).toString();
         try {
           if (!Files.isDirectory(srcPath)) {

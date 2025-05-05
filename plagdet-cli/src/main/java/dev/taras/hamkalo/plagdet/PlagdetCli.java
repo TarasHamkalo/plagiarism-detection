@@ -50,6 +50,7 @@ public class PlagdetCli {
 
       boolean indexOnly = cmd.hasOption("i");
       var params = PlagdetParameters.builder()
+        .reportFileName(cmd.getOptionValue("output-name", "report.zip"))
         .templateDocumentPath(templatePath)
         .luceneIndexDirectoryPath(lucenePath)
         .filteringStrategyParameters(OptionsMapper.buildFilteringStrategyParameters(cmd))
@@ -79,6 +80,9 @@ public class PlagdetCli {
         "l", "lucene-path", "Path to the lucene index directory, if empty, then temporary directory created", null
       )
       .qualified("t", "template-path", "Path to the template file", "IPC task description")
+      .qualified(
+        "o", "output-name", "The name of the generated report file", "report.zip"
+      )
       .noArg("i", "Flag to index submissions without comparison", "false")
       .noArg("h", "Print help information", null)
       .noArg(
