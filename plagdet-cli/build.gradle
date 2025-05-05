@@ -19,7 +19,7 @@ repositories {
 shadowJar {
     archiveBaseName.set('plagdet-cli')
     archiveClassifier.set('')
-    archiveVersion.set('2.2')
+    archiveVersion.set('2.3')
     zip64 true
     mergeServiceFiles()
     exclude('**/windows-x86/**')
@@ -44,8 +44,7 @@ tasks.withType(JavaExec).configureEach {
 }
 
 dependencies {
-
-    implementation 'commons-cli:commons-cli:1.9.0'
+    implementation "commons-cli:commons-cli:$commonsCliVersion"
 
     implementation project(':plagdet-core')
 

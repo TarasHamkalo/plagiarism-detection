@@ -21,30 +21,26 @@ ext {
 }
 
 dependencies {
+    implementation "org.apache.lucene:lucene-core:$luceneVersion"
+    implementation "org.apache.lucene:lucene-queryparser:$luceneVersion"
+    implementation "org.apache.lucene:lucene-analyzers-common:$luceneVersion"
+    implementation "org.apache.lucene:lucene-backward-codecs:$luceneVersion"
+    implementation "org.apache.lucene:lucene-codecs:$luceneVersion"
 
-    implementation 'org.apache.lucene:lucene-core:8.10.1'
+    implementation "org.apache.poi:poi-ooxml:$poiVersion"
+    implementation "org.apache.poi:poi-scratchpad:$poiVersion"
 
-    implementation 'org.apache.lucene:lucene-queryparser:8.10.1'
+    implementation "org.apache.commons:commons-compress:$commonsCompressVersion"
 
-    implementation 'org.apache.lucene:lucene-analyzers-common:8.10.1'
+    implementation "com.itextpdf:itext7-core:$itextCoreVersion"
 
-    implementation 'org.apache.lucene:lucene-backward-codecs:8.10.1'
+    implementation "org.apache.commons:commons-text:$commonsTextVersion"
 
-    implementation 'org.apache.lucene:lucene-codecs:8.10.1'
-
-    implementation 'org.apache.poi:poi-ooxml:5.4.0'
-
-    implementation 'org.apache.poi:poi-scratchpad:5.4.0'
-
-    implementation 'org.apache.commons:commons-compress:1.27.1'
-
-    implementation 'com.itextpdf:itext7-core:7.2.5'
-
-    implementation 'org.apache.commons:commons-text:1.13.0'
+    implementation "io.github.jbellis:jvector:$jvectorVersion"
 
     implementation ':morphodita:'
 
-    implementation('edu.stanford.nlp:stanford-corenlp:4.5.8') {
+    implementation("edu.stanford.nlp:stanford-corenlp:$stanfordCoreNlpVersion") {
         exclude group: 'com.apple', module: 'AppleJavaExtensions'
         exclude group: 'jakarta.servlet', module: 'jakarta.servlet-api'
         exclude group: 'org.ejml', module: 'jakarta.json'
@@ -52,35 +48,29 @@ dependencies {
         exclude group: 'org.glassfish', module: 'jakarta.json'
     }
 
-    implementation('org.deeplearning4j:deeplearning4j-nlp:1.0.0-M2.1') {
+    implementation("org.deeplearning4j:deeplearning4j-nlp:$deeplearning4jVersion") {
         exclude group: 'org.bytedeco', module: 'openblas'
         exclude group: 'org.bytedeco', module: 'opencv'
         exclude group: 'org.bytedeco', module: 'hdf5'
         exclude group: 'org.bytedeco', module: 'leptonica'
         exclude group: 'org.bytedeco', module: 'ffmpeg'
-//        exclude group: 'org.deeplearning4j', module: 'deeplearning4j-datasets'
+//            exclude group: 'org.deeplearning4j', module: 'deeplearning4j-datasets'
         exclude group: 'org.datavec', module: 'datavec-data-image'
     }
 
-    implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.13-1.5.7', classifier: "linux-x86_64"
+    implementation group: 'org.bytedeco', name: 'openblas', version: bytedecoOpenblasVersion, classifier: "linux-x86_64"
 
-    implementation "org.nd4j:nd4j-native:1.0.0-M2.1"
+    implementation "org.nd4j:nd4j-native:$nd4jVersion"
+    implementation "org.nd4j:nd4j-native:$nd4jVersion:linux-x86_64"
 
-    implementation "org.nd4j:nd4j-native:1.0.0-M2.1:linux-x86_64"
+    implementation "org.bytedeco:javacpp:$javacppVersion"
 
-    implementation 'org.bytedeco:javacpp:1.5.7'
-
-    implementation platform('com.fasterxml.jackson:jackson-bom:2.18.3')
-
-    implementation 'io.github.jbellis:jvector:3.0.6'
-
+    implementation platform("com.fasterxml.jackson:jackson-bom:$jacksonBomVersion")
     implementation 'com.fasterxml.jackson.core:jackson-databind'
-
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
-
     implementation 'com.fasterxml.jackson.core:jackson-core'
 
-    implementation 'org.languagetool:language-sk:6.6.12-3'
+    implementation "org.languagetool:language-sk:$languageToolSkVersion"
 
-    implementation 'com.ibm.icu:icu4j:76.1'
+    implementation "com.ibm.icu:icu4j:$icu4jVersion"
 }
