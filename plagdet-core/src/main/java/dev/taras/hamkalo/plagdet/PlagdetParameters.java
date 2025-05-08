@@ -2,8 +2,6 @@ package dev.taras.hamkalo.plagdet;
 
 import dev.taras.hamkalo.plagdet.comparision.MetadataComparator.MetadataComparatorParameters;
 import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedingStrategy.IndexBasedWordAlignmentSeedingStrategyParameters;
-import dev.taras.hamkalo.plagdet.comparision.blocks.LengthBasedFilteringStrategy;
-import dev.taras.hamkalo.plagdet.comparision.blocks.RecursiveClusteringExtensionStrategy;
 import dev.taras.hamkalo.plagdet.comparision.blocks.RecursiveClusteringExtensionStrategy.RecursiveClusteringExtensionStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.filter.ShingleOverlapComparisonFilter.ShingleOverlapComparisonFilterParameters;
 import lombok.Builder;
@@ -22,7 +20,7 @@ import static dev.taras.hamkalo.plagdet.preprocessing.Pipeline.PipelineParameter
 @Builder
 public class PlagdetParameters {
 
-  @Nullable String reportFileName;
+  @Nullable String reportFilePath;
 
   @Nullable String luceneIndexDirectoryPath;
 

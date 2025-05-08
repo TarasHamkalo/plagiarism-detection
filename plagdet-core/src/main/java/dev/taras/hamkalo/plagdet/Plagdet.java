@@ -35,9 +35,12 @@ import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -128,7 +131,7 @@ public class Plagdet {
       ComparisonsStore comparisonsStore =
         new ComparisonsStore(parameters.getComparisonsStoreParameters());
       String reportName =
-        parameters.getReportFileName() != null ? parameters.getReportFileName() : "report";
+        parameters.getReportFilePath() != null ? parameters.getReportFilePath() : "report";
 
       BufferedReportWriter bufferedReportWriter = new BufferedReportWriter(comparisonsStore, reportName);
       FileDataSource fileDataSource = new LazyFileDataSource(registeredFileDataReaders, path);
@@ -223,6 +226,66 @@ public class Plagdet {
             document.getFileData().getPersistentPath()
           );
           luceneIndex.addToIndex(document);
+          i++;
+        }
+        embeddings.clearSentenceVectorCache();
+      }
+
+      luceneIndex.close();
+      ExecutorServiceSingleton.getExecutorService().deInit();
+    } catch (Exception e) {
+      throw new PlagdetException("Error occurred during execution", e);
+    }
+  }
+
+  public void findSimilar(String path) {
+    try {
+      initPipeline();
+      ExecutorServiceSingleton.getExecutorService().init();
+      FileDataSource fileDataSource = new LazyFileDataSource(registeredFileDataReaders, path);
+      Corpus corpus = new BaseCorpus(fileDataSource);
+
+      Nd4j.getMemoryManager().togglePeriodicGc(false);
+
+      int i = 0;
+      int estimateFilesCount = fileDataSource.estimateFilesCount();
+      Path reportPath = Path.of(parameters.getReportFilePath() != null ? parameters.getReportFilePath() : "report.txt");
+      BufferedWriter bufferedWriter = new BufferedWriter(
+        new FileWriter(reportPath.toFile())
+      );
+
+      while (corpus.hasNext()) {
+        var ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(
+          indexingMemoryWorkspace, "PD_INDEXING"
+        );
+
+        try (ws) {
+          var document = corpus.pop();
+
+          FileDataSource luceneSource = new LuceneFileDataSource(
+            luceneIndex, document, parameters.getLuceneFileDataSourceParameters()
+          );
+
+          List<String> retrievedPaths = new ArrayList<>();
+          while (luceneSource.hasNext()) {
+            retrievedPaths.add(luceneSource.next().getPersistentPath());
+          }
+
+          bufferedWriter.write(
+            String.format("[%d/%d]  Documents retrieved for [%s] are [%s]\n",
+              i + 1, estimateFilesCount,
+              document.getFileData().getPersistentPath(),
+              retrievedPaths
+            )
+          );
+
+          log.info(
+            "[{}/{}]  Documents retrieved for [{}] are [{}]",
+            i + 1, estimateFilesCount,
+            document.getFileData().getPersistentPath(),
+            retrievedPaths
+          );
+
           i++;
         }
         embeddings.clearSentenceVectorCache();

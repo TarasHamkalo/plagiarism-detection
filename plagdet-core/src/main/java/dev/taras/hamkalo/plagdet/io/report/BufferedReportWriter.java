@@ -49,14 +49,14 @@ public class BufferedReportWriter {
 
   @NotNull FileReportWriter fileReportWriter;
 
-  @NotNull String reportName;
+  @NotNull String reportPath;
 
   public BufferedReportWriter(
     @NotNull ComparisonsStore comparisonsStore,
-    @NotNull String reportName
+    @NotNull String reportPath
   ) throws IOException {
     this.resultsStore = comparisonsStore;
-    this.reportName = reportName;
+    this.reportPath = reportPath;
     this.flushedComparisonIds = new HashSet<>();
     this.flushedIndexedDocumentsIds = new HashSet<>();
     this.fileReportWriter = new FileReportWriter(true);
@@ -67,7 +67,7 @@ public class BufferedReportWriter {
   public void createReport(@NotNull OverviewJsonModel overviewJsonModel) {
     try {
       fileReportWriter.writeOverview(overviewJsonModel, outputDirectory);
-      ZipArchiver.zipDirectory(outputDirectory, reportName);
+      ZipArchiver.zipDirectory(outputDirectory, reportPath);
     } catch (IOException e) {
       throw new ReportWriteException("Could not create zip report", e);
     }

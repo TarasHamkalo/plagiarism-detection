@@ -20,9 +20,9 @@ public class ZipArchiver {
 
   public static void zipDirectory(
     @NotNull Path tempDir,
-    @NotNull String outputName
+    @NotNull String outputPath
   ) throws IOException {
-    try (OutputStream fos = new FileOutputStream(outputName);
+    try (OutputStream fos = new FileOutputStream(outputPath);
          BufferedOutputStream bos = new BufferedOutputStream(fos);
          ArchiveOutputStream<ZipArchiveEntry> aos = new ZipArchiveOutputStream(bos);
          Stream<Path> paths = Files.walk(tempDir)
