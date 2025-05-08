@@ -35,7 +35,7 @@ public class TextBlockSentenceSplitter implements Annotator {
     "ani", "avšak", "až", "ba", "tak", "hoci", "keby", "keď", "keďže",
     "lenže", "než", "pokiaľ", "pokým", "pretože", "pričom",
     "zatiaľčo", "zatiaľ čo", "kým", "kýmže", "nakoľko", "lebo", "ibaže",
-    "kdežto", "kde", "respektíve"
+    "kdežto", "kde", "respektíve", "ktorý", "ktorá", "ktoré", "no"
   );
 
   private static final String CLAUSE_SENTENCE_BOUNDARY_REGEX = String.format(
