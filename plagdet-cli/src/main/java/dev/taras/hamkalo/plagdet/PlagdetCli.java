@@ -3,7 +3,6 @@ package dev.taras.hamkalo.plagdet;
 import dev.taras.hamkalo.plagdet.ComparisonsStore.ComparisonsStoreParameters;
 import dev.taras.hamkalo.plagdet.comparision.MetadataComparator.MetadataComparatorParameters;
 import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedingStrategy.IndexBasedWordAlignmentSeedingStrategyParameters;
-import dev.taras.hamkalo.plagdet.comparision.blocks.LengthBasedFilteringStrategy;
 import dev.taras.hamkalo.plagdet.comparision.blocks.LengthBasedFilteringStrategy.LengthBasedFilteringStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.blocks.RecursiveClusteringExtensionStrategy.RecursiveClusteringExtensionStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.filter.LengthComparisonFilter.LengthComparisonFilterParameters;
@@ -50,7 +49,7 @@ public class PlagdetCli {
 
       boolean indexOnly = cmd.hasOption("i");
       var params = PlagdetParameters.builder()
-        .reportFileName(cmd.getOptionValue("output-name", "report.zip"))
+        .reportFilePath(cmd.getOptionValue("output-path", "report.zip"))
         .templateDocumentPath(templatePath)
         .luceneIndexDirectoryPath(lucenePath)
         .filteringStrategyParameters(OptionsMapper.buildFilteringStrategyParameters(cmd))
@@ -81,7 +80,7 @@ public class PlagdetCli {
       )
       .qualified("t", "template-path", "Path to the template file", "IPC task description")
       .qualified(
-        "o", "output-name", "The name of the generated report file", "report.zip"
+        "o", "output-path", "Path to report file, to which report data will be written", "report.zip"
       )
       .noArg("i", "Flag to index submissions without comparison", "false")
       .noArg("h", "Print help information", null)
@@ -94,6 +93,11 @@ public class PlagdetCli {
         "bypass-spellcheck",
         "Flag to stop executing spell checking",
         PipelineParameters.DEFAULT_BYPASS_SPELLCHECK
+      )
+      .noArg(
+        "bypass-results-filter",
+        "Flag to store all results produced during comparison",
+        ComparisonsStoreParameters.DEFAULT_BYPASS_FILTERING
       )
       .noArg(
         "bypass-shingle-filter",
