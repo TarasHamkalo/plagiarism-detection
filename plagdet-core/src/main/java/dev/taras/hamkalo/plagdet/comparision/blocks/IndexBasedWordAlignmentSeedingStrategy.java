@@ -32,7 +32,7 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
     /**
      * Query HNSW for top K sentences above that threshold
      */
-    public static final float DEFAULT_VECTOR_SIMILARITY_THRESHOLD = 0.6f;
+    public static final float DEFAULT_VECTOR_SIMILARITY_THRESHOLD = 0.65f;
 
     /**
      * Drop every sentence match below that similarity by Word alignment score
@@ -53,7 +53,7 @@ public class IndexBasedWordAlignmentSeedingStrategy implements SeedingStrategy {
      * Percentage of the number of source document sentences that will be considered
      * during index search
      */
-    public static final double DEFAULT_PORTION_OF_SENTENCES_TO_CONSIDER = 0.1d;
+    public static final double DEFAULT_PORTION_OF_SENTENCES_TO_CONSIDER = 0.2d;
 
     /**
      * Represents the hard limit in percentage of total sentences

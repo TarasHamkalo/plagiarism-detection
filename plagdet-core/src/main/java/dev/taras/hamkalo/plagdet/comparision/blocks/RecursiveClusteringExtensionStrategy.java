@@ -41,6 +41,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RecursiveClusteringExtensionStrategy implements ExtensionStrategy {
 
+
   @Value
   @Builder
   public static class RecursiveClusteringExtensionStrategyParameters {
@@ -53,12 +54,17 @@ public class RecursiveClusteringExtensionStrategy implements ExtensionStrategy {
     /**
      * The smallest cluster that will be recorded, less than this threshold in size are dropped
      */
-    public static final int DEFAULT_MIN_CLUSTER_SIZE = 4;
+    public static final int DEFAULT_MIN_CLUSTER_SIZE = 5;
 
     /**
      * Gap between two matches which is acceptable during match merging
      */
     public static final int DEFAULT_SENT_MAX_GAP = 2;
+
+    /**
+     * Size ratio of fragment on source document and suspicious document sides
+     */
+    private static final double DEFAULT_FRAGMENT_SIDES_SIZE_RATIO = 0.5;
 
     @Builder.Default
     double minFragmentSideSim = DEFAULT_MIN_FRAGMENT_SIDE_SIM;
@@ -68,6 +74,9 @@ public class RecursiveClusteringExtensionStrategy implements ExtensionStrategy {
 
     @Builder.Default
     int sentMaxGap = DEFAULT_SENT_MAX_GAP;
+
+    @Builder.Default
+    double fragmentSidesSizeRatio = DEFAULT_FRAGMENT_SIDES_SIZE_RATIO;
   }
 
 
@@ -130,7 +139,12 @@ public class RecursiveClusteringExtensionStrategy implements ExtensionStrategy {
     List<Fragment> newFragments = new ArrayList<>();
     for (var fragment : fragments) {
       var sideSim = sideSimilarity(documents, fragment);
-      if (sideSim < parameters.minFragmentSideSim) {
+      int[] starts = fragment.getSideStarts();
+      int[] ends = fragment.getSideEnds();
+      double firstLength = ends[0] - starts[0];
+      double secondLength = ends[1] - starts[1];
+      double ratio = Math.min(firstLength / secondLength, secondLength / firstLength);
+      if (ratio < parameters.fragmentSidesSizeRatio || sideSim < parameters.minFragmentSideSim) {
         log.warn("Sim is {}, so splitting fragment with {} seeds", sideSim, fragment.getSeeds(0).size());
         if (sentMaxGap > 0) {
           newFragments.addAll(extend(documents, fragment, sentMaxGap - 1));
