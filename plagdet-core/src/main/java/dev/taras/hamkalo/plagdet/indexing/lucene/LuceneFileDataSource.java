@@ -36,7 +36,7 @@ public class LuceneFileDataSource implements FileDataSource {
   @Builder
   public static class LuceneFileDataSourceParameters {
 
-    public static final int DEFAULT_SIMILAR_DOCUMENTS_LIMIT = 10;
+    public static final int DEFAULT_SIMILAR_DOCUMENTS_LIMIT = 20;
 
     /**
      * Amount of queried documents per filed with same metadata
