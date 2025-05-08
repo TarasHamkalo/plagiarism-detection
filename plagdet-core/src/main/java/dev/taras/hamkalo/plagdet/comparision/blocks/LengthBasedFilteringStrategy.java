@@ -12,7 +12,6 @@ import lombok.experimental.FieldDefaults;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-import java.util.function.Predicate;
 
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -25,7 +24,7 @@ public class LengthBasedFilteringStrategy implements FilteringStrategy {
     /**
      * The smallest fragment to preserve, length should be met on both documents
      */
-    public static final int DEFAULT_MIN_CHARACTER_LENGTH = 70;
+    public static final int DEFAULT_MIN_CHARACTER_LENGTH = 90;
 
     @Builder.Default
     int minCharacterLength = DEFAULT_MIN_CHARACTER_LENGTH;
@@ -51,8 +50,17 @@ public class LengthBasedFilteringStrategy implements FilteringStrategy {
     @NotNull List<List<CoreMap>> documents,
     @NotNull List<Fragment> fragments
   ) {
-    fragments.removeIf(f -> !this.isLengthMet(documents, f));
+    fragments.removeIf(f -> !this.isLengthMet(documents, f) || isWithingAny(fragments, f));
     return fragments;
+  }
+
+  private boolean isWithingAny(
+    @NotNull List<Fragment> fragments,
+    @NotNull Fragment fragment
+  ) {
+    boolean hasSusp = fragments.stream().anyMatch(f -> !f.equals(fragment) && fragment.isWithin(f, 0));
+    boolean hasSrc = fragments.stream().anyMatch(f -> !f.equals(fragment) && fragment.isWithin(f, 1));
+    return hasSusp && hasSrc;
   }
 
   private boolean isLengthMet(

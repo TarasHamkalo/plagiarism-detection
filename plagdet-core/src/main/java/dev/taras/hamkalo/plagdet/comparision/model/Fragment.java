@@ -52,12 +52,28 @@ public class Fragment {
     return sortedSeeds.get(side);
   }
 
-//  public boolean overlaps(Fragment other, int side) {
-//    return (other.sideStarts[side] >= this.sideStarts[side] &&
-//            other.sideStarts[side] <= this.sideEnds[side]) ||
-//           (this.sideStarts[side] >= other.sideStarts[side] &&
-//            this.sideStarts[side] <= other.sideEnds[side]);
-//  }
+  public boolean isWithin(Fragment other) {
+    return isWithin(other, 0) && isWithin(other, 1);
+  }
+
+  public boolean isWithin(Fragment other, int side) {
+    if (this.sideStarts[side] > other.sideStarts[side] &&
+        this.sideEnds[side] < other.sideEnds[side]) {
+      return true;
+    }
+
+    if (this.sideStarts[side] >= other.sideStarts[side] &&
+        this.sideEnds[side] < other.sideEnds[side]) {
+      return true;
+    }
+
+    if (this.sideStarts[side] > other.sideStarts[side] &&
+        this.sideEnds[side] <= other.sideEnds[side]) {
+      return true;
+    }
+
+    return false;
+  }
 
   public @NotNull SpecialMarking toMarkingWithType(
     @NotNull List<List<CoreMap>> documents,
