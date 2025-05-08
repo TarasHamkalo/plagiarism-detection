@@ -114,6 +114,11 @@ public class PlagdetCli {
         "Flag to stop removing template document matches from [new-path] document collection.",
         PipelineParameters.DEFAULT_BYPASS_TEMPLATE_REMOVAL
       )
+      .noArg(
+        "bypass-code-removal",
+        "Flag to stop removing code segments from documents",
+        PipelineParameters.DEFAULT_CAN_BYPASS_CODE_REMOVAL
+      )
       .optional(
         "min-char-len",
         "Minimum character length for fragment to be preserved as plagiarism case.",

@@ -26,11 +26,16 @@ public abstract class Pipeline {
 
     public static final boolean DEFAULT_BYPASS_SPELLCHECK = false;
 
+    public static final boolean DEFAULT_CAN_BYPASS_CODE_REMOVAL = false;
+
     @Builder.Default
     boolean canBypassTemplateRemoval = DEFAULT_BYPASS_TEMPLATE_REMOVAL;
 
     @Builder.Default
     boolean canBypassSpellCheck = DEFAULT_BYPASS_TEMPLATE_REMOVAL;
+
+    @Builder.Default
+    boolean canBypassCodeRemoval = DEFAULT_CAN_BYPASS_CODE_REMOVAL;
   }
 
   private static StanfordCoreNLP firstStagePipeline;
@@ -39,7 +44,10 @@ public abstract class Pipeline {
 
   private static StanfordCoreNLP luceneDocumentPipeline;
 
-  public static StanfordCoreNLP getFirstStagePipeline(boolean canBypassSpellcheck) {
+  public static StanfordCoreNLP getFirstStagePipeline(
+    boolean canBypassSpellcheck,
+    boolean canBypassCodeRemoval
+  ) {
     if (firstStagePipeline == null) {
 
       var props = new Properties();
@@ -50,7 +58,9 @@ public abstract class Pipeline {
       props.put("enforceRequirements", "false");
 
       firstStagePipeline = new StanfordCoreNLP(props);
-      firstStagePipeline.addAnnotator(new CodeSegmentAnnotator());
+      if (!canBypassCodeRemoval) {
+        firstStagePipeline.addAnnotator(new CodeSegmentAnnotator());
+      }
       firstStagePipeline.addAnnotator(new TextBlockIdentifierAnnotator());
       firstStagePipeline.addAnnotator(new TextBlockSentenceSplitter());
       firstStagePipeline.addAnnotator(new MorphoDiTaAnalysisAnnotator());
@@ -102,7 +112,9 @@ public abstract class Pipeline {
     @NotNull Embeddings embeddings,
     @Nullable String templateContent
   ) {
-    firstStagePipeline = getFirstStagePipeline(parameters.canBypassSpellCheck);
+    firstStagePipeline = getFirstStagePipeline(
+      parameters.canBypassSpellCheck, parameters.canBypassCodeRemoval
+    );
     luceneDocumentPipeline = getLuceneDocumentPipeline();
     if (!parameters.canBypassTemplateRemoval) {
       if (templateContent != null) {

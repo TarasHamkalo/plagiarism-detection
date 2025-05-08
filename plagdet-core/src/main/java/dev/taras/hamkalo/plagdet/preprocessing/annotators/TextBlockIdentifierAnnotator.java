@@ -5,9 +5,9 @@ import dev.taras.hamkalo.plagdet.preprocessing.annotations.PlagdetAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.Annotator;
-import org.datavec.api.writable.Text;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -22,7 +22,7 @@ public class TextBlockIdentifierAnnotator implements Annotator {
   public void annotate(Annotation annotation) {
     List<Integer> textBoundaries = annotation.get(PlagdetAnnotations.TextBlockBoundaries.class);
     if (textBoundaries == null) {
-      return;
+      textBoundaries = Collections.emptyList();
     }
     textBoundaries.sort(Comparator.naturalOrder());
     Integer maxId = annotation.get(PlagdetAnnotations.TextBlockCounter.class);

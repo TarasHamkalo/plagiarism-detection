@@ -1,10 +1,8 @@
 package dev.taras.hamkalo.plagdet;
 
 import dev.taras.hamkalo.plagdet.ComparisonsStore.ComparisonsStoreParameters;
-import dev.taras.hamkalo.plagdet.comparision.MetadataComparator;
 import dev.taras.hamkalo.plagdet.comparision.MetadataComparator.MetadataComparatorParameters;
 import dev.taras.hamkalo.plagdet.comparision.blocks.IndexBasedWordAlignmentSeedingStrategy.IndexBasedWordAlignmentSeedingStrategyParameters;
-import dev.taras.hamkalo.plagdet.comparision.blocks.LengthBasedFilteringStrategy;
 import dev.taras.hamkalo.plagdet.comparision.blocks.LengthBasedFilteringStrategy.LengthBasedFilteringStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.blocks.RecursiveClusteringExtensionStrategy.RecursiveClusteringExtensionStrategyParameters;
 import dev.taras.hamkalo.plagdet.comparision.filter.LengthComparisonFilter.LengthComparisonFilterParameters;
@@ -64,6 +62,7 @@ public class OptionsMapper {
 
   public static Pipeline.PipelineParameters buildPipelineParameters(@NotNull CommandLine cmd) {
     return PipelineParameters.builder()
+      .canBypassCodeRemoval(cmd.hasOption("bypass-code-removal"))
       .canBypassTemplateRemoval(cmd.hasOption("bypass-template-removal"))
       .canBypassSpellCheck(cmd.hasOption("bypass-spellcheck"))
       .build();
