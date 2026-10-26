@@ -460,7 +460,7 @@ SIMPLE_FS_INDEX/**
 /test_files/zips/2/bbbb.docx
 /test_files/zips/3/aaa/cccc.docx
 /code-classifier.bin
-/plagdet-cli/src/main/resources/models/sk.poslemma.prim-10.0-public-saneword2vec.bin
-/plagdet-cli/src/main/resources/models/slovak-morfflex-pdt-170914-pos_only.tagger
-/plagdet-cli/src/main/resources/sk-stopwords.txt
-/plagdet-cli/src/main/resources/template.txt
+# /plagdet-cli/src/main/resources/models/sk.poslemma.prim-10.0-public-saneword2vec.bin
+# /plagdet-cli/src/main/resources/models/slovak-morfflex-pdt-170914-pos_only.tagger
+# /plagdet-cli/src/main/resources/sk-stopwords.txt
+#/plagdet-cli/src/main/resources/template.txt

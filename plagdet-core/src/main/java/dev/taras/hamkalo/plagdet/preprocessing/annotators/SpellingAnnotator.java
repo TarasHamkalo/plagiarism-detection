@@ -37,7 +37,7 @@ public class SpellingAnnotator implements Annotator {
   }
 
   private static @NotNull JLanguageTool getJLanguageTool() {
-    JLanguageTool tool = new JLanguageTool(Languages.getLanguageForShortCode("sk"));
+    JLanguageTool tool = new JLanguageTool(Languages.getLanguageForShortCode("sk-SK"));
     tool.getAllActiveRules().removeIf(rule -> !(rule instanceof SpellingCheckRule));
     return tool;
   }

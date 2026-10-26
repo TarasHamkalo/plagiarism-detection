@@ -5,10 +5,6 @@ plugins {
 
 
 repositories {
-    maven {
-        url "https://repo.languagetool.org/artifactory/languagetool-os-release/"
-    }
-
     mavenCentral()
     flatDir {
         dirs '../libs'
@@ -70,7 +66,8 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
     implementation 'com.fasterxml.jackson.core:jackson-core'
 
-    implementation "org.languagetool:language-sk:$languageToolSkVersion"
+    // TODO: update langtool
+    implementation 'org.languagetool:language-sk:6.5'
 
     implementation "com.ibm.icu:icu4j:$icu4jVersion"
 }

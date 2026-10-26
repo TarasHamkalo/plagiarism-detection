@@ -10,10 +10,6 @@ repositories {
     flatDir {
         dirs '../libs'
     }
-
-    maven {
-        url "https://repo.languagetool.org/artifactory/languagetool-os-release/"
-    }
 }
 
 shadowJar {
