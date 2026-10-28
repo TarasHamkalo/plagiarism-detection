@@ -460,7 +460,22 @@ SIMPLE_FS_INDEX/**
 /test_files/zips/2/bbbb.docx
 /test_files/zips/3/aaa/cccc.docx
 /code-classifier.bin
-# /plagdet-cli/src/main/resources/models/sk.poslemma.prim-10.0-public-saneword2vec.bin
-# /plagdet-cli/src/main/resources/models/slovak-morfflex-pdt-170914-pos_only.tagger
-# /plagdet-cli/src/main/resources/sk-stopwords.txt
+/plagdet-cli/src/main/resources/models/sk.poslemma.prim-10.0-public-saneword2vec.bin
+/plagdet-cli/src/main/resources/models/slovak-morfflex-pdt-170914-pos_only.tagger
+#/plagdet-cli/src/main/resources/sk-stopwords.txt
 #/plagdet-cli/src/main/resources/template.txt
+/models-tmp/morfflex-tmp/slovak-morfflex-pdt-170914/LICENSE
+/models-tmp/morfflex-tmp/slovak-morfflex-pdt-170914/README
+/models-tmp/morfflex-tmp/slovak-morfflex-pdt-170914/README.html
+/models-tmp/morfflex-tmp/slovak-morfflex-pdt-170914/slovak-morfflex-170914.dict
+/models-tmp/morfflex-tmp/slovak-morfflex-pdt-170914/slovak-morfflex-170914-no_dia.dict
+/models-tmp/morfflex-tmp/slovak-morfflex-pdt-170914/slovak-morfflex-170914-no_dia-pos_only.dict
+/models-tmp/morfflex-tmp/slovak-morfflex-pdt-170914/slovak-morfflex-170914-pos_only.dict
+/models-tmp/morfflex-tmp/slovak-morfflex-pdt-170914/slovak-morfflex-pdt-170914.tagger
+/models-tmp/morfflex-tmp/slovak-morfflex-pdt-170914/slovak-morfflex-pdt-170914-no_dia.tagger
+/models-tmp/morfflex-tmp/slovak-morfflex-pdt-170914/slovak-morfflex-pdt-170914-no_dia-pos_only.tagger
+/models-tmp/morfflex-tmp/slovak-morfflex-pdt-170914/slovak-morfflex-pdt-170914-pos_only.tagger
+/models-tmp/sk.poslemma.prim-10.0-public-saneword2vec.bin
+/models-tmp/slovak-morfflex-pdt-170914-pos_only.tagger
+/models-tmp/vectors.txt
+/models-tmp/vectors.txt.xz
