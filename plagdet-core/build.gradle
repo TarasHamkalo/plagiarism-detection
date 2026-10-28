@@ -66,8 +66,8 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
     implementation 'com.fasterxml.jackson.core:jackson-core'
 
-    // TODO: update langtool
-    implementation 'org.languagetool:language-sk:6.5'
+    // older version of langtool is used
+    implementation "org.languagetool:language-sk:$languageToolSkVersion"
 
     implementation "com.ibm.icu:icu4j:$icu4jVersion"
 }
