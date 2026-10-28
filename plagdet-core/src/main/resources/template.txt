@@ -1,0 +1,92 @@
+
+5468,5725;6917,6972
+0	1-91	Nn:proces Aj:vyznačený Aj:zvýraznený Nn:okraj Nn:program Nn:kontrola Nn:zadanie Vb:dodať
+0	92-148	Av:treba Vb:vypracovať Nn:program
+0	150-164	Nn:popis Nn:proces
+0	165-233	Nn:proces Nn:zadanie Aj:vypracovaný Nn:študent Vb:zakresliť Nn:diagram
+0	244-283	Nn:zadanie Nn:číslo Nn:port Nn:číslo Nn:port
+0	292-374	Nn:parameter Aj:hlavný Nn:program Nn:číslo Nn:port Nn:server Nn:TCP Nn:UDP
+0	375-423	Nn:číslo Aj:potrebný Nn:proces Vb:odovzdať
+0	424-529	Nn:program Nn:zadanie Vb:vyhradiť Pn:všetko Nn:zdroj Aj:medziprocesový Nn:komunikácia Vb:spustiť Pn:všetko Nn:proces
+0	530-589	Pn:všetko Nn:proces Vb:realizovať Aj:samostatný Nn:program
+0	652-713	Nn:čítaciaho Nn:koniec Nn:rúra Aj:zapisovací Nn:koniec Nn:rúra
+0	722-821	Nn:proces Vb:poslať Nn:signál Aj:hlavný Nn:proces Nn:zadanie Nn:signalizácia Vb:pripraviť
+0	822-955	Nn:proces Nn:údaj Vb:žiadať Vb:poslať Nn:signál Nn:proces Nn:proces Vb:zapísať Nn:slovo Vb:prečítať Nn:súbor
+0	956-996	Aj:istý Vb:platiť Nn:proces
+0	997-1106	Nn:proces Vb:poslať Nn:signál Nn:proces Nn:rúra Vb:zapísať Nn:slovo Nn:proces Nn:súbor
+0	1107-1202	Nn:proces Nn:slovo Aj:prijatý Nn:rúra Vb:pridať Pn:svoj Nn:značka Nn:proces Vb:zapísať Nn:slovo Nn:rúra
+0	1222-1297	Aj:zdieľaný Nn:pamäť Aj:zdieľaný Nn:pamäť
+0	1323-1432	Nn:proces Vb:poslať Nn:signál Aj:hlavný Nn:proces Nn:zadanie Nn:signalizácia Nn:proces Vb:pripraviť
+0	1433-1662	Nn:proces Nn:príjem Nn:slovo Aj:zdieľaný Nn:pamäť Nn:synchronizácia Nn:semafor Vb:pozrieť Nn:časť Nn:semafor Nn:časť Nn:popis Nn:komunikácia Vb:pripísať Pn:on Pn:svoj Nn:značka Vb:zapísať Aj:zdieľaný Nn:pamäť Nn:synchronizácia Nn:semafor
+0	1686-1728	Nn:číslo Nn:port Nn:číslo Nn:port
+0	1737-1828	Nn:proces Vb:vytvoriť Nn:TCP Nn:server Nn:port Nn:číslo Nn:port Vb:prijímať Nn:TCP Nn:paket
+0	1829-1927	Nn:server Aj:prijatý Nn:slovo Vb:označiť Nn:značka Vb:poslať Nn:UDP Nn:server Nn:porto Nn:číslo Nn:port
+0	1928-2011	Nn:číslo Nn:port Nn:argument Aj:hlavný Nn:proces Vb:pozrieť Nn:kapitola Nn:proces Nn:zadanie
+0	2012-2129	Nn:proces Vb:poslať Nn:signál Aj:hlavný Nn:proces Nn:zadanie Nn:signalizácia Nn:proces Vb:pripraviť
+0	2130-2239	Nn:TCP Nn:UDP Nn:server Aj:vytvorený Aj:lokálny Nn:počítač Nn:počítač XX:pozor Nn:localhost
+0	2241-2258	Nn:popis Nn:komunikácia
+0	2270-2324	Nn:semafor Aj:potrebný Vb:vytvoriť Nn:dvojica Nn:semafor
+0	2325-2423	Nn:proces Vb:riadiť Nn:semafor Nn:proces Vb:riadiť Nn:semafor
+0	2424-2497	Aj:nastavený Nn:semafor Vb:rozumieť Aj:nastavený Nn:hodnota Vb:znamenať
+0	2498-2548	Nn:proces Vb:zapisovať Aj:zdieľaný Nn:pamäť
+0	2549-2642	Aj:nastavený Nn:semafor Vb:znamenať Nn:proces Aj:zdieľaný Nn:pamäť Nn:údaj Vb:čítať
+0	2654-2708	Nn:semafor Aj:potrebný Vb:vytvoriť Nn:dvojica Nn:semafor
+0	2709-2800	Nn:proces Vb:riadiť Nn:semafor Nn:proces Vb:riadiť Nn:semafor
+0	2801-2881	Aj:nastavený Nn:semafor Vb:rozumieť Aj:nastavený Nn:hodnota Vb:znamenať
+0	2882-2932	Nn:proces Vb:zapisovať Aj:zdieľaný Nn:pamäť
+0	2933-3026	Aj:nastavený Nn:semafor Vb:znamenať Nn:proces Aj:zdieľaný Nn:pamäť Nn:údaj Vb:čítať
+0	3027-3089	Nn:príklad Nn:komunikácia Nn:proces Nn:proces Nn:semafor
+0	3090-3129	Nn:semafor Aj:analogický
+0	3130-3153	Nn:hodnota Nn:semafor Nn:význam
+0	3173-3243	Nn:proces Vb:riadiť Nn:semafor Nn:proces Vb:riadiť Nn:semafor
+0	3244-3344	Vb:znamenať Nn:proces Nn:semafor Nn:hodnota Aj:červený Av:stále Vb:čakať
+0	3345-3372	Aj:istý Vb:platiť Nn:proces
+0	3373-3479	Vb:znamenať Nn:proces Nn:semafor Nn:hodnota Aj:červený Vb:znamenať Vb:čakať
+0	3480-3530	Nn:semafor Av:treba Vb:inicializovať Aj:nasledovný Nn:stav
+0	3531-3580	Aj:zelený Aj:červený Nn:stoj
+0	3581-3650	Nn:stav Vb:znamenať Nn:proces Aj:zdieľaný Nn:pamäť Vb:zapisovať
+0	3651-3691	Nn:proces Vb:čakať Aj:červený Vb:môcť Vb:čítať
+0	3692-3795	Nn:proces Aj:zelený Vb:zapisovať Nn:semafor Aj:nastavený Nn:hodnota Aj:zelený
+0	3796-3840	Aj:zdieľaný Nn:pamäť Vb:zapísať Nn:údaj
+0	3841-3903	Av:teraz Aj:potrebný Nn:proces Vb:umožniť Nn:proces Nn:údaj Vb:čítať
+0	3904-4132	Vb:zmeniť Nn:semafor Aj:nasledovný Nn:stav Vb:zmeniť Nn:semafor Nn:semafor Nn:hodnota Nn:hodnota Aj:zelený Aj:červený Nn:semafor Nn:proces Vb:zmeniť Nn:hodnota Nn:hodnota Aj:červený Aj:zelený
+0	4133-4191	Vb:naznačiť Nn:údaj Vb:zapísať Vb:čítať
+0	4192-4241	Aj:červený Nn:stoj Aj:zelený
+0	4242-4323	Nn:stav Vb:znamenať Nn:proces Vb:môcť Aj:zdieľaný Nn:pamäť Vb:zapisovať Vb:čakať
+0	4324-4414	Nn:proces Aj:zelený Aj:zdieľaný Nn:pamäť Aj:pripravený Nn:údaj Nn:údaj Nn:pamäť Vb:prečítať
+0	4415-4479	Av:teraz Nn:semafor Aj:zdieľaný Nn:pamäť Nn:údaj Vb:prečítať
+0	4480-4555	Nn:semafor Vb:zmeniť Nn:hodnota Aj:červený Nn:hodnota Aj:zelený
+0	4556-4755	Vb:prečítať Nn:údaj Aj:zdieľaný Nn:pamäť Vb:vymeniť Nn:farba Nn:semafor Vb:zmeniť Pn:sa Aj:zelený Aj:červený Nn:proces Vb:zmeniť Aj:červený Aj:zelený Vb:môcť Nn:pamäť Vb:zapisovať
+0	4790-4887	Nn:súbor Vb:obsahovať Nn:slovo Vb:rozumieť Nn:reťazec Nn:znak Aj:nový Nn:riadok
+0	4888-4962	Nn:veľkosť Nn:slovo Nn:putovanie Nn:proces Vb:presiahnuť Nn:dĺžka Nn:znak
+0	4963-5044	Nn:súbor Vb:obsahovať Aj:výsledný Nn:slovo Aj:zapísaný Aj:samostatný Nn:riadok
+0	5045-5178	Nn:poznámka Nn:účel Nn:vývoj Nn:program Nn:testovanie Aj:možný Nn:program Vb:stiahnuť Nn:stránka Nn:systém Nn:odovzdávanie Nn:zadanie
+0	5192-5236	XX:pozor Vb:nachádzať Aj:paralelný Nn:prostredie
+0	5237-5321	Vb:znamenať Nn:poradie Nn:vykonávanie Nn:proces Vb:musieť Vb:byť Aj:rovnaký Aj:rôzny Nn:systém
+0	5322-5400	Vb:dbať Nn:synchronizácia Vb:vyhnúť Nn:problém Nn:predbiehanie Nn:proces
+0	5402-5438	Pn:všetko Vb:potrebovať Vb:spraviť
+0	5440-5470	Vb:potrebovať Vb:spraviť Nn:program
+1	5729-5804	Aj:zdrojový Nn:text Aj:spustiteľný Nn:program
+1	5805-5875	Nn:zadanie Aj:zdrojový Nn:text Aj:spustiteľný Nn:program Nn:zadanie
+1	5876-5934	Av:takisto Nn:súbor Av:makefile Nn:skompilovanie Pn:všetko Nn:zadanie
+1	5938-6013	Vb:dodržať Nn:názov Nn:program Aj:zdrojový Nn:text Vb:uviesť Nn:zátvorka
+1	6014-6068	Nn:názov Nn:súbor Aj:zdrojový Nn:text Vb:dodržať
+1	6072-6169	Vb:dodržať Aj:stanovený Nn:názov Aj:vstupný Nn:súbor Aj:výstupný Nn:súbor
+1	6170-6199	Vb:dbať Aj:veľký Aj:malý Nn:písmeno
+1	6203-6362	Aj:vyhotovený Aj:zdrojový Nn:text Nn:program Av:spolu Nn:súbor Nn:makefile Nn:program Pn:ten Nn:kontrola Vb:dodať Av:treba Vb:zbaliť Av:dobre Nn:formát
+1	6376-6412	Vb:odoslať Nn:server
+1	6413-6436	Nn:príklad Nn:súbor Vb:makefilať
+1	6437-6490	Av:all Nn:zadanie
+1	6564-6674	Aj:vysoký Vb:uviesť Nn:príklad Aj:zdrojový Nn:súbor Vb:vyrobiť Vb:skompilovať Aj:hlavný Nn:program Nn:zadanie
+1	6675-6730	Vb:uviesť Vb:mať Vb:skompilovať Aj:ostatný Nn:program
+1	6731-6751	Nn:časť
+1	6754-6834	Vb:vypísať Nn:súbor Aj:potrebný Nn:skompilovanie Nn:vytvorenie Nn:program
+1	6851-6919	Vb:uviesť Aj:konkrétny Aj:kompilačný Nn:príkaz Vb:vyvolať Nn:shell Vb:vytvoriť
+2	6976-7010	Nn:názornosť Nn:predstava
+2	7011-7094	Vb:vykonávať Nn:kontrola Vb:uviesť Aj:stručný Nn:priebeh Nn:kontrola Aj:odovzdaný Nn:zadanie
+2	7095-7202	Vb:zavolať Nn:študent Aj:vytvorený Nn:súbor Nn:makefile Pp:pomocou Vb:vytvoriť Aj:potrebný Aj:binárny Nn:súbor Nn:proces
+2	7206-7291	Nn:systém Vb:nájsť Vb:zabezpečiť Aj:potrebný Nn:knižnica Nn:spustiť Nn:program Nn:zadanie Nn:kontrola
+2	7295-7345	Nn:systém Vb:dodať Nn:program
+2	7346-7393	Vb:pripraviť Aj:vstupný Nn:súbor
+2	7397-7450	Vb:spustiť Aj:hlavný Nn:študent Aj:vytvorený Nn:program Nn:zadanie
+2	7454-7522	Nn:skončenie Nn:beh Aj:celý Nn:sústava Nn:proces Vb:vyhodnotiť Nn:súbor
