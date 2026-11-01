@@ -174,7 +174,7 @@ Then build the executable JAR using the Gradle Wrapper:
 
 The resulting JAR is accessible via path:
 ```
-./plagdet-cli/build/libs/plagdet-cli-3.jar
+./plagdet-cli/build/libs/plagdet-cli.jar
 ```
 
 Prebuilt JAR file also available in [GitHub Releases](https://github.com/TarasHamkalo/plagiarism-detection/releases).
@@ -185,7 +185,7 @@ To analyze a collection of documents:
 
 ```bash
 java -Dsystem.library.path=./libs \
-    -jar dist/plagdet-cli-3.jar \
+    -jar dist/plagdet-cli.jar \
     -n ./submissions \
     -o ./report.zip
 ```
@@ -205,7 +205,7 @@ First, index the reference collection:
 
 ```bash
 java -Dsystem.library.path=./libs \
-    -jar dist/plagdet-cli-3.jar \
+    -jar dist/plagdet-cli.jar \
     -n ./reference-submissions \
     -i \
     -l ./lucene-index
@@ -215,7 +215,7 @@ Then analyze new submissions against the existing index:
 
 ```bash
 java -Dsystem.library.path=./libs \
-    -jar dist/plagdet-cli-3.jar \
+    -jar dist/plagdet-cli.jar \
     -n ./new-submissions \
     -l ./lucene-index \
     -o ./report.zip
@@ -231,7 +231,7 @@ Use the built-in help to see all available options and their defaults:
 
 ```bash
 java -Dsystem.library.path=./libs \
-    -jar dist/plagdet-cli-3.jar \
+    -jar dist/plagdet-cli.jar \
     -h
 ```
 Output:

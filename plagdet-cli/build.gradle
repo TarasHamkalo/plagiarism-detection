@@ -15,7 +15,7 @@ repositories {
 shadowJar {
     archiveBaseName.set('plagdet-cli')
     archiveClassifier.set('')
-    archiveVersion.set('3')
+    archiveVersion.set('')
     zip64 true
     mergeServiceFiles()
     exclude('**/windows-x86/**')
