@@ -7,6 +7,7 @@ documents and identifies potentially plagiarized passages rather than relying so
 whole-document similarity scores.
 
 ---
+
 The detection pipeline compares documents at the sentence level using **word alignment and neural
 word embeddings**. A **JVector HNSW index** retrieves candidate sentences for detailed comparison,
 with configurable retrieval limits controlling how many candidate sentences are considered.
@@ -27,24 +28,24 @@ at [CRZP](https://opac.crzp.sk/?fn=detailBiblioForm&sid=9EB7DDC054CB7EBFE473D9EA
 ## Evaluation highlights
 
 - **75.74% F1 on a manually annotated benchmark:**
-    - The best tuned configuration achieved 76.04%
-      precision, 75.43% recall, and a PlagDet score of 68.58, with granularity of 1.15 (about
-      metrics see [PAN](https://pan.webis.de/)).
+  - The best tuned configuration achieved 76.04%
+    precision, 75.43% recall, and a PlagDet score of 68.58, with granularity of 1.15 (about
+    metrics see [PAN](https://pan.webis.de/)).
 
 - **61% lower processing time:**
-    - With code-fragment identification enabled, analysis of 981
-      documents and 480,324 document pairs took 4 h 17 min, compared with 11 h 06 min without it -
-      approximately **2.6× faster** in this experiment.
-    - In the target scenario, source code is analyzed by a separate detection
-      system. Code fragments are therefore excluded from the natural-language
-      comparison pipeline, avoiding unnecessary processing and sentence
-      fragmentation while making text-based similarity results more relevant.
+  - With code-fragment identification enabled, analysis of 981
+    documents and 480,324 document pairs took 4 h 17 min, compared with 11 h 06 min without it -
+    approximately **2.6× faster** in this experiment.
+  - In the target scenario, source code is analyzed by a separate detection
+    system. Code fragments are therefore excluded from the natural-language
+    comparison pipeline, avoiding unnecessary processing and sentence
+    fragmentation while making text-based similarity results more relevant.
 
 - **Efficient candidate retrieval:**
-    - HNSW-based sentence search limits the candidates considered
-      during sentence alignment, avoiding exhaustive comparison of every sentence pair.
-      In our setup it allowed reduction of considered sentences set by 80%, preserving high
-      recall.
+  - HNSW-based sentence search limits the candidates considered
+    during sentence alignment, avoiding exhaustive comparison of every sentence pair.
+    In our setup it allowed reduction of considered sentences set by 80%, preserving high
+    recall.
 
 The annotated benchmark contained 30 documents with 33 manually annotated comparisons. The larger
 981-document experiment measured corpus-scale processing performance, these are separate
@@ -99,19 +100,19 @@ Notable preprocessing steps include:
 Document comparison follows three stages:
 
 1. **Seed:**
-    - Candidate sentence matches are identified using bidirectional word alignment
-        - Best matching word identified via cosine similarity over word2vec embeddings
-    - Each word impact over sentence similarity score is derived from word's cosine similarity
-      weighted by their
-        - POS coefficient: e.g. matched adjectives are more important,
-        - corpus IDF: e.g. word "process" (OS term), is of none importance when matched, in context
-          of OS university course assignment.
+   - Candidate sentence matches are identified using bidirectional word alignment
+     - Best matching word identified via cosine similarity over word2vec embeddings
+   - Each word impact over sentence similarity score is derived from word's cosine similarity
+     weighted by their
+     - POS coefficient: e.g. matched adjectives are more important,
+     - corpus IDF: e.g. word "process" (OS term), is of none importance when matched, in context
+       of OS university course assignment.
 
 2. **Extend:**
-    - Nearby matches are recursively combined into larger matching fragments,
-      allowing for gaps and inserted or omitted sentences.
+   - Nearby matches are recursively combined into larger matching fragments,
+     allowing for gaps and inserted or omitted sentences.
 3. **Filter:**
-    - Short and overlapping fragments are removed to produce the final matches.
+   - Short and overlapping fragments are removed to produce the final matches.
 
 To avoid exhaustive sentence to sentence comparison, sentences are first represented as weighted
 sums
@@ -152,6 +153,7 @@ The project uses the native MorphoDiTa library located in `libs/`. When running 
 ```
 
 ### Building
+
 To build application first install language models via:
 
 ```bash
@@ -159,12 +161,11 @@ python -m pip install gensim
 ./scripts/download_models.sh
 ```
 
-By default, the models are prepared in `models-tmp/`. Copy the following files into the CLI 
-resources directory  `plagdet-cli/src/main/resources/`:
+By default, the models are prepared in `models-tmp/`. Copy the following files into the CLI
+resources directory `plagdet-cli/src/main/resources/`:
 
 - `slovak-morfflex-pdt-170914-pos_only.tagger`
 - `sk.poslemma.prim-10.0-public-saneword2vec.bin`
-
 
 Then build the executable JAR using the Gradle Wrapper:
 
@@ -173,6 +174,7 @@ Then build the executable JAR using the Gradle Wrapper:
 ```
 
 The resulting JAR is accessible via path:
+
 ```
 ./plagdet-cli/build/libs/plagdet-cli.jar
 ```
@@ -194,10 +196,11 @@ The input (`-n`) can be a supported document, directory, or ZIP archive. Nested 
 are also supported.
 
 The output is a ZIP archive containing the analysis results, document contents, metadata, and detected matches. The default output filename is `report.zip`.
-You can analyze it through [Plagdet UI](https://tarashamkalo.github.io/plagdet-ui/) at github.io. 
+You can analyze it through [Plagdet UI](https://tarashamkalo.github.io/plagdet-ui/) at github.io.
+
 ### Indexing a reference corpus
- 
-Plagdet supports building a persistent Lucene index of reference submissions. 
+
+Plagdet supports building a persistent Lucene index of reference submissions.
 This allows subsequent analyses to retrieve potentially relevant source
 documents without using extensive, pair wise comparison with each.
 
@@ -221,7 +224,7 @@ java -Dsystem.library.path=./libs \
     -o ./report.zip
 ```
 
-The `-i` option creates an index without performing document comparisons. The `-l` option specifies the index directory. 
+The `-i` option creates an index without performing document comparisons. The `-l` option specifies the index directory.
 
 ### Configuration
 
@@ -234,7 +237,9 @@ java -Dsystem.library.path=./libs \
     -jar dist/plagdet-cli.jar \
     -h
 ```
+
 Output:
+
 ```txt
 usage: java -jar plagdet.jar
  -alignment-th <arg>                    Drop every sentence match below
@@ -354,7 +359,7 @@ See the UI repository for its build and deployment instructions.
 
 ## Project documentation
 
-The repository also includes the thesis appendices with more extensive 
+The repository also includes the thesis appendices with more extensive
 user and system documentation.
 
 The system documentation contains **UML class diagrams**,
@@ -364,3 +369,20 @@ extension points, such as adding document readers and extending preprocessing
 or indexing functionality.
 
 See [the project appendices](docs/system-appendix-and-manual.pdf) for the complete documentation.
+
+## Project structure
+
+Modules:
+
+- `plagdet-core` - core plagiarism detection implementation:
+  - `preprocessing/` - document preprocessing pipeline, including text block identification,
+    sentence splitting, linguistic annotation, spelling and stop-word filtering.
+  - `comparision/` - document comparison, word alignment, similarity scoring,
+    filtering and comparison result models.
+  - `documents/` - document representation, corpus abstractions, document pools and metadata.
+  - `indexing/` - document and sentence indexing using Apache Lucene and JVector,
+    including text analysis and result mapping.
+  - `io/` - document reading (PDF, DOCX, DOC), archive extraction,
+    file data sources abstraction and report generation.
+  - `classification/` - code segment classification and feature extraction.
+- `plagdet-cli/` - command-line application
